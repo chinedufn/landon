@@ -1,0 +1,38 @@
+{
+  "name": "blender-mesh-to-json",
+  "version": "0.0.1",
+  "description": "Export a mesh from Blender to a JSON file or stdout",
+  "main": "index.js",
+  "scripts": {
+    "build-visualizer": "./bin/build-visualizer.sh",
+    "serve": "cd mesh-visualizer && budo bootstrap.js --live -t [ babelify --presets [ '@babel/preset-env' ] ] -t rustify",
+    "test": "standard"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chinedufn/blender-mesh-to-json.git"
+  },
+  "keywords": [
+    "blender",
+    "mesh",
+    "json",
+    "export",
+    "exporter",
+    "obj",
+    "collada",
+    "python"
+  ],
+  "author": "Chinedu Francis Nwafili <frankie.nwafili@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chinedufn/blender-mesh-to-json/issues"
+  },
+  "homepage": "https://github.com/chinedufn/blender-mesh-to-json#readme",
+  "devDependencies": {
+    "@babel/core": "^7.0.0-beta.51",
+    "@babel/preset-env": "^7.0.0-beta.51",
+    "babelify": "^9.0.0",
+    "budo": "^11.2.2",
+    "rustify": "^1.1.0"
+  }
+}

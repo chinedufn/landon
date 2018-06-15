@@ -1,0 +1,10 @@
+[package]
+name = "blender-mesh-to-json"
+version = "0.0.1"
+authors = ["Chinedu Francis Nwafili <frankie.nwafili@gmail.com>"]
+
+[workspace]
+members = [
+  "mesh-visualizer"
+]
+
