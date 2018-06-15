@@ -1,3 +1,3 @@
-import { greet } from "./wasm_game_of_life";
+import { greet } from "./mesh_visualizer";
 
 greet("Rust and WebAssembly");
