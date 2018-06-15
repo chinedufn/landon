@@ -6,10 +6,26 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 extern {
-    fn alert(s: &str);
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(msg: &str);
+}
+
+// A macro to provide `println!(..)`-style syntax for `console.log` logging.
+macro_rules! clog {
+    ($($t:tt)*) => (log(&format!($($t)*)))
 }
 
 #[wasm_bindgen]
-pub fn greet(name: &str) {
-    alert(&format!("Hello, {}!", name));
+pub struct App {
+}
+
+#[wasm_bindgen]
+impl App {
+    pub fn new () -> App {
+        App {}
+    }
+
+    pub fn render () {
+        clog!("Render");
+    }
 }

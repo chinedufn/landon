@@ -1,3 +1,6 @@
-import { greet } from "./mesh_visualizer";
+import { App } from "./mesh_visualizer";
 
-greet("Rust and WebAssembly");
+const app = App.new();
+
+App.render()
+
