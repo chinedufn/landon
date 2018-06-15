@@ -2,3 +2,6 @@
 target
 *Cargo.lock
 .idea
+
+# Generated wasm interop modules
+mesh-visualizer/mesh_visualizer*
