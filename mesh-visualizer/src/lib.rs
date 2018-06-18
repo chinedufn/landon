@@ -73,6 +73,39 @@ extern {
     #[wasm_bindgen(method, js_name = getShaderInfoLog)]
     fn get_shader_info_log(this: &WebGLRenderingContext, shader: &WebGLShader) -> String;
 
+    #[wasm_bindgen(method, js_name = attachShader)]
+    fn attach_shader(this: &WebGLRenderingContext, program: &WebGLProgram, shader: &WebGLShader);
+
+    #[wasm_bindgen(method, js_name = createProgram)]
+    fn create_program(this: &WebGLRenderingContext) -> WebGLProgram;
+
+    #[wasm_bindgen(method, js_name = linkProgram)]
+    fn link_program(this: &WebGLRenderingContext, program: &WebGLProgram);
+
+    #[wasm_bindgen(method, js_name = useProgram)]
+    fn use_program(this: &WebGLRenderingContext, program: &WebGLProgram);
+
+    #[wasm_bindgen(method, js_name = getAttribLocation)]
+    fn get_attrib_location(this: &WebGLRenderingContext, program: &WebGLProgram, attrib: &str) -> u16;
+
+    #[wasm_bindgen(method, js_name = getUniformLocation)]
+    fn get_uniform_location(this: &WebGLRenderingContext, program: &WebGLProgram, uniform: &str) -> WebGLUniformLocation;
+
+    #[wasm_bindgen(method, js_name = enableVertexAttribArray)]
+    fn enable_vertex_attrib_array(this: &WebGLRenderingContext, attribute: u16);
+
+    #[wasm_bindgen(method)]
+    fn viewport(this: &WebGLRenderingContext, x: u16, y: u16, width: u16, height: u16);
+
+    #[wasm_bindgen(method, js_name = uniformMatrix4fv)]
+    fn uniform_matrix_4fv(this: &WebGLRenderingContext, loc: WebGLUniformLocation, tranpose: bool, value: Vec<f32>);
+
+    #[wasm_bindgen(method, js_name = bindBuffer)]
+    fn bind_buffer(this: &WebGLRenderingContext, buffer_type: u16, buffer: WebGLBuffer);
+
+    #[wasm_bindgen(method, js_name = bufferData)]
+    fn buffer_data(this: &WebGLRenderingContext, buffer_type: u16, data: Vec<f32>, usage: u16);
+
     // TODO: Figure out why these accessors are throwing errors. Create a repo to reproduce the
     // error and open an issue in wasm-bindgen repo
 //    #[wasm_bindgen(method, getter)]
@@ -90,6 +123,9 @@ extern {
     type GLenum;
     type GLbitfield;
     type WebGLShader;
+    type WebGLProgram;
+    type WebGLUniformLocation;
+    type WebGLBuffer;
 }
 
 // A macro to provide `println!(..)`-style syntax for `console.log` logging.
@@ -130,7 +166,6 @@ impl App {
 
         gl.enable(depth_test);
         gl.clear_color(0.0, 0.0, 0.0, 1.0);
-        gl.clear(bitfield);
 
         // gl.FRAGMENT_SHAADER
         let fragment_shader_type = 35632;
@@ -155,5 +190,34 @@ impl App {
         if frag_log.len() > 0 {
             clog!("Vertex shader compilation errors: {}", frag_log);
         }
+
+        let shader_program = gl.create_program();
+        gl.attach_shader(&shader_program, &frag_shader);
+        gl.attach_shader(&shader_program, &vert_shader);
+        gl.link_program(&shader_program);
+        gl.use_program(&shader_program);
+
+        let vert_pos_attrib = gl.get_attrib_location(&shader_program, "aVertPos");
+        gl.enable_vertex_attrib_array(vert_pos_attrib);
+
+        let p_matrix_uni = gl.get_uniform_location(&shader_program, "uPMatrix");
+        let mv_matrix_uni = gl.get_uniform_location(&shader_program, "uMVMatrix");
+
+        gl.viewport(0, 0, 500, 500);
+        gl.clear(bitfield);
+
+        let p_matrix = vec![1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
+        let mv_matrix = vec![1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
+
+        gl.uniform_matrix_4fv(p_matrix_uni, false, p_matrix);
+        gl.uniform_matrix_4fv(mv_matrix_uni, false, mv_matrix);
+
+        let array_buffer = 34962;
+        let element_array_buffer = 34963;
+
+        let static_draw = 35044;
+
+//        var vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'aVertexPosition')
+//        gl.enableVertexAttribArray(vertexPositionAttribute)
     }
 }
