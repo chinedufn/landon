@@ -1,0 +1,2 @@
+npm run watch:wasm
+npm run serve

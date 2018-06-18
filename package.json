@@ -6,6 +6,8 @@
   "scripts": {
     "build-visualizer": "./bin/build-visualizer.sh",
     "serve": "webpack-dev-server",
+    "start": "lil-pids bin/visualizer-services",
+    "watch:wasm": "chokidar 'mesh-visualizer/src' -c 'npm run build-visualizer'",
     "test": "standard"
   },
   "repository": {
@@ -29,6 +31,8 @@
   },
   "homepage": "https://github.com/chinedufn/blender-mesh-to-json#readme",
   "devDependencies": {
+    "chokidar-cli": "^1.2.0",
+    "lil-pids": "^2.6.1",
     "webpack": "^4.8.0",
     "webpack-cli": "^2.1.3",
     "webpack-dev-server": "^3.1.4"
