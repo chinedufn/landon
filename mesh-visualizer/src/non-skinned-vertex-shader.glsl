@@ -5,6 +5,5 @@ uniform mat4 uPMatrix;
 
 void main (void) {
   gl_Position = uPMatrix * uMVMatrix * vec4(aVertPos, 1.0);
-
 }
 
