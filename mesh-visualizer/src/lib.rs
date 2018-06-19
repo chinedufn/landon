@@ -6,6 +6,7 @@ use wasm_bindgen::prelude::*;
 
 pub mod web_apis;
 use web_apis::*;
+use std::f32::consts::PI;
 
 // A macro to provide `println!(..)`-style syntax for `console.log` logging.
 macro_rules! clog {
@@ -85,18 +86,63 @@ impl App {
         gl.viewport(0, 0, 500, 500);
         gl.clear(bitfield);
 
-        let p_matrix = vec![1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
-        let mv_matrix = vec![1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
+        let p_matrix = perspective(PI / 3.0, 1.0, 0.1, 100.0);
+        let mv_matrix = vec![1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, -5.0, 1.0];
 
         gl.uniform_matrix_4fv(p_matrix_uni, false, p_matrix);
         gl.uniform_matrix_4fv(mv_matrix_uni, false, mv_matrix);
 
         let array_buffer = 34962;
-        let element_array_buffer = 34963;
+        let gl_ELEMENT_ARRAY_BUFFER = 34963;
 
         let static_draw = 35044;
 
-//        var vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'aVertexPosition')
-//        gl.enableVertexAttribArray(vertexPositionAttribute)
+        // TODO: Breadcrumb - gl.bindBuffer and gl.bufferData for vertPosAttrib
+        let vert_pos_buffer = gl.create_buffer();
+        gl.bind_buffer(array_buffer, &vert_pos_buffer);
+        let vertices = vec![1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 1.0, 0.0];
+        gl.buffer_f32_data(array_buffer, vertices, static_draw);
+
+        let gl_FLOAT = 5126;
+
+        gl.vertex_attrib_pointer(vert_pos_attrib, 3, gl_FLOAT, false, 0, 0);
+
+        let index_buffer = gl.create_buffer();
+        gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
+        let pos_indices = vec![0, 1, 2];
+        gl.buffer_u16_data(gl_ELEMENT_ARRAY_BUFFER, pos_indices, static_draw);
+
+        let gl_TRIANGLES = 4;
+        let gl_UNSIGNED_SHORT = 5123;
+
+        gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
+
+        gl.draw_elements(gl_TRIANGLES, 3, gl_UNSIGNED_SHORT, 0);
     }
+}
+
+// Ported from https://github.com/stackgl/gl-mat4/blob/master/perspective.js
+fn perspective(fovy: f32, aspect: f32, near: f32, far: f32) -> Vec<f32> {
+    let f = 1.0 / (fovy / 2.0).tan();
+
+    let nf = 1.0 / (near - far);
+
+    vec![
+        f / aspect,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        f,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        (far + near) * nf,
+        -1.0,
+        0.0,
+        0.0,
+        (2.0 * far * near) * nf,
+        0.0,
+    ]
 }

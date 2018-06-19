@@ -102,11 +102,23 @@ pub extern {
     #[wasm_bindgen(method, js_name = uniformMatrix4fv)]
     pub fn uniform_matrix_4fv(this: &WebGLRenderingContext, loc: WebGLUniformLocation, tranpose: bool, value: Vec<f32>);
 
+    #[wasm_bindgen(method, js_name = createBuffer)]
+    pub fn create_buffer(this: &WebGLRenderingContext) -> WebGLBuffer;
+
     #[wasm_bindgen(method, js_name = bindBuffer)]
-    pub fn bind_buffer(this: &WebGLRenderingContext, buffer_type: u16, buffer: WebGLBuffer);
+    pub fn bind_buffer(this: &WebGLRenderingContext, buffer_type: u16, buffer: &WebGLBuffer);
 
     #[wasm_bindgen(method, js_name = bufferData)]
-    pub fn buffer_data(this: &WebGLRenderingContext, buffer_type: u16, data: Vec<f32>, usage: u16);
+    pub fn buffer_f32_data(this: &WebGLRenderingContext, buffer_type: u16, data: Vec<f32>, usage: u16);
+
+    #[wasm_bindgen(method, js_name = bufferData)]
+    pub fn buffer_u16_data(this: &WebGLRenderingContext, buffer_type: u16, data: Vec<u16>, usage: u16);
+
+    #[wasm_bindgen(method, js_name = vertexAttribPointer)]
+    pub fn vertex_attrib_pointer(this: &WebGLRenderingContext, index: u16, size: u8, kind: u16, normalized: bool, stride: u8, offset: u8);
+
+    #[wasm_bindgen(method, js_name = drawElements)]
+    pub fn draw_elements(this: &WebGLRenderingContext, mode: u8, count: u16, kind: u16, offset: u8);
 
     // TODO: Figure out why these accessors are throwing errors. Create a repo to reproduce the
     // error and open an issue in wasm-bindgen repo
