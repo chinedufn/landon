@@ -2,7 +2,7 @@
 # armature into a JSON file
 
 bl_info = {
-    "name": "Export Actions to JSON",
+    "name": "Export Mesh to JSON",
     "category": "Import-Export"
 }
 
@@ -30,6 +30,7 @@ class MeshToJSON(bpy.types.Operator):
 
     def execute(self, context):
         print("\n\n\nHIHIHIH FROM BLENDER\n\n\n")
+        return {'FINISHED'}
 
 def register():
     bpy.utils.register_class(MeshToJSON)
@@ -60,6 +61,3 @@ if __name__ == "__main__":
 
 # >>> o.vertex_groups[6].name
 # 'Hand.L'
-
-
-
