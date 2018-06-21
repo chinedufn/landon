@@ -9,6 +9,9 @@ fn parse_data () {
     let install_addon = &abs_path("install-addon.py");
     let run_addon = &abs_path("run-addon.py");
 
+    // TODO: Move the CLI spawning and parsing into `lib.rs`. In our test just verify
+    // the returned mesh data
+
     let mut blender_output =  Command::new("blender")
         .args(&["--background", basic_cube_blend])
         .args(&["--python", run_addon])
@@ -17,11 +20,9 @@ fn parse_data () {
         .expect("Failed to execute Blender process");
 
     let stderr = String::from_utf8(blender_output.stderr).unwrap();
-    println!("{}", stderr);
     assert_eq!(stderr, "");
 
     let stdout = String::from_utf8(blender_output.stdout).unwrap();
-
     println!("{}", stdout);
 
     // TODO: Breadcrumb - spawn out blender script, look at stdout and verify that
@@ -36,8 +37,16 @@ fn abs_path (path: &str) -> String {
     abs_path.to_str().unwrap().to_string()
 }
 
-fn test_script<'a> () -> &'a str {
-    r#"
+// TODO: write_to_file.rs test where we make sure that we write to a file instead of stdout
+// if `-- --mesh-filepath="" is provided
 
-    "#
-}
+// TODO: cli.rs test that spawns a bash script that calls a python script that iterates over
+// passed in mesh names and calls bpy.ops.import_export.mesh2json(). It then tee's the output
+// so that readers have an example of how to combine this with other scripts
+
+// CLI
+// STDOUT=$(blender -b --python multiple-blender-files)
+// JSON = $(cat STDOUT | mesh2json)
+// cat STDOUT | mesh2json > some_file.json
+
+// bpy.ops.wm.open_mainfile( filepath = "/path/to/file.blend" )

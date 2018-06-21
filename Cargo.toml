@@ -3,6 +3,9 @@ name = "blender-mesh-to-json"
 version = "0.0.1"
 authors = ["Chinedu Francis Nwafili <frankie.nwafili@gmail.com>"]
 
+[dependencies]
+failure = "0.1"
+
 [workspace]
 members = [
   "mesh-visualizer"
