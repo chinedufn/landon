@@ -97,7 +97,6 @@ impl App {
 
         let static_draw = 35044;
 
-        // TODO: Breadcrumb - gl.bindBuffer and gl.bufferData for vertPosAttrib
         let vert_pos_buffer = gl.create_buffer();
         gl.bind_buffer(array_buffer, &vert_pos_buffer);
         let vertices = vec![1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 1.0, 0.0];
@@ -118,6 +117,29 @@ impl App {
         gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
         gl.draw_elements(gl_TRIANGLES, 3, gl_UNSIGNED_SHORT, 0);
+
+        // TODO: Breadcrumb - tests/ directory has integration tests for exporting each of
+        // our fixture models. All stored in same directory.. basic_cube.rs basic_cube.blend.
+        // Export the data from basic_model.blend by spawning a blender process and with our
+        // blender-mesh-to-json.py (if there is only one mesh it selects it automatically) and
+        // pull out the data.
+
+        // TODO: Make our build process export all of our fixtures to a serialized-models directory
+        // and have our mesh visualizer iterate over the serialized models dir. Get our basic_cube
+        // model to show up in our visualizer, rotating slowly
+
+        // TODO: `textured_cube.{rs,blend}`. create an `img` element and add a source, then use
+        // that image as a texture via hard coded uv coordinates.
+
+        // TODO: Split this method up / clean up the var names
+
+        // TODO: Render a cube instead of a triangle
+
+        // TODO: Add normals
+
+        // TODO: Add material and lighting
+
+        // TODO: Add camera controls
     }
 }
 

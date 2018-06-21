@@ -1,5 +1,2 @@
-import { App } from "./mesh_visualizer";
-
-const app = App.new();
-
+import { App } from './mesh_visualizer';
 App.start()
