@@ -1,7 +1,7 @@
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-pub extern {
+extern "C" {
     pub type HTMLDocument;
 
     #[wasm_bindgen(js_namespace = console)]
@@ -23,7 +23,7 @@ pub extern {
 }
 
 #[wasm_bindgen]
-pub extern {
+extern "C" {
     pub type Element;
 
     #[wasm_bindgen(method, setter = innerHTML)]
@@ -51,7 +51,7 @@ pub extern {
 }
 
 #[wasm_bindgen]
-pub extern {
+extern "C" {
     pub type WebGLRenderingContext;
 
     #[wasm_bindgen(method)]
@@ -76,7 +76,11 @@ pub extern {
     pub fn get_shader_info_log(this: &WebGLRenderingContext, shader: &WebGLShader) -> String;
 
     #[wasm_bindgen(method, js_name = attachShader)]
-    pub fn attach_shader(this: &WebGLRenderingContext, program: &WebGLProgram, shader: &WebGLShader);
+    pub fn attach_shader(
+        this: &WebGLRenderingContext,
+        program: &WebGLProgram,
+        shader: &WebGLShader,
+    );
 
     #[wasm_bindgen(method, js_name = createProgram)]
     pub fn create_program(this: &WebGLRenderingContext) -> WebGLProgram;
@@ -88,10 +92,18 @@ pub extern {
     pub fn use_program(this: &WebGLRenderingContext, program: &WebGLProgram);
 
     #[wasm_bindgen(method, js_name = getAttribLocation)]
-    pub fn get_attrib_location(this: &WebGLRenderingContext, program: &WebGLProgram, attrib: &str) -> u16;
+    pub fn get_attrib_location(
+        this: &WebGLRenderingContext,
+        program: &WebGLProgram,
+        attrib: &str,
+    ) -> u16;
 
     #[wasm_bindgen(method, js_name = getUniformLocation)]
-    pub fn get_uniform_location(this: &WebGLRenderingContext, program: &WebGLProgram, uniform: &str) -> WebGLUniformLocation;
+    pub fn get_uniform_location(
+        this: &WebGLRenderingContext,
+        program: &WebGLProgram,
+        uniform: &str,
+    ) -> WebGLUniformLocation;
 
     #[wasm_bindgen(method, js_name = enableVertexAttribArray)]
     pub fn enable_vertex_attrib_array(this: &WebGLRenderingContext, attribute: u16);
@@ -100,7 +112,12 @@ pub extern {
     pub fn viewport(this: &WebGLRenderingContext, x: u16, y: u16, width: u16, height: u16);
 
     #[wasm_bindgen(method, js_name = uniformMatrix4fv)]
-    pub fn uniform_matrix_4fv(this: &WebGLRenderingContext, loc: WebGLUniformLocation, tranpose: bool, value: Vec<f32>);
+    pub fn uniform_matrix_4fv(
+        this: &WebGLRenderingContext,
+        loc: WebGLUniformLocation,
+        tranpose: bool,
+        value: Vec<f32>,
+    );
 
     #[wasm_bindgen(method, js_name = createBuffer)]
     pub fn create_buffer(this: &WebGLRenderingContext) -> WebGLBuffer;
@@ -109,19 +126,37 @@ pub extern {
     pub fn bind_buffer(this: &WebGLRenderingContext, buffer_type: u16, buffer: &WebGLBuffer);
 
     #[wasm_bindgen(method, js_name = bufferData)]
-    pub fn buffer_f32_data(this: &WebGLRenderingContext, buffer_type: u16, data: Vec<f32>, usage: u16);
+    pub fn buffer_f32_data(
+        this: &WebGLRenderingContext,
+        buffer_type: u16,
+        data: Vec<f32>,
+        usage: u16,
+    );
 
     #[wasm_bindgen(method, js_name = bufferData)]
-    pub fn buffer_u16_data(this: &WebGLRenderingContext, buffer_type: u16, data: Vec<u16>, usage: u16);
+    pub fn buffer_u16_data(
+        this: &WebGLRenderingContext,
+        buffer_type: u16,
+        data: Vec<u16>,
+        usage: u16,
+    );
 
     #[wasm_bindgen(method, js_name = vertexAttribPointer)]
-    pub fn vertex_attrib_pointer(this: &WebGLRenderingContext, index: u16, size: u8, kind: u16, normalized: bool, stride: u8, offset: u8);
+    pub fn vertex_attrib_pointer(
+        this: &WebGLRenderingContext,
+        index: u16,
+        size: u8,
+        kind: u16,
+        normalized: bool,
+        stride: u8,
+        offset: u8,
+    );
 
     #[wasm_bindgen(method, js_name = drawElements)]
     pub fn draw_elements(this: &WebGLRenderingContext, mode: u8, count: u16, kind: u16, offset: u8);
 
-    // TODO: Figure out why these accessors are throwing errors. Create a repo to reproduce the
-    // error and open an issue in wasm-bindgen repo
+// TODO: Figure out why these accessors are throwing errors. Create a repo to reproduce the
+// error and open an issue in wasm-bindgen repo
 //    #[wasm_bindgen(method, getter)]
 //    pub fn COLOR_BUFFER_BIT(this: &WebGLRenderingContext) -> GLbitfield;
 //
@@ -136,7 +171,7 @@ pub extern {
 }
 
 #[wasm_bindgen]
-pub extern {
+extern "C" {
     pub type GLenum;
     pub type GLbitfield;
     pub type WebGLShader;
@@ -144,4 +179,3 @@ pub extern {
     pub type WebGLUniformLocation;
     pub type WebGLBuffer;
 }
-

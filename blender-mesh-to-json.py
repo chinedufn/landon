@@ -14,9 +14,9 @@ import json
 # Stdout mesh JSON is wrapped in a start and end indicators
 # to more easily distinguish it from other Blender output.
 #
-# START_EXPORT_MESH $BLENDER_FILEPATH $MESH_NAME
+# START_MESH_JSON $BLENDER_FILEPATH $MESH_NAME
 # ... mesh json ...
-# FINISH_EXPORT_MESH $BLENDER_FILEPATH $MESH_NAME
+# END_MESH_JSON $BLENDER_FILEPATH $MESH_NAME
 class MeshToJSON(bpy.types.Operator):
     """Given an active armature, export it's actions and keyframed bone pose information to a JSON file"""
     # Unique identifier for the addon
@@ -37,9 +37,6 @@ class MeshToJSON(bpy.types.Operator):
             'vertex_position_indices': [],
             'vertex_normals': [],
             'vertex_normal_indices': [],
-            'vertex_uvs': [],
-            'vertex_uv_indices': [],
-            'texture_name': None,
             'armature_name': None,
         }
 
@@ -75,9 +72,9 @@ class MeshToJSON(bpy.types.Operator):
 
         # Iterate over all of the polygons and get the face data
 
-        print("START_EXPORT_MESH " + bpy.data.filepath + " " + mesh.name)
+        print("START_MESH_JSON " + bpy.data.filepath + " " + mesh.name)
         print(json.dumps(mesh_json))
-        print("FINISH_EXPORT_MESH " + bpy.data.filepath + " " + mesh.name)
+        print("END_MESH_JSON " + bpy.data.filepath + " " + mesh.name)
 # START_EXPORT_MESH $BLENDER_FILEPATH $MESH_NAME
 # ... mesh json ...
 # FINISH_EXPORT_MESH $BLENDER_FILEPATH $MESH_NAME

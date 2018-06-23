@@ -5,8 +5,8 @@ extern crate wasm_bindgen;
 use wasm_bindgen::prelude::*;
 
 pub mod web_apis;
-use web_apis::*;
 use std::f32::consts::PI;
+use web_apis::*;
 
 // A macro to provide `println!(..)`-style syntax for `console.log` logging.
 macro_rules! clog {
@@ -14,16 +14,15 @@ macro_rules! clog {
 }
 
 #[wasm_bindgen]
-pub struct App {
-}
+pub struct App {}
 
 #[wasm_bindgen]
 impl App {
-    pub fn new () -> App {
+    pub fn new() -> App {
         App {}
     }
 
-    pub fn start () {
+    pub fn start() {
         clog!("Starting!");
 
         let canvas_id = "mesh-visualizer";
@@ -55,8 +54,14 @@ impl App {
         let frag_shader = gl.create_shader(fragment_shader_type);
         let vert_shader = gl.create_shader(vertex_shader_type);
 
-        gl.shader_source(&vert_shader, include_str!("./non-skinned-vertex-shader.glsl"));
-        gl.shader_source(&frag_shader, include_str!("./non-skinned-fragment-shader.glsl"));
+        gl.shader_source(
+            &vert_shader,
+            include_str!("./non-skinned-vertex-shader.glsl"),
+        );
+        gl.shader_source(
+            &frag_shader,
+            include_str!("./non-skinned-fragment-shader.glsl"),
+        );
 
         gl.compile_shader(&vert_shader);
         gl.compile_shader(&frag_shader);
@@ -87,7 +92,9 @@ impl App {
         gl.clear(bitfield);
 
         let p_matrix = perspective(PI / 3.0, 1.0, 0.1, 100.0);
-        let mv_matrix = vec![1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, -5.0, 1.0];
+        let mv_matrix = vec![
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, -5.0, 1.0,
+        ];
 
         gl.uniform_matrix_4fv(p_matrix_uni, false, p_matrix);
         gl.uniform_matrix_4fv(mv_matrix_uni, false, mv_matrix);
