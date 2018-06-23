@@ -1,7 +1,10 @@
+extern crate blender_mesh_to_json;
+
 use std::path::Path;
 use std::fs::File;
 use std::env::current_dir;
 use std::process::Command;
+use blender_mesh_to_json::parse_meshes_from_blender_stdout;
 
 #[test]
 fn parse_data () {
@@ -20,13 +23,16 @@ fn parse_data () {
         .expect("Failed to execute Blender process");
 
     let stderr = String::from_utf8(blender_output.stderr).unwrap();
+    println!("{}", stderr);
+
     assert_eq!(stderr, "");
 
     let stdout = String::from_utf8(blender_output.stdout).unwrap();
-    println!("{}", stdout);
 
-    // TODO: Breadcrumb - spawn out blender script, look at stdout and verify that
-    // our script ran
+    let parsed_mesh = parse_meshes_from_blender_stdout(&stdout, None).unwrap();
+
+    println!("{}", stdout);
+    println!("{:#?}", parsed_mesh);
 }
 
 fn abs_path (path: &str) -> String {

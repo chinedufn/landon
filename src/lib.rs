@@ -19,6 +19,8 @@
 #[macro_use]
 extern crate failure;
 
+use std::collections::HashMap;
+
 /// Something went wrong in the Blender child process that was trying to parse your mesh data.
 #[derive(Debug, Fail)]
 pub enum BlenderError {
@@ -35,20 +37,43 @@ pub struct ExportConfig {
     pub output_filepath: Option<String>
 }
 
+/// All of the data about a Blender mesh
+#[derive(Debug)]
+pub struct BlenderMesh {
+    /// [v1x, v1y, v1z, v2x, v2y, v2z, ...]
+    pub vertex_positions: Vec<f32>,
+    /// The indices within vertex positions that make up each triangle in our mesh.
+    /// Three vertex position indices correspond to one triangle
+    /// [tri1
+    pub vertex_position_indices: Vec<f32>,
+    pub vertex_normals: Vec<f32>,
+    pub vertex_normal_indices: Vec<f32>,
+    pub vertex_uvs: Option<Vec<f32>>,
+    pub vertex_uv_indices: Option<Vec<f32>>,
+    pub texture_name: String,
+    pub armature_name: String,
+}
+
+pub type MeshNamesToData = HashMap<String, BlenderMesh>;
+pub type FilenamesToMeshes = HashMap<String, MeshNamesToData>;
+
 /// Given a buffer of standard output from Blender we parse all of the mesh JSON that was
 /// written to stdout by `blender-mesh-to-json.py`.
 ///
-/// # Examples
+/// Meshes data in stdout will look like:
 ///
 /// ```
-/// let stdout = Command::new("blender")
-///     .args(&["--background", "house.blend"])
-///     .args(&["--python", "run-addon.py"])
-///     .arg("--")
-///     .output()
-///     .expect("Failed to execute Blender process");
-/// let stdout = String::from_utf8(blender_output.stderr).unwrap();
+/// START_MESH_JSON /path/to/file.blend my_mesh_name
+/// END_MESH_JSON /path/to/file.blend my_mesh_name
 /// ```
-pub fn parse_meshes_from_blender_stdout (stdout: &str, config: Option<&ExportConfig>) {
-    // TODO: Output format {filepath: {MESH_NAME: {data}, filepath2: ...}
+///
+/// @see blender-mesh-to-json.py - This is where we write to stdout
+pub fn parse_meshes_from_blender_stdout (stdout: &str, config: Option<&ExportConfig>)
+    -> Result<FilenamesToMeshes, failure::Error> {
+    let filenames_to_meshes = HashMap::new();
+    // TODO: JSON Output format [{mesh_name: 'foo', mesh_data: {}, source_file: '/path/to/file.blend'}]
+
+    // TODO: Breadcrumb - define the `Mesh` struct, then start writing data to stdout from Blender
+
+    Ok(filenames_to_meshes)
 }
