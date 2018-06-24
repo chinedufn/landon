@@ -16,6 +16,10 @@ use std::rc::Rc;
 use web_apis::*;
 use std::cell::RefCell;
 
+use cgmath::Matrix4;
+use cgmath::Vector3;
+use cgmath::Point3;
+
 // A macro to provide `println!(..)`-style syntax for `console.log` logging.
 macro_rules! clog {
     ($($t:tt)*) => (log(&format!($($t)*)))
@@ -161,15 +165,18 @@ impl App {
 
         let fovy = cgmath::Rad(PI / 3.0);
         let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
-        let mut p_matrix = vec![];
+        let mut p_matrix = vec_from_matrix4(&perspective);
 
-        for index in 0..16 {
-            p_matrix.push(perspective[index / 4][index % 4]);
-        }
+        let model_matrix = Matrix4::from_translation(Vector3::new(0.0, 0.0, 0.0));
 
-        let mv_matrix = vec![
-            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, -5.0, 1.0,
-        ];
+        // TODO: Breadcrumb - create a view matrix looking down on the model. multiple the view
+        // and model matrix and store as mv matrix;
+        let mut mv_matrix = Matrix4::look_at(Point3::new(1.0, 2.0, -10.0), Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 1.0, 0.0));
+
+        // TODO: Multiply without new allocation
+        mv_matrix = mv_matrix * model_matrix;
+
+        let mv_matrix = vec_from_matrix4(&mv_matrix);
 
         let p_matrix_uni = gl.get_uniform_location(&shader_program, "uPMatrix");
         let mv_matrix_uni = gl.get_uniform_location(&shader_program, "uMVMatrix");
@@ -217,6 +224,17 @@ impl App {
 
         // TODO: Add camera controls
     }
+}
+
+fn vec_from_matrix4 (mat4: &Matrix4<f32>) -> Vec<f32> {
+    // TODO: Accept output vec instead of re-allocating
+    let mut vec = vec![];
+
+    for index in 0..16 {
+        vec.push(mat4[index / 4][index % 4]);
+    }
+
+    vec
 }
 
 #[cfg(test)]
