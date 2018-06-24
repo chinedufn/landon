@@ -54,7 +54,9 @@ impl App {
 
         let save_model_in_state = move |model_json: String| {
             let mut mesh = BlenderMesh::from_json(&model_json).unwrap();
+
             mesh.combine_vertex_indices();
+            mesh.triangulate();
 
             meshes_clone.borrow_mut().insert("dist/cube.json".to_string(), mesh);
             *current_model_clone.borrow_mut() = Some("dist/cube.json".to_string());
