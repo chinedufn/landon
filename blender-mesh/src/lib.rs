@@ -71,16 +71,16 @@ impl BlenderMesh {
         type PosIndex = u32;
         type NormalIndex = u32;
         type UvIndex = Option<u32>;
-        type EncounteredIndices = HashSet<(PosIndex, NormalIndex, UvIndex)>;
+        type EncounteredIndices = HashMap<(PosIndex, NormalIndex, UvIndex), PosIndex>;
 
         let mut largest_pos_index = *self.vertex_position_indices.iter().max().unwrap() as usize;
 
-        let mut encountered_indices: EncounteredIndices = HashSet::new();
+        let mut encountered_indices: EncounteredIndices = HashMap::new();
         let mut encountered_pos_indices = HashSet::new();
 
-        let mut single_index_normals = vec![];
+        let mut single_normals = vec![];
         let mut single_index_pos_indices = vec![];
-        let mut single_index_positions = vec![];
+        let mut single_positions = vec![];
 
         single_index_pos_indices.resize(self.vertex_position_indices.len(), 0);
 
@@ -90,54 +90,64 @@ impl BlenderMesh {
 
             // FIXME: Don't reallocate an vector every iteration... Only reallocate when necessary.
             // Also trim the vector when we're done
-            single_index_positions.resize(largest_pos_index * 3 + 7, 0.0);
-            single_index_normals.resize(largest_pos_index * 3 + 7, 0.0);
+            single_positions.resize(largest_pos_index * 3 + 7, 0.0);
+            single_normals.resize(largest_pos_index * 3 + 7, 0.0);
 
-            if encountered_indices.contains(&(pos_index, normal_index, None))
+            let mut index_to_reuse = None;
+
+            {
+                index_to_reuse = encountered_indices.get(&(pos_index, normal_index, None)).cloned();
+            }
+
+            if index_to_reuse.is_some()
                 || !encountered_pos_indices.contains(&pos_index)
             {
-                single_index_pos_indices[vert_num] = pos_index;
+                let index_to_reuse = match index_to_reuse {
+                    Some(i) => i,
+                    None => pos_index
+                };
 
-                single_index_positions[pos_index as usize * 3] =
+                single_index_pos_indices[vert_num] = index_to_reuse;
+
+                single_positions[index_to_reuse as usize * 3] =
                     self.vertex_positions[pos_index as usize * 3];
-                single_index_positions[pos_index as usize * 3 + 1] =
+                single_positions[index_to_reuse as usize * 3 + 1] =
                     self.vertex_positions[pos_index as usize * 3 + 1];
-                single_index_positions[pos_index as usize * 3 + 2] =
+                single_positions[index_to_reuse as usize * 3 + 2] =
                     self.vertex_positions[pos_index as usize * 3 + 2];
 
-                single_index_normals[normal_index as usize * 3] =
-                    self.vertex_normals[normal_index as usize];
-                single_index_normals[normal_index as usize * 3 + 1] =
-                    self.vertex_normals[normal_index as usize + 1];
-                single_index_normals[normal_index as usize * 3 + 2] =
-                    self.vertex_normals[normal_index as usize + 2];
+                single_normals[index_to_reuse as usize * 3] =
+                    self.vertex_normals[normal_index as usize * 3];
+                single_normals[index_to_reuse as usize * 3 + 1] =
+                    self.vertex_normals[normal_index as usize * 3 + 1];
+                single_normals[index_to_reuse as usize * 3 + 2] =
+                    self.vertex_normals[normal_index as usize * 3 + 2];
 
                 encountered_pos_indices.insert(pos_index);
-                encountered_indices.insert((pos_index, normal_index, None));
+                encountered_indices.insert((pos_index, normal_index, None), index_to_reuse);
             } else {
                 largest_pos_index += 1;
 
                 single_index_pos_indices[vert_num] = largest_pos_index as u32;
 
-                single_index_positions[largest_pos_index * 3] = self.vertex_positions[pos_index as usize * 3];
-                single_index_positions[largest_pos_index * 3 + 1] = self.vertex_positions[pos_index as usize * 3 + 1];
-                single_index_positions[largest_pos_index * 3 + 2] = self.vertex_positions[pos_index as usize * 3 + 2];
+                single_positions[largest_pos_index * 3] = self.vertex_positions[pos_index as usize * 3];
+                single_positions[largest_pos_index * 3 + 1] = self.vertex_positions[pos_index as usize * 3 + 1];
+                single_positions[largest_pos_index * 3 + 2] = self.vertex_positions[pos_index as usize * 3 + 2];
 
-                single_index_normals[largest_pos_index as usize * 3] =
-                    self.vertex_normals[normal_index as usize];
-                single_index_normals[largest_pos_index as usize * 3 + 1] =
-                    self.vertex_normals[normal_index as usize + 1];
-                single_index_normals[largest_pos_index as usize * 3 + 2] =
-                    self.vertex_normals[normal_index as usize + 2];
+                single_normals[largest_pos_index as usize * 3] =
+                    self.vertex_normals[normal_index as usize * 3];
+                single_normals[largest_pos_index as usize * 3 + 1] =
+                    self.vertex_normals[normal_index as usize * 3 + 1];
+                single_normals[largest_pos_index as usize * 3 + 2] =
+                    self.vertex_normals[normal_index as usize * 3 + 2];
 
-                encountered_indices.insert((largest_pos_index as u32, normal_index, None));
-                encountered_pos_indices.insert(largest_pos_index as u32);
+                encountered_indices.insert((pos_index as u32, normal_index, None), largest_pos_index as u32);
             }
         }
 
         self.vertex_position_indices = single_index_pos_indices;
-        self.vertex_normals = single_index_normals;
-        self.vertex_positions = single_index_positions;
+        self.vertex_normals = single_normals;
+        self.vertex_positions = single_positions;
 
         self.vertex_positions.resize(largest_pos_index * 3 + 3, 0.0);
         self.vertex_normals.resize(largest_pos_index * 3 + 3, 0.0);
@@ -232,15 +242,15 @@ mod tests {
         let mut start_n2 = vec![6.0, 6.0, 6.0];
 
         let mut start_positions = vec![];
-        start_positions.append(&mut start_v0);
-        start_positions.append(&mut start_v1);
-        start_positions.append(&mut start_v2);
-        start_positions.append(&mut start_v3);
+        start_positions.append(&mut start_v0.clone());
+        start_positions.append(&mut start_v1.clone());
+        start_positions.append(&mut start_v2.clone());
+        start_positions.append(&mut start_v3.clone());
 
         let mut start_normals = vec![];
-        start_normals.append(&mut start_n0);
-        start_normals.append(&mut start_n1);
-        start_normals.append(&mut start_n2);
+        start_normals.append(&mut start_n0.clone());
+        start_normals.append(&mut start_n1.clone());
+        start_normals.append(&mut start_n2.clone());
 
         let mut mesh_to_combine = BlenderMesh {
             vertex_positions: start_positions,
@@ -265,24 +275,24 @@ mod tests {
         let mut end_n2 = vec![6.0, 6.0, 6.0];
 
         let mut end_positions = vec![];
-        end_positions.append(&mut end_v0);
-        end_positions.append(&mut end_v1);
-        end_positions.append(&mut end_v2);
-        end_positions.append(&mut end_v3);
-        end_positions.append(&mut end_v4);
-        end_positions.append(&mut end_v5);
-        end_positions.append(&mut end_v6);
-        end_positions.append(&mut end_v7);
+        end_positions.append(&mut end_v0.clone());
+        end_positions.append(&mut end_v1.clone());
+        end_positions.append(&mut end_v2.clone());
+        end_positions.append(&mut end_v3.clone());
+        end_positions.append(&mut end_v4.clone());
+        end_positions.append(&mut end_v5.clone());
+        end_positions.append(&mut end_v6.clone());
+        end_positions.append(&mut end_v7.clone());
 
         let mut end_normals = vec![];
-        end_normals.append(&mut end_n0);
-        end_normals.append(&mut end_n1);
-        end_normals.append(&mut end_n0);
-        end_normals.append(&mut end_n1);
-        end_normals.append(&mut end_n2);
-        end_normals.append(&mut end_n2);
-        end_normals.append(&mut end_n2);
-        end_normals.append(&mut end_n2);
+        end_normals.append(&mut end_n0.clone());
+        end_normals.append(&mut end_n1.clone());
+        end_normals.append(&mut end_n0.clone());
+        end_normals.append(&mut end_n1.clone());
+        end_normals.append(&mut end_n2.clone());
+        end_normals.append(&mut end_n2.clone());
+        end_normals.append(&mut end_n2.clone());
+        end_normals.append(&mut end_n2.clone());
 
         let expected_mesh = BlenderMesh {
             vertex_positions: end_positions,
