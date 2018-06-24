@@ -10,6 +10,7 @@ crate-type = ["cdylib"]
 [dependencies]
 wasm-bindgen = "0.2.4"
 blender-mesh = { path = "../blender-mesh" }
+cgmath = "0.16"
 
 [build-dependencies]
 blender-mesh = { path = "../blender-mesh" }

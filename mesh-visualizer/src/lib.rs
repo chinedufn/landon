@@ -2,12 +2,14 @@
 
 extern crate blender_mesh;
 extern crate wasm_bindgen;
+extern crate cgmath;
 
 use blender_mesh::BlenderMesh;
 
 use wasm_bindgen::prelude::*;
 
 pub mod web_apis;
+
 use std::collections::HashMap;
 use std::f32::consts::PI;
 use std::rc::Rc;
@@ -48,6 +50,7 @@ impl App {
 
     pub fn start(&mut self) {
         clog!("Starting!");
+
 
         let current_model_clone = Rc::clone(&self.current_model);
         let meshes_clone = Rc::clone(&self.meshes);
@@ -156,7 +159,14 @@ impl App {
 
         gl.clear(bitfield);
 
-        let p_matrix = perspective(PI / 3.0, 1.0, 0.1, 100.0);
+        let fovy = cgmath::Rad(PI / 3.0);
+        let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
+        let mut p_matrix = vec![];
+
+        for index in 0..16 {
+            p_matrix.push(perspective[index / 4][index % 4]);
+        }
+
         let mv_matrix = vec![
             1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, -5.0, 1.0,
         ];
@@ -207,32 +217,6 @@ impl App {
 
         // TODO: Add camera controls
     }
-}
-
-// Ported from https://github.com/stackgl/gl-mat4/blob/master/perspective.js
-fn perspective(fovy: f32, aspect: f32, near: f32, far: f32) -> Vec<f32> {
-    let f = 1.0 / (fovy / 2.0).tan();
-
-    let nf = 1.0 / (near - far);
-
-    vec![
-        f / aspect,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        f,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        (far + near) * nf,
-        -1.0,
-        0.0,
-        0.0,
-        (2.0 * far * near) * nf,
-        0.0,
-    ]
 }
 
 #[cfg(test)]
