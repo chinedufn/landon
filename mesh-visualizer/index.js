@@ -13,7 +13,11 @@ export function download_model (modelName, cb) {
   })
 }
 
-window.requestAnimationFrame(() => {
+const draw = () => {
   app.draw()
-  window.requestAnimationFrame(app.draw)
-})
+
+  window.requestAnimationFrame(() => {
+    draw()
+  })
+}
+draw()

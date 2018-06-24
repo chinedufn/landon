@@ -30,14 +30,15 @@ pub struct App {
 #[wasm_bindgen]
 impl App {
     pub fn new() -> App {
-        App { meshes: vec![] }
+        App { meshes: HashMap::new() }
     }
 
     pub fn start(&self) {
         clog!("Starting!");
 
         let save_model_in_state = move |model_json: String| {
-            let mesh = BlenderMesh::from_json(&model_json).unwrap();
+            let mut mesh = BlenderMesh::from_json(&model_json).unwrap();
+            mesh.combine_vertex_indices();
         };
 
         let on_model_load = Closure::new(save_model_in_state);
@@ -161,7 +162,6 @@ impl App {
     }
 
     pub fn draw(&self) {
-        clog!("Draw!");
     }
 }
 
