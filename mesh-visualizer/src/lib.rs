@@ -3,6 +3,8 @@
 extern crate blender_mesh;
 extern crate wasm_bindgen;
 
+use blender_mesh::BlenderMesh;
+
 use wasm_bindgen::prelude::*;
 
 pub mod web_apis;
@@ -14,6 +16,11 @@ macro_rules! clog {
     ($($t:tt)*) => (log(&format!($($t)*)))
 }
 
+#[wasm_bindgen(module = "./index")]
+extern "C" {
+    fn download_model(model_name: &str, cb: &Closure<FnMut(String)>);
+}
+
 #[wasm_bindgen]
 pub struct App {}
 
@@ -23,8 +30,17 @@ impl App {
         App {}
     }
 
-    pub fn start() {
+    pub fn start(&self) {
         clog!("Starting!");
+
+        let save_model_in_state = move |model_json: String| {
+            let mesh = BlenderMesh::from_json(&model_json).unwrap();
+            clog!("{:#?}", mesh);
+        };
+
+        let on_model_load = Closure::new(save_model_in_state);
+
+        download_model("dist/cube.json", &on_model_load);
 
         let canvas_id = "mesh-visualizer";
 
@@ -126,12 +142,6 @@ impl App {
 
         gl.draw_elements(gl_TRIANGLES, 3, gl_UNSIGNED_SHORT, 0);
 
-        // TODO: Breadcrumb - tests/ directory has integration tests for exporting each of
-        // our fixture models. All stored in same directory.. basic_cube.rs basic_cube.blend.
-        // Export the data from basic_model.blend by spawning a blender process and with our
-        // blender-mesh-to-json.py (if there is only one mesh it selects it automatically) and
-        // pull out the data.
-
         // TODO: Make our build process export all of our fixtures to a serialized-models directory
         // and have our mesh visualizer iterate over the serialized models dir. Get our basic_cube
         // model to show up in our visualizer, rotating slowly
@@ -148,6 +158,13 @@ impl App {
         // TODO: Add material and lighting
 
         // TODO: Add camera controls
+        let draw = Closure::new(|| {
+            clog!("hi");
+        });
+        requestAnimationFrame(&draw);
+
+        draw.forget();
+        on_model_load.forget();
     }
 }
 

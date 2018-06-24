@@ -24,6 +24,7 @@ extern crate serde_derive;
 extern crate serde_json;
 
 use std::collections::HashMap;
+use serde_json::Error;
 
 /// Something went wrong in the Blender child process that was trying to parse your mesh data.
 #[derive(Debug, Fail)]
@@ -55,6 +56,12 @@ pub struct BlenderMesh {
     pub vertex_normal_indices: Vec<u32>,
     pub armature_name: Option<String>,
     // TODO: textures: HashMap<TextureNameString, {uvs, uv_indices}>
+}
+
+impl BlenderMesh {
+    pub fn from_json (json_str: &str) -> Result<BlenderMesh, Error> {
+        serde_json::from_str(json_str)
+    }
 }
 
 pub type MeshNamesToData = HashMap<String, BlenderMesh>;

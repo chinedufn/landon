@@ -172,6 +172,11 @@ extern "C" {
 
 #[wasm_bindgen]
 extern "C" {
+    pub fn requestAnimationFrame(cb: &Closure<FnMut()>);
+}
+
+#[wasm_bindgen]
+extern "C" {
     pub type GLenum;
     pub type GLbitfield;
     pub type WebGLShader;
