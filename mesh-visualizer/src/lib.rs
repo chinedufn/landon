@@ -30,6 +30,9 @@ pub struct App {
     current_model: Rc<RefCell<Option<String>>>,
     /// All of the models that we have downloaded and can render
     meshes: Rc<RefCell<HashMap<String, BlenderMesh>>>,
+    /// A handle into the WebGL context for our canvas
+    gl: Option<WebGLRenderingContext>,
+    non_skinned_shader_program: Option<WebGLProgram>,
 }
 
 #[wasm_bindgen]
@@ -38,10 +41,12 @@ impl App {
         App {
             meshes: Rc::new(RefCell::new(HashMap::new())),
             current_model: Rc::new(RefCell::new(None)),
+            gl: None,
+            non_skinned_shader_program: None,
         }
     }
 
-    pub fn start(&self) {
+    pub fn start(&mut self) {
         clog!("Starting!");
 
         let current_model_clone = Rc::clone(&self.current_model);
@@ -52,6 +57,7 @@ impl App {
             mesh.combine_vertex_indices();
 
             meshes_clone.borrow_mut().insert("dist/cube.json".to_string(), mesh);
+            *current_model_clone.borrow_mut() = Some("dist/cube.json".to_string());
         };
 
         let on_model_load = Closure::new(save_model_in_state);
@@ -60,12 +66,6 @@ impl App {
 
         let canvas_id = "mesh-visualizer";
 
-        // Temporarily using u16's until I can get GLbitfield / Glenum etc working
-        let color_buffer_bit = 16384;
-        let depth_buffer_bit = 256;
-        // color_buffer_bit | depth_buffer_bit
-        let bitfield = 16640;
-        let depth_test = 2929;
 
         let canvas = document.create_canvas_element("canvas");
         canvas.set_width(500);
@@ -76,7 +76,8 @@ impl App {
         let canvas = document.get_canvas_element_by_id(canvas_id);
         let gl = canvas.get_context("webgl");
 
-        gl.enable(depth_test);
+        let gl_depth_test = 2929;
+        gl.enable(gl_depth_test);
         gl.clear_color(0.0, 0.0, 0.0, 1.0);
 
         // gl.FRAGMENT_SHAADER
@@ -115,19 +116,51 @@ impl App {
         gl.link_program(&shader_program);
         gl.use_program(&shader_program);
 
+        gl.viewport(0, 0, 500, 500);
+
+        self.gl = Some(gl);
+        self.non_skinned_shader_program = Some(shader_program);
+
+        on_model_load.forget();
+    }
+
+    pub fn draw(&self) {
+        if self.gl.is_none() {
+            return;
+        }
+
+        let current_model = self.current_model.borrow();
+        let current_model = current_model.as_ref();
+        if current_model.is_none() {
+            return;
+        }
+        let current_model = current_model.unwrap();
+
+        let mesh = self.meshes.borrow();
+        let mesh = mesh.get(current_model).unwrap();
+
+        let gl = self.gl.as_ref().unwrap();
+
+        let shader_program = self.non_skinned_shader_program.as_ref().unwrap();
+
         let vert_pos_attrib = gl.get_attrib_location(&shader_program, "aVertPos");
         gl.enable_vertex_attrib_array(vert_pos_attrib);
 
-        let p_matrix_uni = gl.get_uniform_location(&shader_program, "uPMatrix");
-        let mv_matrix_uni = gl.get_uniform_location(&shader_program, "uMVMatrix");
+        // Temporarily using u16's until I can get GLbitfield / Glenum etc working
+        let color_buffer_bit = 16384;
+        let depth_buffer_bit = 256;
+        // color_buffer_bit | depth_buffer_bit
+        let bitfield = 16640;
 
-        gl.viewport(0, 0, 500, 500);
         gl.clear(bitfield);
 
         let p_matrix = perspective(PI / 3.0, 1.0, 0.1, 100.0);
         let mv_matrix = vec![
             1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, -5.0, 1.0,
         ];
+
+        let p_matrix_uni = gl.get_uniform_location(&shader_program, "uPMatrix");
+        let mv_matrix_uni = gl.get_uniform_location(&shader_program, "uMVMatrix");
 
         gl.uniform_matrix_4fv(p_matrix_uni, false, p_matrix);
         gl.uniform_matrix_4fv(mv_matrix_uni, false, mv_matrix);
@@ -139,8 +172,8 @@ impl App {
 
         let vert_pos_buffer = gl.create_buffer();
         gl.bind_buffer(array_buffer, &vert_pos_buffer);
-        let vertices = vec![1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 1.0, 0.0];
-        gl.buffer_f32_data(array_buffer, vertices, static_draw);
+        // TODO: Remove clone
+        gl.buffer_f32_data(array_buffer, mesh.vertex_positions.clone(), static_draw);
 
         let gl_FLOAT = 5126;
 
@@ -148,15 +181,16 @@ impl App {
 
         let index_buffer = gl.create_buffer();
         gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
-        let pos_indices = vec![0, 1, 2];
-        gl.buffer_u16_data(gl_ELEMENT_ARRAY_BUFFER, pos_indices, static_draw);
+
+        // TODO: Remove clone
+        gl.buffer_u16_data(gl_ELEMENT_ARRAY_BUFFER, mesh.vertex_position_indices.clone(), static_draw);
 
         let gl_TRIANGLES = 4;
         let gl_UNSIGNED_SHORT = 5123;
 
         gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
-        gl.draw_elements(gl_TRIANGLES, 3, gl_UNSIGNED_SHORT, 0);
+        gl.draw_elements(gl_TRIANGLES, mesh.vertex_position_indices.len() as u16, gl_UNSIGNED_SHORT, 0);
 
         // TODO: Add normals and lighting to non-skinned shader
 
@@ -170,11 +204,7 @@ impl App {
         // TODO: Render a cube instead of a triangle
 
         // TODO: Add camera controls
-
-        on_model_load.forget();
     }
-
-    pub fn draw(&self) {}
 }
 
 // Ported from https://github.com/stackgl/gl-mat4/blob/master/perspective.js

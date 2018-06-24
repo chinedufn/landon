@@ -44,10 +44,10 @@ pub struct BlenderMesh {
     /// The indices within vertex positions that make up each triangle in our mesh.
     /// Three vertex position indices correspond to one triangle
     /// [0, 1, 2, 0, 2, 3, ...]
-    pub vertex_position_indices: Vec<u32>,
+    pub vertex_position_indices: Vec<u16>,
     pub num_vertices_in_each_face: Vec<u8>,
     pub vertex_normals: Vec<f32>,
-    pub vertex_normal_indices: Option<Vec<u32>>,
+    pub vertex_normal_indices: Option<Vec<u16>>,
     pub armature_name: Option<String>,
     // TODO: textures: HashMap<TextureNameString, {uvs, uv_indices}>
 }
@@ -68,9 +68,9 @@ impl BlenderMesh {
     /// from having three indices to having one. This usually requires some duplication of
     /// data. We duplicate the minimum amount of vertex data necessary.
     pub fn combine_vertex_indices(&mut self) {
-        type PosIndex = u32;
-        type NormalIndex = u32;
-        type UvIndex = Option<u32>;
+        type PosIndex = u16;
+        type NormalIndex = u16;
+        type UvIndex = Option<u16>;
         type EncounteredIndices = HashMap<(PosIndex, NormalIndex, UvIndex), PosIndex>;
 
         let mut largest_pos_index = *self.vertex_position_indices.iter().max().unwrap() as usize;
@@ -128,7 +128,7 @@ impl BlenderMesh {
             } else {
                 largest_pos_index += 1;
 
-                single_index_pos_indices[vert_num] = largest_pos_index as u32;
+                single_index_pos_indices[vert_num] = largest_pos_index as u16;
 
                 single_positions[largest_pos_index * 3] =
                     self.vertex_positions[pos_index as usize * 3];
@@ -145,8 +145,8 @@ impl BlenderMesh {
                     self.vertex_normals[normal_index as usize * 3 + 2];
 
                 encountered_indices.insert(
-                    (pos_index as u32, normal_index, None),
-                    largest_pos_index as u32,
+                    (pos_index as u16, normal_index, None),
+                    largest_pos_index as u16,
                 );
             }
         }
