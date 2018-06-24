@@ -1,5 +1,6 @@
 #![feature(proc_macro, wasm_custom_section, wasm_import_module)]
 
+extern crate blender_mesh;
 extern crate wasm_bindgen;
 
 use wasm_bindgen::prelude::*;
@@ -174,4 +175,10 @@ fn perspective(fovy: f32, aspect: f32, near: f32, far: f32) -> Vec<f32> {
         (2.0 * far * near) * nf,
         0.0,
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {}
 }

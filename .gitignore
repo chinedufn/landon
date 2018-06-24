@@ -5,3 +5,6 @@ target
 
 # Generated wasm interop modules
 mesh-visualizer/mesh_visualizer*
+
+# Generated serialized blender meshes
+mesh-visualizer/dist

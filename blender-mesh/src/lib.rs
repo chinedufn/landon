@@ -42,7 +42,7 @@ pub struct ExportConfig {
 }
 
 /// All of the data about a Blender mesh
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct BlenderMesh {
     /// [v1x, v1y, v1z, v2x, v2y, v2z, ...]
     pub vertex_positions: Vec<f32>,
@@ -86,9 +86,9 @@ pub fn parse_meshes_from_blender_stdout(
         index = next_start_index;
     }
 
-    // TODO: Breadcrumb - deserialize JSON from stdout into BlenderMeshes, then we start working
-    // on the visualizer to verify that everything is working. Step 1 is adding a function to
-    // our main crate that expands our 3 vertex indices into just one. Unit test it
+    // TODO: Breadcrumb - Plan mesh visualizer to visualizer our basic_cube.rs on paper.
+    // Step 1 is adding a function to our main crate that expands our 3 vertex indices into just one.
+    // Unit test it
 
     Ok(filenames_to_meshes)
 }

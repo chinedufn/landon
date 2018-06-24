@@ -1,7 +1,7 @@
 {
-  "name": "blender-mesh-to-json",
+  "name": "blender-mesh-exporter",
   "version": "0.0.1",
-  "description": "Export a mesh from Blender to a JSON file or stdout",
+  "description": "Export a mesh from Blender",
   "main": "index.js",
   "scripts": {
     "build-visualizer": "./bin/build-visualizer.sh",

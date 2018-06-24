@@ -1,0 +1,10 @@
+[package]
+name = "blender-mesh"
+version = "0.0.1"
+authors = ["Chinedu Francis Nwafili <frankie.nwafili@gmail.com>"]
+
+[dependencies]
+failure = "0.1"
+serde = "1"
+serde_derive = "1"
+serde_json = "1"
