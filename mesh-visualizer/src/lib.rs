@@ -10,7 +10,9 @@ use wasm_bindgen::prelude::*;
 pub mod web_apis;
 use std::collections::HashMap;
 use std::f32::consts::PI;
+use std::rc::Rc;
 use web_apis::*;
+use std::cell::RefCell;
 
 // A macro to provide `println!(..)`-style syntax for `console.log` logging.
 macro_rules! clog {
@@ -24,21 +26,32 @@ extern "C" {
 
 #[wasm_bindgen]
 pub struct App {
-    meshes: HashMap<String, BlenderMesh>,
+    /// The model that the user is currently viewing in their browser
+    current_model: Rc<RefCell<Option<String>>>,
+    /// All of the models that we have downloaded and can render
+    meshes: Rc<RefCell<HashMap<String, BlenderMesh>>>,
 }
 
 #[wasm_bindgen]
 impl App {
     pub fn new() -> App {
-        App { meshes: HashMap::new() }
+        App {
+            meshes: Rc::new(RefCell::new(HashMap::new())),
+            current_model: Rc::new(RefCell::new(None)),
+        }
     }
 
     pub fn start(&self) {
         clog!("Starting!");
 
+        let current_model_clone = Rc::clone(&self.current_model);
+        let meshes_clone = Rc::clone(&self.meshes);
+
         let save_model_in_state = move |model_json: String| {
             let mut mesh = BlenderMesh::from_json(&model_json).unwrap();
             mesh.combine_vertex_indices();
+
+            meshes_clone.borrow_mut().insert("dist/cube.json".to_string(), mesh);
         };
 
         let on_model_load = Closure::new(save_model_in_state);
@@ -161,8 +174,7 @@ impl App {
         on_model_load.forget();
     }
 
-    pub fn draw(&self) {
-    }
+    pub fn draw(&self) {}
 }
 
 // Ported from https://github.com/stackgl/gl-mat4/blob/master/perspective.js

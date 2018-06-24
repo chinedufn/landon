@@ -96,15 +96,15 @@ impl BlenderMesh {
             let mut index_to_reuse = None;
 
             {
-                index_to_reuse = encountered_indices.get(&(pos_index, normal_index, None)).cloned();
+                index_to_reuse = encountered_indices
+                    .get(&(pos_index, normal_index, None))
+                    .cloned();
             }
 
-            if index_to_reuse.is_some()
-                || !encountered_pos_indices.contains(&pos_index)
-            {
+            if index_to_reuse.is_some() || !encountered_pos_indices.contains(&pos_index) {
                 let index_to_reuse = match index_to_reuse {
                     Some(i) => i,
-                    None => pos_index
+                    None => pos_index,
                 };
 
                 single_index_pos_indices[vert_num] = index_to_reuse;
@@ -130,9 +130,12 @@ impl BlenderMesh {
 
                 single_index_pos_indices[vert_num] = largest_pos_index as u32;
 
-                single_positions[largest_pos_index * 3] = self.vertex_positions[pos_index as usize * 3];
-                single_positions[largest_pos_index * 3 + 1] = self.vertex_positions[pos_index as usize * 3 + 1];
-                single_positions[largest_pos_index * 3 + 2] = self.vertex_positions[pos_index as usize * 3 + 2];
+                single_positions[largest_pos_index * 3] =
+                    self.vertex_positions[pos_index as usize * 3];
+                single_positions[largest_pos_index * 3 + 1] =
+                    self.vertex_positions[pos_index as usize * 3 + 1];
+                single_positions[largest_pos_index * 3 + 2] =
+                    self.vertex_positions[pos_index as usize * 3 + 2];
 
                 single_normals[largest_pos_index as usize * 3] =
                     self.vertex_normals[normal_index as usize * 3];
@@ -141,7 +144,10 @@ impl BlenderMesh {
                 single_normals[largest_pos_index as usize * 3 + 2] =
                     self.vertex_normals[normal_index as usize * 3 + 2];
 
-                encountered_indices.insert((pos_index as u32, normal_index, None), largest_pos_index as u32);
+                encountered_indices.insert(
+                    (pos_index as u32, normal_index, None),
+                    largest_pos_index as u32,
+                );
             }
         }
 
