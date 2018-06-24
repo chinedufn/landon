@@ -8,6 +8,7 @@ use blender_mesh::BlenderMesh;
 use wasm_bindgen::prelude::*;
 
 pub mod web_apis;
+use std::collections::HashMap;
 use std::f32::consts::PI;
 use web_apis::*;
 
@@ -22,12 +23,14 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub struct App {}
+pub struct App {
+    meshes: HashMap<String, BlenderMesh>,
+}
 
 #[wasm_bindgen]
 impl App {
     pub fn new() -> App {
-        App {}
+        App { meshes: vec![] }
     }
 
     pub fn start(&self) {
@@ -35,7 +38,6 @@ impl App {
 
         let save_model_in_state = move |model_json: String| {
             let mesh = BlenderMesh::from_json(&model_json).unwrap();
-            clog!("{:#?}", mesh);
         };
 
         let on_model_load = Closure::new(save_model_in_state);
@@ -142,9 +144,9 @@ impl App {
 
         gl.draw_elements(gl_TRIANGLES, 3, gl_UNSIGNED_SHORT, 0);
 
-        // TODO: Make our build process export all of our fixtures to a serialized-models directory
-        // and have our mesh visualizer iterate over the serialized models dir. Get our basic_cube
-        // model to show up in our visualizer, rotating slowly
+        // TODO: Add normals and lighting to non-skinned shader
+
+        // TODO: Make look at camera looking down at mesh (move math into separate module)
 
         // TODO: `textured_cube.{rs,blend}`. create an `img` element and add a source, then use
         // that image as a texture via hard coded uv coordinates.
@@ -153,18 +155,13 @@ impl App {
 
         // TODO: Render a cube instead of a triangle
 
-        // TODO: Add normals
-
-        // TODO: Add material and lighting
-
         // TODO: Add camera controls
-        let draw = Closure::new(|| {
-            clog!("hi");
-        });
-        requestAnimationFrame(&draw);
 
-        draw.forget();
         on_model_load.forget();
+    }
+
+    pub fn draw(&self) {
+        clog!("Draw!");
     }
 }
 

@@ -50,8 +50,14 @@ class MeshToJSON(bpy.types.Operator):
 
             for i in range(num_vertices_in_face):
                 mesh_json['vertex_position_indices'].append(face.vertices[i])
+                # TODO: Maintain a dictionary with (x, y, z) => normal index
+                # for normals that we've already run into.
+                # Re-use an existing normal index wherever possible. Especially important
+                # for smoothed models that mostly re-use the same normals. Test this by
+                # making a cube with to faces that have the same normal
                 mesh_json['vertex_normal_indices'].append(index)
 
+            # TODO: Don't append normals if we've already encountered them
             mesh_json['vertex_normals'].append(face.normal.x)
             mesh_json['vertex_normals'].append(face.normal.y)
             mesh_json['vertex_normals'].append(face.normal.z)

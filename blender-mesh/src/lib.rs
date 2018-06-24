@@ -23,8 +23,9 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
-use std::collections::HashMap;
 use serde_json::Error;
+use std::collections::HashMap;
+use std::collections::HashSet;
 
 /// Something went wrong in the Blender child process that was trying to parse your mesh data.
 #[derive(Debug, Fail)]
@@ -33,13 +34,6 @@ pub enum BlenderError {
     /// process that we spawned when attempting to export meshes from a `.blend` file.
     #[fail(display = "There was an issue while exporting meshes: Blender stderr output: {}", _0)]
     Stderr(String),
-}
-
-/// Configuration for how to export the meshes from your `.blend` file.
-#[derive(Debug)]
-pub struct ExportConfig {
-    /// The filepath to write the exported mesh data to.
-    pub output_filepath: Option<String>,
 }
 
 /// All of the data about a Blender mesh
@@ -53,14 +47,102 @@ pub struct BlenderMesh {
     pub vertex_position_indices: Vec<u32>,
     pub num_vertices_in_each_face: Vec<u8>,
     pub vertex_normals: Vec<f32>,
-    pub vertex_normal_indices: Vec<u32>,
+    pub vertex_normal_indices: Option<Vec<u32>>,
     pub armature_name: Option<String>,
     // TODO: textures: HashMap<TextureNameString, {uvs, uv_indices}>
 }
 
 impl BlenderMesh {
-    pub fn from_json (json_str: &str) -> Result<BlenderMesh, Error> {
+    pub fn from_json(json_str: &str) -> Result<BlenderMesh, Error> {
         serde_json::from_str(json_str)
+    }
+}
+
+impl BlenderMesh {
+    /// We export our models with indices for positions, normals and uvs because
+    ///
+    ///  1) Easier because ... todo ...
+    ///  2) Reduces amount of data required to represent the model on disk
+    ///
+    /// OpenGL only supports one index buffer, we convert our vertex data
+    /// from having three indices to having one. This usually requires some duplication of
+    /// data. We duplicate the minimum amount of vertex data necessary.
+    pub fn combine_vertex_indices(&mut self) {
+        type PosIndex = u32;
+        type NormalIndex = u32;
+        type UvIndex = Option<u32>;
+        type EncounteredIndices = HashSet<(PosIndex, NormalIndex, UvIndex)>;
+
+        let mut largest_pos_index = *self.vertex_position_indices.iter().max().unwrap() as usize;
+
+        let mut encountered_indices: EncounteredIndices = HashSet::new();
+        let mut encountered_pos_indices = HashSet::new();
+
+        let mut single_index_normals = vec![];
+        let mut single_index_pos_indices = vec![];
+        let mut single_index_positions = vec![];
+
+        single_index_pos_indices.resize(self.vertex_position_indices.len(), 0);
+
+        for (vert_num, pos_index) in self.vertex_position_indices.iter().enumerate() {
+            let pos_index = *pos_index;
+            let normal_index = self.vertex_normal_indices.as_ref().unwrap()[vert_num];
+
+            // FIXME: Don't reallocate an vector every iteration... Only reallocate when necessary.
+            // Also trim the vector when we're done
+            single_index_positions.resize(largest_pos_index * 3 + 7, 0.0);
+            single_index_normals.resize(largest_pos_index * 3 + 7, 0.0);
+
+            if encountered_indices.contains(&(pos_index, normal_index, None))
+                || !encountered_pos_indices.contains(&pos_index)
+            {
+                single_index_pos_indices[vert_num] = pos_index;
+
+                single_index_positions[pos_index as usize * 3] =
+                    self.vertex_positions[pos_index as usize * 3];
+                single_index_positions[pos_index as usize * 3 + 1] =
+                    self.vertex_positions[pos_index as usize * 3 + 1];
+                single_index_positions[pos_index as usize * 3 + 2] =
+                    self.vertex_positions[pos_index as usize * 3 + 2];
+
+                single_index_normals[normal_index as usize * 3] =
+                    self.vertex_normals[normal_index as usize];
+                single_index_normals[normal_index as usize * 3 + 1] =
+                    self.vertex_normals[normal_index as usize + 1];
+                single_index_normals[normal_index as usize * 3 + 2] =
+                    self.vertex_normals[normal_index as usize + 2];
+
+                encountered_pos_indices.insert(pos_index);
+                encountered_indices.insert((pos_index, normal_index, None));
+            } else {
+                largest_pos_index += 1;
+
+                single_index_pos_indices[vert_num] = largest_pos_index as u32;
+
+                single_index_positions[largest_pos_index * 3] = self.vertex_positions[pos_index as usize * 3];
+                single_index_positions[largest_pos_index * 3 + 1] = self.vertex_positions[pos_index as usize * 3 + 1];
+                single_index_positions[largest_pos_index * 3 + 2] = self.vertex_positions[pos_index as usize * 3 + 2];
+
+                single_index_normals[largest_pos_index as usize * 3] =
+                    self.vertex_normals[normal_index as usize];
+                single_index_normals[largest_pos_index as usize * 3 + 1] =
+                    self.vertex_normals[normal_index as usize + 1];
+                single_index_normals[largest_pos_index as usize * 3 + 2] =
+                    self.vertex_normals[normal_index as usize + 2];
+
+                encountered_indices.insert((largest_pos_index as u32, normal_index, None));
+                encountered_pos_indices.insert(largest_pos_index as u32);
+            }
+        }
+
+        self.vertex_position_indices = single_index_pos_indices;
+        self.vertex_normals = single_index_normals;
+        self.vertex_positions = single_index_positions;
+
+        self.vertex_positions.resize(largest_pos_index * 3 + 3, 0.0);
+        self.vertex_normals.resize(largest_pos_index * 3 + 3, 0.0);
+
+        self.vertex_normal_indices = None;
     }
 }
 
@@ -80,7 +162,6 @@ pub type FilenamesToMeshes = HashMap<String, MeshNamesToData>;
 /// @see blender-mesh-to-json.py - This is where we write to stdout
 pub fn parse_meshes_from_blender_stdout(
     blender_stdout: &str,
-    config: Option<&ExportConfig>,
 ) -> Result<FilenamesToMeshes, failure::Error> {
     let mut filenames_to_meshes = HashMap::new();
 
@@ -133,4 +214,88 @@ fn find_first_mesh_after_index(
     }
 
     return None;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn combine_pos_norm_uv_indices() {
+        let mut start_v0 = vec![0.0, 0.0, 0.0];
+        let mut start_v1 = vec![1.0, 1.0, 1.0];
+        let mut start_v2 = vec![2.0, 2.0, 2.0];
+        let mut start_v3 = vec![3.0, 3.0, 3.0];
+
+        let mut start_n0 = vec![4.0, 4.0, 4.0];
+        let mut start_n1 = vec![5.0, 5.0, 5.0];
+        let mut start_n2 = vec![6.0, 6.0, 6.0];
+
+        let mut start_positions = vec![];
+        start_positions.append(&mut start_v0);
+        start_positions.append(&mut start_v1);
+        start_positions.append(&mut start_v2);
+        start_positions.append(&mut start_v3);
+
+        let mut start_normals = vec![];
+        start_normals.append(&mut start_n0);
+        start_normals.append(&mut start_n1);
+        start_normals.append(&mut start_n2);
+
+        let mut mesh_to_combine = BlenderMesh {
+            vertex_positions: start_positions,
+            vertex_position_indices: vec![0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3],
+            num_vertices_in_each_face: vec![4, 4, 4],
+            vertex_normals: start_normals,
+            vertex_normal_indices: Some(vec![0, 1, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2]),
+            armature_name: None,
+        };
+
+        let mut end_v0 = vec![0.0, 0.0, 0.0];
+        let mut end_v1 = vec![1.0, 1.0, 1.0];
+        let mut end_v2 = vec![2.0, 2.0, 2.0];
+        let mut end_v3 = vec![3.0, 3.0, 3.0];
+        let mut end_v4 = vec![0.0, 0.0, 0.0];
+        let mut end_v5 = vec![1.0, 1.0, 1.0];
+        let mut end_v6 = vec![2.0, 2.0, 2.0];
+        let mut end_v7 = vec![3.0, 3.0, 3.0];
+
+        let mut end_n0 = vec![4.0, 4.0, 4.0];
+        let mut end_n1 = vec![5.0, 5.0, 5.0];
+        let mut end_n2 = vec![6.0, 6.0, 6.0];
+
+        let mut end_positions = vec![];
+        end_positions.append(&mut end_v0);
+        end_positions.append(&mut end_v1);
+        end_positions.append(&mut end_v2);
+        end_positions.append(&mut end_v3);
+        end_positions.append(&mut end_v4);
+        end_positions.append(&mut end_v5);
+        end_positions.append(&mut end_v6);
+        end_positions.append(&mut end_v7);
+
+        let mut end_normals = vec![];
+        end_normals.append(&mut end_n0);
+        end_normals.append(&mut end_n1);
+        end_normals.append(&mut end_n0);
+        end_normals.append(&mut end_n1);
+        end_normals.append(&mut end_n2);
+        end_normals.append(&mut end_n2);
+        end_normals.append(&mut end_n2);
+        end_normals.append(&mut end_n2);
+
+        let expected_mesh = BlenderMesh {
+            vertex_positions: end_positions,
+            vertex_position_indices: vec![0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7],
+            num_vertices_in_each_face: vec![4, 4, 4],
+            vertex_normals: end_normals,
+            vertex_normal_indices: None,
+            armature_name: None,
+        };
+
+        mesh_to_combine.combine_vertex_indices();
+        let combined_mesh = mesh_to_combine;
+
+        assert_eq!(combined_mesh, expected_mesh);
+    }
 }

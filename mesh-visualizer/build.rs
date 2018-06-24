@@ -51,7 +51,7 @@ fn main() {
     fs::write("./dist/foo", blender_stdout.clone()).unwrap();
     fs::write("/tmp/foo", blender_stdout.clone()).unwrap();
 
-    let meshes = blender_mesh::parse_meshes_from_blender_stdout(&blender_stdout, None).unwrap();
+    let meshes = blender_mesh::parse_meshes_from_blender_stdout(&blender_stdout).unwrap();
 
     let output_dir = "./dist";
     DirBuilder::new()
