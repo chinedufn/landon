@@ -38,6 +38,7 @@ pub enum BlenderError {
 
 /// All of the data about a Blender mesh
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(Default))]
 pub struct BlenderMesh {
     /// [v1x, v1y, v1z, v2x, v2y, v2z, ...]
     pub vertex_positions: Vec<f32>,
@@ -217,6 +218,31 @@ impl BlenderMesh {
     }
 }
 
+impl BlenderMesh {
+    /// Blender meshes get exported with a Z up coordinate system.
+    /// Here we flip our coordinate system to be y up
+    ///
+    /// @see https://gamedev.stackexchange.com/a/7932
+    ///
+    /// TODO: When we have bone data we'll need to change them to port change-mat4-coordinate-system
+    /// into here.
+    /// https://github.com/chinedufn/change-mat4-coordinate-system/blob/master/change-mat4-coordinate-system.js
+    pub fn y_up (&mut self) {
+        for vert_num in 0..(self.vertex_positions.len() / 3) {
+            let y_index = vert_num * 3 + 1;
+            let z_index = y_index + 1;
+
+            let new_z = -self.vertex_positions[y_index];
+            self.vertex_positions[y_index] = self.vertex_positions[z_index];
+            self.vertex_positions[z_index] = new_z;
+
+            let new_z = -self.vertex_normals[y_index];
+            self.vertex_normals[y_index] = self.vertex_normals[z_index];
+            self.vertex_normals[z_index] = new_z;
+        }
+    }
+}
+
 pub type MeshNamesToData = HashMap<String, BlenderMesh>;
 pub type FilenamesToMeshes = HashMap<String, MeshNamesToData>;
 
@@ -319,7 +345,7 @@ mod tests {
             num_vertices_in_each_face: vec![4, 4, 4],
             vertex_normals: start_normals,
             vertex_normal_indices: Some(vec![0, 1, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2]),
-            armature_name: None,
+            ..BlenderMesh::default()
         };
 
         let mut end_v0 = vec![0.0, 0.0, 0.0];
@@ -360,8 +386,7 @@ mod tests {
             vertex_position_indices: vec![0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7],
             num_vertices_in_each_face: vec![4, 4, 4],
             vertex_normals: end_normals,
-            vertex_normal_indices: None,
-            armature_name: None,
+            ..BlenderMesh::default()
         };
 
         mesh_to_combine.combine_vertex_indices();
@@ -373,26 +398,40 @@ mod tests {
     #[test]
     fn triangulate_faces () {
         let mut start_mesh = BlenderMesh {
-            vertex_positions: vec![],
             vertex_position_indices: vec![0, 1, 2, 3, 4, 5, 6, 7],
             num_vertices_in_each_face: vec![4, 4],
-            vertex_normals: vec![],
-            vertex_normal_indices: None,
-            armature_name: None,
+            ..BlenderMesh::default()
         };
 
         start_mesh.triangulate();
         let triangulated_mesh = start_mesh;
 
         let expected_mesh = BlenderMesh {
-            vertex_positions: vec![],
             vertex_position_indices: vec![0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7],
             num_vertices_in_each_face: vec![3, 3, 3, 3],
-            vertex_normals: vec![],
-            vertex_normal_indices: None,
-            armature_name: None,
+            ..BlenderMesh::default()
         };
 
         assert_eq!(triangulated_mesh, expected_mesh);
+    }
+
+    #[test]
+    fn z_up_to_y_up () {
+        let mut start_mesh = BlenderMesh {
+            vertex_positions: vec![0.0, 1.0, 2.0, 0.0, 1.0, 2.0],
+            vertex_normals: vec![0.0, 1.0, 2.0, 0.0, 1.0, 2.0],
+            ..BlenderMesh::default()
+        };
+
+        start_mesh.y_up();
+
+        let y_up_mesh = start_mesh;
+        let expected_mesh = BlenderMesh {
+            vertex_positions: vec![0.0, 2.0, -1.0, 0.0, 2.0, -1.0],
+            vertex_normals: vec![0.0, 2.0, -1.0, 0.0, 2.0, -1.0],
+            ..BlenderMesh::default()
+        };
+
+        assert_eq!(y_up_mesh, expected_mesh);
     }
 }

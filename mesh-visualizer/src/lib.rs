@@ -64,6 +64,7 @@ impl App {
 
             mesh.combine_vertex_indices();
             mesh.triangulate();
+            mesh.y_up();
 
             meshes_clone.borrow_mut().insert("dist/cube.json".to_string(), mesh);
             *current_model_clone.borrow_mut() = Some("dist/cube.json".to_string());
