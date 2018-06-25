@@ -89,9 +89,9 @@ impl App {
         gl.enable(gl_depth_test);
         gl.clear_color(0.0, 0.0, 0.0, 1.0);
 
-        // gl.FRAGMENT_SHAADER
+        // gl.FRAGMENT_SHADER
         let fragment_shader_type = 35632;
-        // gl.VERTEX_SHAADER
+        // gl.VERTEX_SHADER
         let vertex_shader_type = 35633;
 
         let frag_shader = gl.create_shader(fragment_shader_type);
@@ -116,7 +116,7 @@ impl App {
 
         let frag_log = gl.get_shader_info_log(&frag_shader);
         if frag_log.len() > 0 {
-            clog!("Vertex shader compilation errors: {}", frag_log);
+            clog!("Fragment shader compilation errors: {}", frag_log);
         }
 
         let shader_program = gl.create_program();
@@ -169,9 +169,9 @@ impl App {
 
         let model_matrix = Matrix4::from_translation(Vector3::new(0.0, 0.0, 0.0));
 
-        // TODO: Breadcrumb - create a view matrix looking down on the model. multiple the view
-        // and model matrix and store as mv matrix;
         let mut mv_matrix = Matrix4::look_at(Point3::new(1.0, 2.0, -10.0), Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 1.0, 0.0));
+
+        // TODO: Breadcrumb - add normal and point lighting to shader..
 
         // TODO: Multiply without new allocation
         mv_matrix = mv_matrix * model_matrix;
