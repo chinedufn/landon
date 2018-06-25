@@ -152,8 +152,11 @@ impl App {
 
         let shader_program = self.non_skinned_shader_program.as_ref().unwrap();
 
-        let vert_pos_attrib = gl.get_attrib_location(&shader_program, "aVertPos");
+        let vert_pos_attrib = gl.get_attrib_location(&shader_program, "aVertexPos");
         gl.enable_vertex_attrib_array(vert_pos_attrib);
+
+        let vert_normal_attrib = gl.get_attrib_location(&shader_program, "aVertexNormal");
+        gl.enable_vertex_attrib_array(vert_normal_attrib);
 
         // Temporarily using u16's until I can get GLbitfield / Glenum etc working
         let color_buffer_bit = 16384;
@@ -184,19 +187,23 @@ impl App {
         gl.uniform_matrix_4fv(p_matrix_uni, false, p_matrix);
         gl.uniform_matrix_4fv(mv_matrix_uni, false, mv_matrix);
 
-        let array_buffer = 34962;
+        let gl_array_buffer = 34962;
         let gl_ELEMENT_ARRAY_BUFFER = 34963;
+        let gl_FLOAT = 5126;
 
         let static_draw = 35044;
 
         let vert_pos_buffer = gl.create_buffer();
-        gl.bind_buffer(array_buffer, &vert_pos_buffer);
+        gl.bind_buffer(gl_array_buffer, &vert_pos_buffer);
         // TODO: Remove clone
-        gl.buffer_f32_data(array_buffer, mesh.vertex_positions.clone(), static_draw);
-
-        let gl_FLOAT = 5126;
-
+        gl.buffer_f32_data(gl_array_buffer, mesh.vertex_positions.clone(), static_draw);
         gl.vertex_attrib_pointer(vert_pos_attrib, 3, gl_FLOAT, false, 0, 0);
+
+        let vert_normal_buffer = gl.create_buffer();
+        gl.bind_buffer(gl_array_buffer, &vert_normal_buffer);
+        // TODO: Remove clone
+        gl.buffer_f32_data(gl_array_buffer, mesh.vertex_normals.clone(), static_draw);
+        gl.vertex_attrib_pointer(vert_normal_attrib, 3, gl_FLOAT, false, 0, 0);
 
         let index_buffer = gl.create_buffer();
         gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
