@@ -33,15 +33,15 @@ fn parse_skinned_letter_f_data() {
 
     let parsed_meshes = parse_meshes_from_blender_stdout(&stdout).unwrap();
     println!("{:#?}", parsed_meshes);
-//
-//    let (filename, mesh) = parsed_meshes.iter().next().unwrap();
-//
-//    let mesh = mesh.get("Cube").unwrap();
-//
-//    let expected_mesh = &expected_mesh_data();
-//    let expected_mesh: BlenderMesh = serde_json::from_str(expected_mesh).unwrap();
-//
-//    assert_eq!(mesh, &expected_mesh)
+    //
+    //    let (filename, mesh) = parsed_meshes.iter().next().unwrap();
+    //
+    //    let mesh = mesh.get("Cube").unwrap();
+    //
+    //    let expected_mesh = &expected_mesh_data();
+    //    let expected_mesh: BlenderMesh = serde_json::from_str(expected_mesh).unwrap();
+    //
+    //    assert_eq!(mesh, &expected_mesh)
 }
 
 fn expected_mesh_data() -> String {

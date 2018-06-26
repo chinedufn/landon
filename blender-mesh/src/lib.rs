@@ -58,8 +58,7 @@ pub struct BlenderMesh {
     pub vertex_group_indices: Option<Vec<u8>>,
     pub vertex_group_weights: Option<Vec<f32>>,
     /// TODO: enum.. if they're all equal we replace the MyEnum::PerVertex(u8) with MyEnum::Equal(4)
-    pub num_groups_for_each_vertex: Option<Vec<u8>>
-    // TODO: textures: HashMap<TextureNameString, {uvs, uv_indices}>
+    pub num_groups_for_each_vertex: Option<Vec<u8>>, // TODO: textures: HashMap<TextureNameString, {uvs, uv_indices}>
 }
 
 impl BlenderMesh {
@@ -119,6 +118,7 @@ impl BlenderMesh {
 
                 single_index_pos_indices[vert_num] = index_to_reuse;
 
+                // TODO: Six methods to get and set the normal, pos, and uv for a vertex_num
                 single_positions[index_to_reuse as usize * 3] =
                     self.vertex_positions[pos_index as usize * 3];
                 single_positions[index_to_reuse as usize * 3 + 1] =
@@ -185,7 +185,7 @@ impl BlenderMesh {
     ///
     /// Panics if a face has more than 4 vertices. In the future we might support 5+ vertices,
     /// but I haven't run into that yet. Not even sure if Blender can have faces with 5 vertices..
-    pub fn triangulate (&mut self) {
+    pub fn triangulate(&mut self) {
         let mut triangulated_position_indices = vec![];
         let mut triangulated_face_vertex_counts = vec![];
 
@@ -197,8 +197,10 @@ impl BlenderMesh {
                     triangulated_face_vertex_counts.push(3);
 
                     triangulated_position_indices.push(self.vertex_position_indices[face_pointer]);
-                    triangulated_position_indices.push(self.vertex_position_indices[face_pointer + 1]);
-                    triangulated_position_indices.push(self.vertex_position_indices[face_pointer + 2]);
+                    triangulated_position_indices
+                        .push(self.vertex_position_indices[face_pointer + 1]);
+                    triangulated_position_indices
+                        .push(self.vertex_position_indices[face_pointer + 2]);
 
                     face_pointer += 3;
                 }
@@ -207,11 +209,15 @@ impl BlenderMesh {
                     triangulated_face_vertex_counts.push(3);
 
                     triangulated_position_indices.push(self.vertex_position_indices[face_pointer]);
-                    triangulated_position_indices.push(self.vertex_position_indices[face_pointer + 1]);
-                    triangulated_position_indices.push(self.vertex_position_indices[face_pointer + 2]);
+                    triangulated_position_indices
+                        .push(self.vertex_position_indices[face_pointer + 1]);
+                    triangulated_position_indices
+                        .push(self.vertex_position_indices[face_pointer + 2]);
                     triangulated_position_indices.push(self.vertex_position_indices[face_pointer]);
-                    triangulated_position_indices.push(self.vertex_position_indices[face_pointer + 2]);
-                    triangulated_position_indices.push(self.vertex_position_indices[face_pointer + 3]);
+                    triangulated_position_indices
+                        .push(self.vertex_position_indices[face_pointer + 2]);
+                    triangulated_position_indices
+                        .push(self.vertex_position_indices[face_pointer + 3]);
 
                     face_pointer += 4;
                 }
@@ -219,7 +225,6 @@ impl BlenderMesh {
                     panic!("blender-mesh currently only supports triangulating faces with 3 or 4 vertices");
                 }
             }
-
         }
 
         self.vertex_position_indices = triangulated_position_indices;
@@ -236,7 +241,7 @@ impl BlenderMesh {
     /// TODO: When we have bone data we'll need to change them to port change-mat4-coordinate-system
     /// into here.
     /// https://github.com/chinedufn/change-mat4-coordinate-system/blob/master/change-mat4-coordinate-system.js
-    pub fn y_up (&mut self) {
+    pub fn y_up(&mut self) {
         for vert_num in 0..(self.vertex_positions.len() / 3) {
             let y_index = vert_num * 3 + 1;
             let z_index = y_index + 1;
@@ -325,27 +330,23 @@ fn find_first_mesh_after_index(
 mod tests {
     use super::*;
 
+    // Concatenate a series of vectors into one vector
+    macro_rules! concat_vecs {
+        ( $( $vec:expr),* ) => {
+            {
+                let mut concatenated_vec = Vec::new();
+                $(
+                    concatenated_vec.append(&mut $vec.clone());
+                )*
+                concatenated_vec
+            }
+        }
+    }
+
     #[test]
     fn combine_pos_norm_uv_indices() {
-        let mut start_v0 = vec![0.0, 0.0, 0.0];
-        let mut start_v1 = vec![1.0, 1.0, 1.0];
-        let mut start_v2 = vec![2.0, 2.0, 2.0];
-        let mut start_v3 = vec![3.0, 3.0, 3.0];
-
-        let mut start_n0 = vec![4.0, 4.0, 4.0];
-        let mut start_n1 = vec![5.0, 5.0, 5.0];
-        let mut start_n2 = vec![6.0, 6.0, 6.0];
-
-        let mut start_positions = vec![];
-        start_positions.append(&mut start_v0.clone());
-        start_positions.append(&mut start_v1.clone());
-        start_positions.append(&mut start_v2.clone());
-        start_positions.append(&mut start_v3.clone());
-
-        let mut start_normals = vec![];
-        start_normals.append(&mut start_n0.clone());
-        start_normals.append(&mut start_n1.clone());
-        start_normals.append(&mut start_n2.clone());
+        let mut start_positions = concat_vecs!(v(0), v(1), v(2), v(3));
+        let mut start_normals = concat_vecs!(v(4), v(5), v(6));
 
         let mut mesh_to_combine = BlenderMesh {
             vertex_positions: start_positions,
@@ -356,38 +357,12 @@ mod tests {
             ..BlenderMesh::default()
         };
 
-        let mut end_v0 = vec![0.0, 0.0, 0.0];
-        let mut end_v1 = vec![1.0, 1.0, 1.0];
-        let mut end_v2 = vec![2.0, 2.0, 2.0];
-        let mut end_v3 = vec![3.0, 3.0, 3.0];
-        let mut end_v4 = vec![0.0, 0.0, 0.0];
-        let mut end_v5 = vec![1.0, 1.0, 1.0];
-        let mut end_v6 = vec![2.0, 2.0, 2.0];
-        let mut end_v7 = vec![3.0, 3.0, 3.0];
-
         let mut end_n0 = vec![4.0, 4.0, 4.0];
         let mut end_n1 = vec![5.0, 5.0, 5.0];
         let mut end_n2 = vec![6.0, 6.0, 6.0];
 
-        let mut end_positions = vec![];
-        end_positions.append(&mut end_v0.clone());
-        end_positions.append(&mut end_v1.clone());
-        end_positions.append(&mut end_v2.clone());
-        end_positions.append(&mut end_v3.clone());
-        end_positions.append(&mut end_v4.clone());
-        end_positions.append(&mut end_v5.clone());
-        end_positions.append(&mut end_v6.clone());
-        end_positions.append(&mut end_v7.clone());
-
-        let mut end_normals = vec![];
-        end_normals.append(&mut end_n0.clone());
-        end_normals.append(&mut end_n1.clone());
-        end_normals.append(&mut end_n0.clone());
-        end_normals.append(&mut end_n1.clone());
-        end_normals.append(&mut end_n2.clone());
-        end_normals.append(&mut end_n2.clone());
-        end_normals.append(&mut end_n2.clone());
-        end_normals.append(&mut end_n2.clone());
+        let mut end_positions = concat_vecs!(v(0), v(1), v(2), v(3), v(0), v(1), v(2), v(3));
+        let mut end_normals = concat_vecs!(v(4), v(5), v(4), v(5), v(6), v(6), v(6), v(6));
 
         let expected_mesh = BlenderMesh {
             vertex_positions: end_positions,
@@ -404,7 +379,7 @@ mod tests {
     }
 
     #[test]
-    fn triangulate_faces () {
+    fn triangulate_faces() {
         let mut start_mesh = BlenderMesh {
             vertex_position_indices: vec![0, 1, 2, 3, 4, 5, 6, 7],
             num_vertices_in_each_face: vec![4, 4],
@@ -424,7 +399,7 @@ mod tests {
     }
 
     #[test]
-    fn z_up_to_y_up () {
+    fn z_up_to_y_up() {
         let mut start_mesh = BlenderMesh {
             vertex_positions: vec![0.0, 1.0, 2.0, 0.0, 1.0, 2.0],
             vertex_normals: vec![0.0, 1.0, 2.0, 0.0, 1.0, 2.0],
@@ -441,5 +416,12 @@ mod tests {
         };
 
         assert_eq!(y_up_mesh, expected_mesh);
+    }
+
+    // Create a 3 dimensional vector with all three values the same.
+    // Useful for quickly generating some fake vertex data.
+    // v(0.0) -> vec![0.0, 0.0, 0.0]
+    fn v(val: u8) -> Vec<f32> {
+        vec![val as f32, val as f32, val as f32]
     }
 }

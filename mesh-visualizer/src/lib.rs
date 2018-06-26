@@ -1,8 +1,8 @@
 #![feature(proc_macro, wasm_custom_section, wasm_import_module)]
 
 extern crate blender_mesh;
-extern crate wasm_bindgen;
 extern crate cgmath;
+extern crate wasm_bindgen;
 
 use blender_mesh::BlenderMesh;
 
@@ -10,15 +10,15 @@ use wasm_bindgen::prelude::*;
 
 pub mod web_apis;
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::f32::consts::PI;
 use std::rc::Rc;
 use web_apis::*;
-use std::cell::RefCell;
 
 use cgmath::Matrix4;
-use cgmath::Vector3;
 use cgmath::Point3;
+use cgmath::Vector3;
 
 // A macro to provide `println!(..)`-style syntax for `console.log` logging.
 macro_rules! clog {
@@ -55,7 +55,6 @@ impl App {
     pub fn start(&mut self) {
         clog!("Starting!");
 
-
         let current_model_clone = Rc::clone(&self.current_model);
         let meshes_clone = Rc::clone(&self.meshes);
 
@@ -66,7 +65,9 @@ impl App {
             mesh.triangulate();
             mesh.y_up();
 
-            meshes_clone.borrow_mut().insert("dist/LetterF.json".to_string(), mesh);
+            meshes_clone
+                .borrow_mut()
+                .insert("dist/LetterF.json".to_string(), mesh);
             *current_model_clone.borrow_mut() = Some("dist/LetterF.json".to_string());
         };
 
@@ -75,7 +76,6 @@ impl App {
         download_model("dist/LetterF.json", &on_model_load);
 
         let canvas_id = "mesh-visualizer";
-
 
         let canvas = document.create_canvas_element("canvas");
         canvas.set_width(500);
@@ -173,7 +173,11 @@ impl App {
 
         let model_matrix = Matrix4::from_translation(Vector3::new(0.0, 0.0, 0.0));
 
-        let mut mv_matrix = Matrix4::look_at(Point3::new(1.0, 2.0, -10.0), Point3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 1.0, 0.0));
+        let mut mv_matrix = Matrix4::look_at(
+            Point3::new(1.0, 2.0, -10.0),
+            Point3::new(0.0, 0.0, 0.0),
+            Vector3::new(0.0, 1.0, 0.0),
+        );
 
         // TODO: Breadcrumb - add normal and point lighting to shader..
 
@@ -210,14 +214,23 @@ impl App {
         gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
         // TODO: Remove clone
-        gl.buffer_u16_data(gl_ELEMENT_ARRAY_BUFFER, mesh.vertex_position_indices.clone(), static_draw);
+        gl.buffer_u16_data(
+            gl_ELEMENT_ARRAY_BUFFER,
+            mesh.vertex_position_indices.clone(),
+            static_draw,
+        );
 
         let gl_TRIANGLES = 4;
         let gl_UNSIGNED_SHORT = 5123;
 
         gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
-        gl.draw_elements(gl_TRIANGLES, mesh.vertex_position_indices.len() as u16, gl_UNSIGNED_SHORT, 0);
+        gl.draw_elements(
+            gl_TRIANGLES,
+            mesh.vertex_position_indices.len() as u16,
+            gl_UNSIGNED_SHORT,
+            0,
+        );
 
         // TODO: Breadcrumb - plan and implement unit testing a skinned mesh export
 
@@ -235,7 +248,7 @@ impl App {
     }
 }
 
-fn vec_from_matrix4 (mat4: &Matrix4<f32>) -> Vec<f32> {
+fn vec_from_matrix4(mat4: &Matrix4<f32>) -> Vec<f32> {
     // TODO: Accept output vec instead of re-allocating
     let mut vec = vec![];
 
