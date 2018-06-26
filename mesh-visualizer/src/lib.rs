@@ -219,11 +219,12 @@ impl App {
 
         gl.draw_elements(gl_TRIANGLES, mesh.vertex_position_indices.len() as u16, gl_UNSIGNED_SHORT, 0);
 
-        // TODO: Add normals and lighting to non-skinned shader
+        // TODO: Breadcrumb - plan and implement unit testing a skinned mesh export
 
-        // TODO: Make look at camera looking down at mesh (move math into separate module)
+        // TODO: Pass uCameraPos into fragment shader
 
-        // TODO: `textured_cube.{rs,blend}`. create an `img` element and add a source, then use
+        // TODO: Plan and implement a textured cube test
+        // `textured_cube.{rs,blend}`. create an `img` element and add a source, then use
         // that image as a texture via hard coded uv coordinates.
 
         // TODO: Split this method up / clean up the var names

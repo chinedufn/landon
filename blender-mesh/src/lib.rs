@@ -46,10 +46,19 @@ pub struct BlenderMesh {
     /// Three vertex position indices correspond to one triangle
     /// [0, 1, 2, 0, 2, 3, ...]
     pub vertex_position_indices: Vec<u16>,
+    /// TODO: enum.. if they're all equal we replace the MyEnum::PerVertex(u8) with MyEnum::Equal(4)
     pub num_vertices_in_each_face: Vec<u8>,
     pub vertex_normals: Vec<f32>,
     pub vertex_normal_indices: Option<Vec<u16>>,
     pub armature_name: Option<String>,
+    /// TODO: When we move to single index triangulate and add new vertices give those vertices the same group indices / weights
+    /// TODO: A function that trims this down to `n` weights and indices per vertex. Similar to our
+    /// triangulate function
+    /// TODO: Make sure that when we combine vertex indices we expand our group weights
+    pub vertex_group_indices: Option<Vec<u8>>,
+    pub vertex_group_weights: Option<Vec<f32>>,
+    /// TODO: enum.. if they're all equal we replace the MyEnum::PerVertex(u8) with MyEnum::Equal(4)
+    pub num_groups_for_each_vertex: Option<Vec<u8>>
     // TODO: textures: HashMap<TextureNameString, {uvs, uv_indices}>
 }
 
@@ -251,10 +260,9 @@ pub type FilenamesToMeshes = HashMap<String, MeshNamesToData>;
 ///
 /// Meshes data in stdout will look like:
 ///
-/// ```
 /// START_MESH_JSON /path/to/file.blend my_mesh_name
+/// {...}
 /// END_MESH_JSON /path/to/file.blend my_mesh_name
-/// ```
 ///
 /// @see blender-mesh-to-json.py - This is where we write to stdout
 pub fn parse_meshes_from_blender_stdout(

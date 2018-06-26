@@ -38,6 +38,9 @@ class MeshToJSON(bpy.types.Operator):
             'vertex_normals': [],
             'vertex_normal_indices': [],
             'armature_name': None,
+            'vertex_group_indices': [],
+            'vertex_group_weights': [],
+            'num_groups_for_each_vertex': []
         }
 
         # TODO: Handle triangular polygons, not just quads
@@ -70,6 +73,16 @@ class MeshToJSON(bpy.types.Operator):
             mesh_json['vertex_positions'].append(vert.co.x)
             mesh_json['vertex_positions'].append(vert.co.y)
             mesh_json['vertex_positions'].append(vert.co.z)
+
+            # TODO: Only include num groups if there is a parent armature. Otherwise the
+            # number of groups (bones) per vertex probably doesn't matter...?
+            num_groups = len(list(vert.groups))
+            for group in vert.groups:
+                mesh_json['vertex_group_indices'].append(group.group)
+                mesh_json['vertex_group_weights'].append(group.weight)
+                # groupName = mesh.vertex_groups[group.group].name
+
+            mesh_json['num_groups_for_each_vertex'].append(num_groups)
 
         # TODO: Add unit test for no mesh currently selected
         # if mesh == None or mesh.type != 'MESH':
