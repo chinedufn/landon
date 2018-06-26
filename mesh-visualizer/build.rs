@@ -11,9 +11,9 @@ use std::process::Command;
 fn main() {
     let mut blender_files = vec![];
 
-    let tests_dir = PathBuf::from("../tests");
+    let tests_dir = PathBuf::from("../blender-mesh/tests");
 
-    for entry in tests_dir.read_dir().unwrap() {
+    for entry in tests_dir.read_dir().expect("blender-mesh tests dir") {
         let blender_file = entry.unwrap().path().display().to_string();
 
         if blender_file.ends_with(".blend") {

@@ -66,13 +66,13 @@ impl App {
             mesh.triangulate();
             mesh.y_up();
 
-            meshes_clone.borrow_mut().insert("dist/cube.json".to_string(), mesh);
-            *current_model_clone.borrow_mut() = Some("dist/cube.json".to_string());
+            meshes_clone.borrow_mut().insert("dist/LetterF.json".to_string(), mesh);
+            *current_model_clone.borrow_mut() = Some("dist/LetterF.json".to_string());
         };
 
         let on_model_load = Closure::new(save_model_in_state);
 
-        download_model("dist/cube.json", &on_model_load);
+        download_model("dist/LetterF.json", &on_model_load);
 
         let canvas_id = "mesh-visualizer";
 
