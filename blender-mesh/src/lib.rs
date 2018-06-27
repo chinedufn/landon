@@ -105,20 +105,21 @@ impl BlenderMesh {
 
         new_pos_indices.resize(self.vertex_position_indices.len(), 0);
 
-        let mut total_previous = 0;
+        let mut total_previous: u32 = 0;
         let vert_group_map = match self.num_groups_for_each_vertex.as_ref() {
             Some(num_groups_per) => {
                 let mut map = HashMap::new();
 
                 for (index, num) in num_groups_per.iter().enumerate() {
                     map.insert(index, total_previous);
-                    total_previous += num;
+                    total_previous += *num as u32;
                 }
 
                 Some(map)
             }
             None => None,
         };
+        println!("{}", "Made it to for loop");
 
         for (elem_array_index, vert_id) in self.vertex_position_indices.iter().enumerate() {
             let vert_id = *vert_id;
@@ -172,7 +173,10 @@ impl BlenderMesh {
 
                         let num_groups_for_this_vertex =
                             num_groups_for_each_vertex[pos_index as usize];
-                        new_groups_for_each_vert.as_mut().unwrap().push(num_groups_for_this_vertex);
+                        new_groups_for_each_vert
+                            .as_mut()
+                            .unwrap()
+                            .push(num_groups_for_this_vertex);
 
                         for i in 0..num_groups_for_this_vertex {
                             let weight = new_group_weights.as_ref().unwrap()[foo + i as usize];

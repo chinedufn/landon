@@ -20,6 +20,8 @@ use cgmath::Matrix4;
 use cgmath::Point3;
 use cgmath::Vector3;
 
+mod assets;
+
 // A macro to provide `println!(..)`-style syntax for `console.log` logging.
 macro_rules! clog {
     ($($t:tt)*) => (log(&format!($($t)*)))
@@ -52,28 +54,11 @@ impl App {
         }
     }
 
+    // TODO: Breadcrumb - refactor this method
     pub fn start(&mut self) {
         clog!("Starting!");
 
-        let current_model_clone = Rc::clone(&self.current_model);
-        let meshes_clone = Rc::clone(&self.meshes);
-
-        let save_model_in_state = move |model_json: String| {
-            let mut mesh = BlenderMesh::from_json(&model_json).unwrap();
-
-            mesh.combine_vertex_indices();
-            mesh.triangulate();
-            mesh.y_up();
-
-            meshes_clone
-                .borrow_mut()
-                .insert("dist/LetterF.json".to_string(), mesh);
-            *current_model_clone.borrow_mut() = Some("dist/LetterF.json".to_string());
-        };
-
-        let on_model_load = Closure::new(save_model_in_state);
-
-        download_model("dist/LetterF.json", &on_model_load);
+        self.load_model();
 
         let canvas_id = "mesh-visualizer";
 
@@ -130,8 +115,6 @@ impl App {
 
         self.gl = Some(gl);
         self.non_skinned_shader_program = Some(shader_program);
-
-        on_model_load.forget();
     }
 
     pub fn draw(&self) {
@@ -246,6 +229,32 @@ impl App {
 
         // TODO: Add camera controls
     }
+
+    fn load_model(&mut self) {
+        let current_model_clone = Rc::clone(&self.current_model);
+        let meshes_clone = Rc::clone(&self.meshes);
+
+        let save_model_in_state = move |model_json: String| {
+            let mut mesh = BlenderMesh::from_json(&model_json).unwrap();
+
+            mesh.combine_vertex_indices();
+            mesh.triangulate();
+            mesh.y_up();
+
+            meshes_clone
+                .borrow_mut()
+                .insert("dist/LetterF.json".to_string(), mesh);
+            *current_model_clone.borrow_mut() = Some("dist/LetterF.json".to_string());
+        };
+
+        let on_model_load = Closure::new(save_model_in_state);
+
+        download_model("dist/LetterF.json", &on_model_load);
+
+        // TODO: Instead of leaking memory everytime we load a model, see if can store it in
+        // an assets module
+        on_model_load.forget();
+    }
 }
 
 fn vec_from_matrix4(mat4: &Matrix4<f32>) -> Vec<f32> {
@@ -262,5 +271,5 @@ fn vec_from_matrix4(mat4: &Matrix4<f32>) -> Vec<f32> {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn it_works() {}
+    fn foo() {}
 }
