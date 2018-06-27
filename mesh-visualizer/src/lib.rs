@@ -252,7 +252,7 @@ impl App {
         download_model("dist/LetterF.json", &on_model_load);
 
         // TODO: Instead of leaking memory everytime we load a model, see if can store it in
-        // an assets module
+        // an assets module that managers our assets
         on_model_load.forget();
     }
 }
