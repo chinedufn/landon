@@ -79,6 +79,8 @@ impl BlenderMesh {
     ///
     /// FIXME: Wrote a test and threw code at the wall until it passed. Need to refactor
     /// this extensively! Any work on this before refactoring will not be worth the time
+    ///
+    /// TODO: breadcrumb - refactor this method then refactor mesh-visualizer/src/lib.rs
     pub fn combine_vertex_indices(&mut self) {
         type PosIndex = u16;
         type NormalIndex = u16;
@@ -88,11 +90,11 @@ impl BlenderMesh {
         let mut largest_pos_index = *self.vertex_position_indices.iter().max().unwrap() as usize;
 
         let mut encountered_indices: EncounteredIndices = HashMap::new();
-        let mut encountered_pos_indices = HashSet::new();
+        let mut encountered_vert_ids = HashSet::new();
 
         let mut single_normals = vec![];
         let mut single_index_pos_indices = vec![];
-        let mut single_positions = vec![];
+        let mut single_positions = self.vertex_positions.clone();
 
         let mut single_vertex_group_indices = self.vertex_group_indices.clone();
         let mut single_vertex_group_weights = self.vertex_group_weights.clone();
@@ -115,61 +117,51 @@ impl BlenderMesh {
             None => None
         };
 
-        for (vert_num, pos_index) in self.vertex_position_indices.iter().enumerate() {
-            let pos_index = *pos_index;
-            let normal_index = self.vertex_normal_indices.as_ref().unwrap()[vert_num];
+        for (elem_array_index, vert_id) in self.vertex_position_indices.iter().enumerate() {
+            let vert_id = *vert_id;
+            let normal_index = self.vertex_normal_indices.as_ref().unwrap()[elem_array_index];
 
             // FIXME: Don't reallocate every iteration... Only reallocate when necessary.
             // Also trim the vector when we're done
-            single_positions.resize(largest_pos_index * 3 + 7, 0.0);
             single_normals.resize(largest_pos_index * 3 + 7, 0.0);
 
-            let mut index_to_reuse = None;
+            let mut vert_id_to_reuse = None;
 
             {
-                index_to_reuse = encountered_indices
-                    .get(&(pos_index, normal_index, None))
+                vert_id_to_reuse = encountered_indices
+                    .get(&(vert_id, normal_index, None))
                     .cloned();
             }
 
-            if index_to_reuse.is_some() || !encountered_pos_indices.contains(&pos_index) {
-                let index_to_reuse = match index_to_reuse {
+            if vert_id_to_reuse.is_some() || !encountered_vert_ids.contains(&vert_id) {
+                let vert_id = match vert_id_to_reuse {
                     Some(i) => i,
-                    None => pos_index,
+                    None => vert_id,
                 };
 
                 // TODO: vert_num -> element_array_index
                 // TODO: pos_index / index_to_reuse -> vertex_id / vertex_id_to_reuse
-                single_index_pos_indices[vert_num] = index_to_reuse;
+                single_index_pos_indices[elem_array_index] = vert_id;
 
                 // TODO: Six methods to get and set the normal, pos, and uv for a vertex_num
-                single_positions[index_to_reuse as usize * 3] =
-                    self.vertex_positions[pos_index as usize * 3];
-                single_positions[index_to_reuse as usize * 3 + 1] =
-                    self.vertex_positions[pos_index as usize * 3 + 1];
-                single_positions[index_to_reuse as usize * 3 + 2] =
-                    self.vertex_positions[pos_index as usize * 3 + 2];
 
-                single_normals[index_to_reuse as usize * 3] =
+                single_normals[vert_id as usize * 3] =
                     self.vertex_normals[normal_index as usize * 3];
-                single_normals[index_to_reuse as usize * 3 + 1] =
+                single_normals[vert_id as usize * 3 + 1] =
                     self.vertex_normals[normal_index as usize * 3 + 1];
-                single_normals[index_to_reuse as usize * 3 + 2] =
+                single_normals[vert_id as usize * 3 + 2] =
                     self.vertex_normals[normal_index as usize * 3 + 2];
 
-                encountered_pos_indices.insert(pos_index);
-                encountered_indices.insert((pos_index, normal_index, None), index_to_reuse);
+                encountered_vert_ids.insert(vert_id);
+                encountered_indices.insert((vert_id, normal_index, None), vert_id);
             } else {
                 largest_pos_index += 1;
 
-                single_index_pos_indices[vert_num] = largest_pos_index as u16;
+                single_index_pos_indices[elem_array_index] = largest_pos_index as u16;
 
-                single_positions[largest_pos_index * 3] =
-                    self.vertex_positions[pos_index as usize * 3];
-                single_positions[largest_pos_index * 3 + 1] =
-                    self.vertex_positions[pos_index as usize * 3 + 1];
-                single_positions[largest_pos_index * 3 + 2] =
-                    self.vertex_positions[pos_index as usize * 3 + 2];
+                single_positions.push(self.vertex_positions[vert_id as usize * 3]);
+                single_positions.push(self.vertex_positions[vert_id as usize * 3 + 1]);
+                single_positions.push(self.vertex_positions[vert_id as usize * 3 + 2]);
 
                 single_normals[largest_pos_index as usize * 3] =
                     self.vertex_normals[normal_index as usize * 3];
@@ -180,7 +172,7 @@ impl BlenderMesh {
 
                 match self.num_groups_for_each_vertex.as_ref() {
                     Some(num_groups_for_each_vertex) => {
-                        let pos_index = pos_index as usize;
+                        let pos_index = vert_id as usize;
                         let foo = *vert_group_map.as_ref().unwrap().get(&pos_index).unwrap() as usize;
 
                         let num_groups_for_this_vertex = num_groups_for_each_vertex[pos_index as usize];
@@ -199,7 +191,7 @@ impl BlenderMesh {
                 };
 
                 encountered_indices.insert(
-                    (pos_index as u16, normal_index, None),
+                    (vert_id as u16, normal_index, None),
                     largest_pos_index as u16,
                 );
             }
