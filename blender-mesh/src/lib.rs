@@ -26,6 +26,7 @@ extern crate serde_json;
 use serde_json::Error;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::cmp::max;
 
 /// Something went wrong in the Blender child process that was trying to parse your mesh data.
 #[derive(Debug, Fail)]
@@ -87,12 +88,14 @@ impl BlenderMesh {
         type UvIndex = Option<u16>;
         type EncounteredIndices = HashMap<(PosIndex, NormalIndex, UvIndex), PosIndex>;
 
-        let mut largest_pos_index = *self.vertex_position_indices.iter().max().unwrap() as usize;
+        let mut largest_vert_id = *self.vertex_position_indices.iter().max().unwrap() as usize;
 
         let mut encountered_indices: EncounteredIndices = HashMap::new();
         let mut encountered_vert_ids = HashSet::new();
 
         let mut single_normals = vec![];
+        single_normals.resize(max(self.vertex_positions.len(), self.vertex_normals.len()), 0.0);
+
         let mut single_index_pos_indices = vec![];
 
         let mut single_vertex_group_indices = self.vertex_group_indices.clone();
@@ -120,17 +123,9 @@ impl BlenderMesh {
             let vert_id = *vert_id;
             let normal_index = self.vertex_normal_indices.as_ref().unwrap()[elem_array_index];
 
-            // FIXME: Don't reallocate every iteration... Only reallocate when necessary.
-            // Also trim the vector when we're done
-            single_normals.resize(largest_pos_index * 3 + 7, 0.0);
-
-            let mut vert_id_to_reuse = None;
-
-            {
-                vert_id_to_reuse = encountered_indices
-                    .get(&(vert_id, normal_index, None))
-                    .cloned();
-            }
+            let mut vert_id_to_reuse = encountered_indices
+                .get(&(vert_id, normal_index, None))
+                .cloned();
 
             if vert_id_to_reuse.is_some() || !encountered_vert_ids.contains(&vert_id) {
                 let vert_id = match vert_id_to_reuse {
@@ -154,9 +149,9 @@ impl BlenderMesh {
                 encountered_vert_ids.insert(vert_id);
                 encountered_indices.insert((vert_id, normal_index, None), vert_id);
             } else {
-                largest_pos_index += 1;
+                largest_vert_id += 1;
 
-                single_index_pos_indices[elem_array_index] = largest_pos_index as u16;
+                single_index_pos_indices[elem_array_index] = largest_vert_id as u16;
 
                 let x = self.vertex_x_pos(vert_id);
                 self.vertex_positions.push(x);
@@ -167,9 +162,9 @@ impl BlenderMesh {
                 let z = self.vertex_z_pos(vert_id);
                 self.vertex_positions.push(z);
 
-                single_normals[largest_pos_index as usize * 3] = self.vertex_x_normal(normal_index);
-                single_normals[largest_pos_index as usize * 3 + 1] = self.vertex_y_normal(normal_index);
-                single_normals[largest_pos_index as usize * 3 + 2] = self.vertex_z_normal(normal_index);
+                single_normals.push(self.vertex_x_normal(normal_index));
+                single_normals.push(self.vertex_y_normal(normal_index));
+                single_normals.push(self.vertex_z_normal(normal_index));
 
                 match self.num_groups_for_each_vertex.as_ref() {
                     Some(num_groups_for_each_vertex) => {
@@ -197,18 +192,16 @@ impl BlenderMesh {
                     None => {}
                 };
 
-                encountered_indices.insert(
-                    (vert_id as u16, normal_index, None),
-                    largest_pos_index as u16,
-                );
+                encountered_indices
+                    .insert((vert_id as u16, normal_index, None), largest_vert_id as u16);
             }
         }
 
         self.vertex_position_indices = single_index_pos_indices;
         self.vertex_normals = single_normals;
 
-        self.vertex_positions.resize(largest_pos_index * 3 + 3, 0.0);
-        self.vertex_normals.resize(largest_pos_index * 3 + 3, 0.0);
+        self.vertex_positions.resize(largest_vert_id * 3 + 3, 0.0);
+        self.vertex_normals.resize(largest_vert_id * 3 + 3, 0.0);
 
         self.vertex_group_indices = single_vertex_group_indices;
         self.num_groups_for_each_vertex = single_groups_per_vertex;
@@ -410,8 +403,8 @@ mod tests {
 
     #[test]
     fn combine_pos_norm_uv_indices() {
-        let mut start_positions = concat_vecs!(v(0), v(1), v(2), v(3));
-        let mut start_normals = concat_vecs!(v(4), v(5), v(6));
+        let start_positions = concat_vecs!(v(0), v(1), v(2), v(3));
+        let start_normals = concat_vecs!(v(4), v(5), v(6));
 
         // TODO: Breadcrumb - add vertex group weights and indices into the
         // start mesh and verify that we end up with the proper valuse
@@ -430,8 +423,8 @@ mod tests {
             ..BlenderMesh::default()
         };
 
-        let mut end_positions = concat_vecs!(v(0), v(1), v(2), v(3), v(0), v(1), v(2), v(3));
-        let mut end_normals = concat_vecs!(v(4), v(5), v(4), v(5), v(6), v(6), v(6), v(6));
+        let end_positions = concat_vecs!(v(0), v(1), v(2), v(3), v(0), v(1), v(2), v(3));
+        let end_normals = concat_vecs!(v(4), v(5), v(4), v(5), v(6), v(6), v(6), v(6));
 
         let expected_mesh = BlenderMesh {
             vertex_positions: end_positions,
