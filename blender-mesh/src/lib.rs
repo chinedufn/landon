@@ -94,7 +94,6 @@ impl BlenderMesh {
 
         let mut single_normals = vec![];
         let mut single_index_pos_indices = vec![];
-        let mut single_positions = self.vertex_positions.clone();
 
         let mut single_vertex_group_indices = self.vertex_group_indices.clone();
         let mut single_vertex_group_weights = self.vertex_group_weights.clone();
@@ -114,7 +113,7 @@ impl BlenderMesh {
 
                 Some(map)
             }
-            None => None
+            None => None,
         };
 
         for (elem_array_index, vert_id) in self.vertex_position_indices.iter().enumerate() {
@@ -159,32 +158,40 @@ impl BlenderMesh {
 
                 single_index_pos_indices[elem_array_index] = largest_pos_index as u16;
 
-                single_positions.push(self.vertex_positions[vert_id as usize * 3]);
-                single_positions.push(self.vertex_positions[vert_id as usize * 3 + 1]);
-                single_positions.push(self.vertex_positions[vert_id as usize * 3 + 2]);
+                let x = self.vertex_x_pos(vert_id);
+                self.vertex_positions.push(x);
 
-                single_normals[largest_pos_index as usize * 3] =
-                    self.vertex_normals[normal_index as usize * 3];
-                single_normals[largest_pos_index as usize * 3 + 1] =
-                    self.vertex_normals[normal_index as usize * 3 + 1];
-                single_normals[largest_pos_index as usize * 3 + 2] =
-                    self.vertex_normals[normal_index as usize * 3 + 2];
+                let y = self.vertex_y_pos(vert_id);
+                self.vertex_positions.push(y);
+
+                let z = self.vertex_z_pos(vert_id);
+                self.vertex_positions.push(z);
+
+                single_normals[largest_pos_index as usize * 3] = self.vertex_x_normal(normal_index);
+                single_normals[largest_pos_index as usize * 3 + 1] = self.vertex_y_normal(normal_index);
+                single_normals[largest_pos_index as usize * 3 + 2] = self.vertex_z_normal(normal_index);
 
                 match self.num_groups_for_each_vertex.as_ref() {
                     Some(num_groups_for_each_vertex) => {
                         let pos_index = vert_id as usize;
-                        let foo = *vert_group_map.as_ref().unwrap().get(&pos_index).unwrap() as usize;
+                        let foo =
+                            *vert_group_map.as_ref().unwrap().get(&pos_index).unwrap() as usize;
 
-                        let num_groups_for_this_vertex = num_groups_for_each_vertex[pos_index as usize];
-                        single_groups_per_vertex.as_mut().unwrap().push(num_groups_for_this_vertex);
+                        let num_groups_for_this_vertex =
+                            num_groups_for_each_vertex[pos_index as usize];
+                        single_groups_per_vertex
+                            .as_mut()
+                            .unwrap()
+                            .push(num_groups_for_this_vertex);
 
                         for i in 0..num_groups_for_this_vertex {
-                            let weight = single_vertex_group_weights.as_ref().unwrap()[foo + i as usize];
+                            let weight =
+                                single_vertex_group_weights.as_ref().unwrap()[foo + i as usize];
                             single_vertex_group_weights.as_mut().unwrap().push(weight);
 
-                            let index = single_vertex_group_indices.as_ref().unwrap()[foo + i as usize];
+                            let index =
+                                single_vertex_group_indices.as_ref().unwrap()[foo + i as usize];
                             single_vertex_group_indices.as_mut().unwrap().push(index);
-
                         }
                     }
                     None => {}
@@ -199,7 +206,6 @@ impl BlenderMesh {
 
         self.vertex_position_indices = single_index_pos_indices;
         self.vertex_normals = single_normals;
-        self.vertex_positions = single_positions;
 
         self.vertex_positions.resize(largest_pos_index * 3 + 3, 0.0);
         self.vertex_normals.resize(largest_pos_index * 3 + 3, 0.0);
@@ -209,6 +215,25 @@ impl BlenderMesh {
         self.vertex_group_weights = single_vertex_group_weights;
 
         self.vertex_normal_indices = None;
+    }
+
+    fn vertex_x_pos(&self, vertex_id: u16) -> f32 {
+        self.vertex_positions[vertex_id as usize * 3 + 0]
+    }
+    fn vertex_y_pos(&self, vertex_id: u16) -> f32 {
+        self.vertex_positions[vertex_id as usize * 3 + 1]
+    }
+    fn vertex_z_pos(&self, vertex_id: u16) -> f32 {
+        self.vertex_positions[vertex_id as usize * 3 + 2]
+    }
+    fn vertex_x_normal(&self, vertex_id: u16) -> f32 {
+        self.vertex_normals[vertex_id as usize * 3 + 0]
+    }
+    fn vertex_y_normal(&self, vertex_id: u16) -> f32 {
+        self.vertex_normals[vertex_id as usize * 3 + 1]
+    }
+    fn vertex_z_normal(&self, vertex_id: u16) -> f32 {
+        self.vertex_normals[vertex_id as usize * 3 + 2]
     }
 }
 
@@ -415,7 +440,7 @@ mod tests {
             vertex_normals: end_normals,
             num_groups_for_each_vertex: Some(vec![3, 2, 5, 1, 3, 2, 5, 1]),
             vertex_group_indices: Some(vec![
-                0, 1, 2, 0, 3, 4, 5, 6, 7, 8, 11, 0, 1, 2, 0, 3, 4, 5, 6, 7, 8, 11
+                0, 1, 2, 0, 3, 4, 5, 6, 7, 8, 11, 0, 1, 2, 0, 3, 4, 5, 6, 7, 8, 11,
             ]),
             vertex_group_weights: Some(vec![
                 0.05, 0.8, 0.15, 0.5, 0.5, 0.1, 0.2, 0.2, 0.2, 0.3, 0.999, 0.05, 0.8, 0.15, 0.5,
