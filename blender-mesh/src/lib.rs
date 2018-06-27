@@ -76,6 +76,9 @@ impl BlenderMesh {
     /// OpenGL only supports one index buffer, we convert our vertex data
     /// from having three indices to having one. This usually requires some duplication of
     /// data. We duplicate the minimum amount of vertex data necessary.
+    ///
+    /// FIXME: Wrote a test and threw code at the wall until it passed. Need to refactor
+    /// this extensively! Any work on this before refactoring will not be worth the time
     pub fn combine_vertex_indices(&mut self) {
         type PosIndex = u16;
         type NormalIndex = u16;
@@ -91,13 +94,32 @@ impl BlenderMesh {
         let mut single_index_pos_indices = vec![];
         let mut single_positions = vec![];
 
+        let mut single_vertex_group_indices = self.vertex_group_indices.clone();
+        let mut single_vertex_group_weights = self.vertex_group_weights.clone();
+        let mut single_groups_per_vertex = self.num_groups_for_each_vertex.clone();
+
         single_index_pos_indices.resize(self.vertex_position_indices.len(), 0);
+
+        let mut total_previous = 0;
+        let vert_group_map = match self.num_groups_for_each_vertex.as_ref() {
+            Some(num_groups_per) => {
+                let mut map = HashMap::new();
+
+                for (index, num) in num_groups_per.iter().enumerate() {
+                    map.insert(index, total_previous);
+                    total_previous += num;
+                }
+
+                Some(map)
+            }
+            None => None
+        };
 
         for (vert_num, pos_index) in self.vertex_position_indices.iter().enumerate() {
             let pos_index = *pos_index;
             let normal_index = self.vertex_normal_indices.as_ref().unwrap()[vert_num];
 
-            // FIXME: Don't reallocate an vector every iteration... Only reallocate when necessary.
+            // FIXME: Don't reallocate every iteration... Only reallocate when necessary.
             // Also trim the vector when we're done
             single_positions.resize(largest_pos_index * 3 + 7, 0.0);
             single_normals.resize(largest_pos_index * 3 + 7, 0.0);
@@ -116,6 +138,8 @@ impl BlenderMesh {
                     None => pos_index,
                 };
 
+                // TODO: vert_num -> element_array_index
+                // TODO: pos_index / index_to_reuse -> vertex_id / vertex_id_to_reuse
                 single_index_pos_indices[vert_num] = index_to_reuse;
 
                 // TODO: Six methods to get and set the normal, pos, and uv for a vertex_num
@@ -154,6 +178,26 @@ impl BlenderMesh {
                 single_normals[largest_pos_index as usize * 3 + 2] =
                     self.vertex_normals[normal_index as usize * 3 + 2];
 
+                match self.num_groups_for_each_vertex.as_ref() {
+                    Some(num_groups_for_each_vertex) => {
+                        let pos_index = pos_index as usize;
+                        let foo = *vert_group_map.as_ref().unwrap().get(&pos_index).unwrap() as usize;
+
+                        let num_groups_for_this_vertex = num_groups_for_each_vertex[pos_index as usize];
+                        single_groups_per_vertex.as_mut().unwrap().push(num_groups_for_this_vertex);
+
+                        for i in 0..num_groups_for_this_vertex {
+                            let weight = single_vertex_group_weights.as_ref().unwrap()[foo + i as usize];
+                            single_vertex_group_weights.as_mut().unwrap().push(weight);
+
+                            let index = single_vertex_group_indices.as_ref().unwrap()[foo + i as usize];
+                            single_vertex_group_indices.as_mut().unwrap().push(index);
+
+                        }
+                    }
+                    None => {}
+                };
+
                 encountered_indices.insert(
                     (pos_index as u16, normal_index, None),
                     largest_pos_index as u16,
@@ -167,6 +211,10 @@ impl BlenderMesh {
 
         self.vertex_positions.resize(largest_pos_index * 3 + 3, 0.0);
         self.vertex_normals.resize(largest_pos_index * 3 + 3, 0.0);
+
+        self.vertex_group_indices = single_vertex_group_indices;
+        self.num_groups_for_each_vertex = single_groups_per_vertex;
+        self.vertex_group_weights = single_vertex_group_weights;
 
         self.vertex_normal_indices = None;
     }
@@ -348,18 +396,22 @@ mod tests {
         let mut start_positions = concat_vecs!(v(0), v(1), v(2), v(3));
         let mut start_normals = concat_vecs!(v(4), v(5), v(6));
 
+        // TODO: Breadcrumb - add vertex group weights and indices into the
+        // start mesh and verify that we end up with the proper valuse
+
         let mut mesh_to_combine = BlenderMesh {
             vertex_positions: start_positions,
             vertex_position_indices: vec![0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3],
             num_vertices_in_each_face: vec![4, 4, 4],
             vertex_normals: start_normals,
             vertex_normal_indices: Some(vec![0, 1, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2]),
+            num_groups_for_each_vertex: Some(vec![3, 2, 5, 1]),
+            vertex_group_indices: Some(vec![0, 1, 2, 0, 3, 4, 5, 6, 7, 8, 11]),
+            vertex_group_weights: Some(vec![
+                0.05, 0.8, 0.15, 0.5, 0.5, 0.1, 0.2, 0.2, 0.2, 0.3, 0.999,
+            ]),
             ..BlenderMesh::default()
         };
-
-        let mut end_n0 = vec![4.0, 4.0, 4.0];
-        let mut end_n1 = vec![5.0, 5.0, 5.0];
-        let mut end_n2 = vec![6.0, 6.0, 6.0];
 
         let mut end_positions = concat_vecs!(v(0), v(1), v(2), v(3), v(0), v(1), v(2), v(3));
         let mut end_normals = concat_vecs!(v(4), v(5), v(4), v(5), v(6), v(6), v(6), v(6));
@@ -369,6 +421,14 @@ mod tests {
             vertex_position_indices: vec![0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7],
             num_vertices_in_each_face: vec![4, 4, 4],
             vertex_normals: end_normals,
+            num_groups_for_each_vertex: Some(vec![3, 2, 5, 1, 3, 2, 5, 1]),
+            vertex_group_indices: Some(vec![
+                0, 1, 2, 0, 3, 4, 5, 6, 7, 8, 11, 0, 1, 2, 0, 3, 4, 5, 6, 7, 8, 11
+            ]),
+            vertex_group_weights: Some(vec![
+                0.05, 0.8, 0.15, 0.5, 0.5, 0.1, 0.2, 0.2, 0.2, 0.3, 0.999, 0.05, 0.8, 0.15, 0.5,
+                0.5, 0.1, 0.2, 0.2, 0.2, 0.3, 0.999,
+            ]),
             ..BlenderMesh::default()
         };
 
@@ -377,6 +437,8 @@ mod tests {
 
         assert_eq!(combined_mesh, expected_mesh);
     }
+
+    // TODO: TDD a Method to normalize groups per vertex to all be the same number
 
     #[test]
     fn triangulate_faces() {
