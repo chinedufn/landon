@@ -78,7 +78,7 @@ class ExportArmatureToJSON(bpy.types.Operator):
                     # So here, at 24FPS, frame 12 would become `0.5` (seconds)
                     timeOfKeyframe = round(frame / bpy.context.scene.render.fps, 6)
                     # Get all of the bone pose matrices for this frame -> [bone1Matrix, bone2Matrix, ..]
-                    armatureJSON[actionInfo.name][str(timeOfKeyframe)] = matrixToArray(getBonePosesAtKeyframe(frame, activeArmature, allBoneNames))
+                    armatureJSON[actionInfo.name][str(timeOfKeyframe)] = {'Matrix': matrixToArray(getBonePosesAtKeyframe(frame, activeArmature, allBoneNames))}
 
             # Now that we've added our actions we add our bind poses
             # We iterate over pose bones instead of edit bones to ensure a consistent ordering
@@ -98,7 +98,7 @@ class ExportArmatureToJSON(bpy.types.Operator):
                 boneBindMatrix = activeArmature.matrix_world * poseBone.bone.matrix_local
                 boneInverseBind = boneBindMatrix.copy().inverted()
 
-                armatureJSON['inverseBindPoses'].append(matrixToArray(boneInverseBind))
+                armatureJSON['inverseBindPoses'].append({'Matrix': matrixToArray(boneInverseBind)})
 
             # Now we create the JSON for the joint name indices. The bind poses and keyframe poses are
             # arrays of index 0...numBones - 1. To look up a bone in this array you use its joint name index

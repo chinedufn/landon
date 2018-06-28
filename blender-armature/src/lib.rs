@@ -40,13 +40,20 @@ pub enum BlenderError {
     Stderr(String),
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(Default))]
+pub enum Bone {
+    Matrix(Vec<f32>),
+    DualQuat(Vec<f32>),
+}
+
 /// All of the data about a Blender armature
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(test, derive(Default))]
 pub struct BlenderArmature {
     pub jointIndex: HashMap<String, u8>,
-    pub inverseBindPoses: Vec<Vec<f32>>,
-    pub actions: HashMap<String, HashMap<String, Vec<Vec<f32>>>>,
+    pub inverseBindPoses: Vec<Bone>,
+    pub actions: HashMap<String, HashMap<String, Vec<Bone>>>,
 }
 
 impl BlenderArmature {
@@ -81,10 +88,6 @@ pub fn parse_armatures_from_blender_stdout(
         filenames_to_armature.extend(filename_to_armature);
         index = next_start_index;
     }
-
-    // TODO: Breadcrumb - Plan armature visualizer to visualizer our basic_cube.rs on paper.
-    // Step 1 is adding a function to our main crate that expands our 3 vertex indices into just one.
-    // Unit test it
 
     Ok(filenames_to_armature)
 }
