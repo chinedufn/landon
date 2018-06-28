@@ -20,6 +20,7 @@ fn parse_skinned_letter_f_data() {
 
     let mut blender_output = Command::new("blender")
         .args(&["--background", skinned_letter_f_blend])
+        .args(&["--python-expr", &set_active_object_by_name("LetterF")])
         .args(&["--python", run_addon])
         .arg("--")
         .output()
@@ -40,6 +41,16 @@ fn parse_skinned_letter_f_data() {
     let expected_mesh: BlenderMesh = serde_json::from_str(expected_mesh).unwrap();
 
     assert_eq!(mesh, &expected_mesh)
+}
+
+fn set_active_object_by_name(name: &str) -> String {
+    format!(r#"
+import bpy
+bpy.context.scene.objects.active = None
+for obj in bpy.context.scene.objects:
+    if obj.name == '{}':
+        bpy.context.scene.objects.active = obj
+"#, name)
 }
 
 fn expected_mesh_data() -> String {
@@ -66,16 +77,5 @@ fn abs_path(path: &str) -> String {
     abs_path.to_str().unwrap().to_string()
 }
 
-// TODO: write_to_file.rs test where we make sure that we write to a file instead of stdout
-// if `-- --mesh-filepath="" is provided
-
-// TODO: cli.rs test that spawns a bash script that calls a python script that iterates over
-// passed in mesh names and calls bpy.ops.import_export.mesh2json(). It then tee's the output
-// so that readers have an example of how to combine this with other scripts
-
-// CLI
-// STDOUT=$(blender -b --python multiple-blender-files)
-// JSON = $(cat STDOUT | mesh2json)
-// cat STDOUT | mesh2json > some_file.json
 
 // bpy.ops.wm.open_mainfile( filepath = "/path/to/file.blend" )
