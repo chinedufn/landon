@@ -6,7 +6,7 @@ use std::fs::DirBuilder;
 use std::path::PathBuf;
 use std::process::Command;
 
-// TODO: Make a directory for all of our tenp build stuff (py scripts) so that we can delete it
+// TODO: Make a directory for all of our temp build stuff (py scripts) so that we can delete it
 // all easily when we're done by deleting the dir
 fn main() {
     let mut blender_files = vec![];

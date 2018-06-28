@@ -21,6 +21,7 @@ use cgmath::Point3;
 use cgmath::Vector3;
 
 mod assets;
+use assets::Assets;
 
 // A macro to provide `println!(..)`-style syntax for `console.log` logging.
 macro_rules! clog {
@@ -29,18 +30,19 @@ macro_rules! clog {
 
 #[wasm_bindgen(module = "./index")]
 extern "C" {
-    fn download_model(model_name: &str, cb: &Closure<FnMut(String)>);
+    fn download_mesh(mesh_name: &str, mesh_path: &str, cb: &Closure<FnMut(String, String)>);
 }
 
 #[wasm_bindgen]
 pub struct App {
     /// The model that the user is currently viewing in their browser
-    current_model: Rc<RefCell<Option<String>>>,
+    current_model: String,
     /// All of the models that we have downloaded and can render
     meshes: Rc<RefCell<HashMap<String, BlenderMesh>>>,
     /// A handle into the WebGL context for our canvas
     gl: Option<WebGLRenderingContext>,
     non_skinned_shader_program: Option<WebGLProgram>,
+    assets: Assets
 }
 
 #[wasm_bindgen]
@@ -48,9 +50,10 @@ impl App {
     pub fn new() -> App {
         App {
             meshes: Rc::new(RefCell::new(HashMap::new())),
-            current_model: Rc::new(RefCell::new(None)),
+            current_model: "LetterF".to_string(),
             gl: None,
             non_skinned_shader_program: None,
+            assets: Assets::new()
         }
     }
 
@@ -58,7 +61,7 @@ impl App {
     pub fn start(&mut self) {
         clog!("Starting!");
 
-        self.load_model();
+        self.assets.load_mesh(&self.current_model);
 
         let canvas_id = "mesh-visualizer";
 
@@ -122,15 +125,15 @@ impl App {
             return;
         }
 
-        let current_model = self.current_model.borrow();
-        let current_model = current_model.as_ref();
-        if current_model.is_none() {
+        let mesh = self.assets.meshes();
+        let mesh = mesh.borrow();
+        let mesh = mesh.get(&self.current_model);
+
+        if mesh.is_none() {
             return;
         }
-        let current_model = current_model.unwrap();
 
-        let mesh = self.meshes.borrow();
-        let mesh = mesh.get(current_model).unwrap();
+        let mesh = mesh.unwrap();
 
         let gl = self.gl.as_ref().unwrap();
 
@@ -157,7 +160,7 @@ impl App {
         let model_matrix = Matrix4::from_translation(Vector3::new(0.0, 0.0, 0.0));
 
         let mut mv_matrix = Matrix4::look_at(
-            Point3::new(1.0, 2.0, -10.0),
+            Point3::new(1.0, 2.0, -2.0),
             Point3::new(0.0, 0.0, 0.0),
             Vector3::new(0.0, 1.0, 0.0),
         );
@@ -228,32 +231,6 @@ impl App {
         // TODO: Render a cube instead of a triangle
 
         // TODO: Add camera controls
-    }
-
-    fn load_model(&mut self) {
-        let current_model_clone = Rc::clone(&self.current_model);
-        let meshes_clone = Rc::clone(&self.meshes);
-
-        let save_model_in_state = move |model_json: String| {
-            let mut mesh = BlenderMesh::from_json(&model_json).unwrap();
-
-            mesh.combine_vertex_indices();
-            mesh.triangulate();
-            mesh.y_up();
-
-            meshes_clone
-                .borrow_mut()
-                .insert("dist/LetterF.json".to_string(), mesh);
-            *current_model_clone.borrow_mut() = Some("dist/LetterF.json".to_string());
-        };
-
-        let on_model_load = Closure::new(save_model_in_state);
-
-        download_model("dist/LetterF.json", &on_model_load);
-
-        // TODO: Instead of leaking memory everytime we load a model, see if can store it in
-        // an assets module that managers our assets
-        on_model_load.forget();
     }
 }
 
