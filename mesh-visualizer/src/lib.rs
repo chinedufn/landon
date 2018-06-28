@@ -30,7 +30,7 @@ macro_rules! clog {
 
 #[wasm_bindgen(module = "./index")]
 extern "C" {
-    fn download_mesh(mesh_name: &str, mesh_path: &str, cb: &Closure<FnMut(String, String)>);
+    fn download_mesh(mesh_name: &str, mesh_url: &str, cb: &Closure<FnMut(String, String)>);
 }
 
 #[wasm_bindgen]
@@ -160,7 +160,7 @@ impl App {
         let model_matrix = Matrix4::from_translation(Vector3::new(0.0, 0.0, 0.0));
 
         let mut mv_matrix = Matrix4::look_at(
-            Point3::new(1.0, 2.0, -2.0),
+            Point3::new(1.0, 2.0, 2.0),
             Point3::new(0.0, 0.0, 0.0),
             Vector3::new(0.0, 1.0, 0.0),
         );

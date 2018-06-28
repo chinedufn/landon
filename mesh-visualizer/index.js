@@ -4,11 +4,11 @@ const app = App.new()
 
 app.start()
 
-export function download_model (modelName, cb) {
-  const request = new window.Request(modelName)
+export function download_mesh (meshName, meshURL, cb) {
+  const request = new window.Request(meshURL)
   window.fetch(request).then(response => {
     response.text().then(modelJSONString => {
-      cb(modelJSONString)
+      cb(meshName, modelJSONString)
     })
   })
 }
