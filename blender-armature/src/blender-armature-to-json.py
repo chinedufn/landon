@@ -16,8 +16,7 @@ class ExportArmatureToJSON(bpy.types.Operator):
     bl_label = 'Export Armature to JSON'
     bl_options = {'REGISTER'}
     bl_category = 'Import-Export'
-    # If a filepath argument is passed into the addon we use it instead of reading a filepath from the CLI
-    filepath = bpy.props.StringProperty(name='filepath')
+
     def execute(self, context):
         def getKeyframesInAction(action):
             keyframes = []
@@ -155,7 +154,7 @@ class ExportArmatureToJSON(bpy.types.Operator):
 
         # Now we create the JSON for the joint name indices. The bind poses and keyframe poses are
         # arrays of index 0...numBones - 1. To look up a bone in this array you use its joint name index
-        jsonActionData += '"jointNameIndices": {\n'
+        jsonActionData += '"jointIndex": {\n'
         for index, boneName in enumerate(allBoneNames):
             jsonActionData += '"' + boneName + '": ' + str(index) + ','
 
@@ -163,7 +162,11 @@ class ExportArmatureToJSON(bpy.types.Operator):
         jsonActionData = jsonActionData.rstrip('\r\n').rstrip(',')
         jsonActionData += '}'
         jsonActionData += '\n}'
-        jsonActionData
+
+        print("START_ARMATURE_JSON " + bpy.data.filepath + " " + activeArmature.name)
+        # print(json.dumps(armature_json))
+        print(jsonActionData)
+        print("END_ARMATURE_JSON " + bpy.data.filepath + " " + activeArmature.name)
 
         return {'FINISHED'}
 

@@ -16,9 +16,9 @@ pub struct Assets {
 }
 
 impl Assets {
-    pub fn new () -> Assets {
+    pub fn new() -> Assets {
         Assets {
-            meshes: Rc::new(RefCell::new(HashMap::new()))
+            meshes: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 

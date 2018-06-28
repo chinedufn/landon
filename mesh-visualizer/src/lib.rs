@@ -42,7 +42,7 @@ pub struct App {
     /// A handle into the WebGL context for our canvas
     gl: Option<WebGLRenderingContext>,
     non_skinned_shader_program: Option<WebGLProgram>,
-    assets: Assets
+    assets: Assets,
 }
 
 #[wasm_bindgen]
@@ -53,7 +53,7 @@ impl App {
             current_model: "LetterF".to_string(),
             gl: None,
             non_skinned_shader_program: None,
-            assets: Assets::new()
+            assets: Assets::new(),
         }
     }
 

@@ -1,7 +1,10 @@
+extern crate blender_armature;
 extern crate blender_mesh;
 extern crate serde;
 extern crate serde_json;
 
+use blender_armature::parse_armatures_from_blender_stdout;
+use blender_armature::BlenderArmature;
 use blender_mesh::parse_meshes_from_blender_stdout;
 use blender_mesh::BlenderMesh;
 use std::env::current_dir;
@@ -10,9 +13,8 @@ use std::path::Path;
 use std::process::Command;
 
 #[test]
-fn parse_skinned_letter_f_data() {
+fn parse_skinned_letter_f_mesh_data() {
     let skinned_letter_f_blend = &abs_path("tests/skinned_letter_f.blend");
-    let install_addon = &abs_path("../install-addon.py");
     let run_addon = &abs_path("../run-addon.py");
 
     // TODO: Move the CLI spawning and parsing into `lib.rs`. In our test just verify
@@ -43,14 +45,56 @@ fn parse_skinned_letter_f_data() {
     assert_eq!(mesh, &expected_mesh)
 }
 
+// TODO: Move these integration tests to the root directory since they encompass meshes and armatures
+#[test]
+fn parse_skinned_letter_f_armature_data() {
+    let skinned_letter_f_blend = &abs_path("tests/skinned_letter_f.blend");
+    let install_addon = &abs_path("../blender-armature/install-armature-to-json.py");
+    let run_addon = &abs_path("../blender-armature/run-armature-to-json.py");
+
+    // TODO: Move the CLI spawning and parsing into `lib.rs`. In our test just verify
+    // the returned mesh data
+
+    let mut blender_output = Command::new("blender")
+        .args(&["--background", skinned_letter_f_blend])
+        .args(&[
+            "--python-expr",
+            &set_active_object_by_name("LetterFArmature"),
+        ])
+        .args(&["--python", run_addon])
+        .arg("--")
+        .output()
+        .expect("Failed to execute Blender process");
+
+    let stderr = String::from_utf8(blender_output.stderr).unwrap();
+    assert_eq!(stderr, "");
+
+    let stdout = String::from_utf8(blender_output.stdout).unwrap();
+    println!("{}", stdout);
+
+    let parsed_armatures = parse_armatures_from_blender_stdout(&stdout).unwrap();
+
+    let (filename, armature) = parsed_armatures.iter().next().unwrap();
+
+    let armature = armature.get("LetterFArmature").unwrap();
+
+    let expected_armature = &expected_armature_data();
+    let expected_armature: BlenderArmature = serde_json::from_str(expected_armature).unwrap();
+
+    assert_eq!(armature, &expected_armature)
+}
+
 fn set_active_object_by_name(name: &str) -> String {
-    format!(r#"
+    format!(
+        r#"
 import bpy
 bpy.context.scene.objects.active = None
 for obj in bpy.context.scene.objects:
     if obj.name == '{}':
         bpy.context.scene.objects.active = obj
-"#, name)
+"#,
+        name
+    )
 }
 
 fn expected_mesh_data() -> String {
@@ -69,6 +113,23 @@ fn expected_mesh_data() -> String {
         "#.to_string()
 }
 
+fn expected_armature_data() -> String {
+    r#"
+    {
+        "actions": {  },
+        "inverseBindPoses": [
+            [1.0, -0.0, 0.0, -0.0, -0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, -0.0, -0.0, 0.0, -0.0, 1.0],
+            [1.0, 2.3841855067985307e-07, 0.0, -0.0, -0.0, 0.0, 1.0000001192092896, -0.5959557890892029, 2.3841855067985307e-07, -1.0, 0.0, -0.0, -0.0, 0.0, -0.0, 1.0],
+            [0.0, 1.0, -4.3711370523169535e-08, 4.101917383536602e-08, -1.0, -5.684341886080802e-14, 3.7892565231672105e-15, -3.5558752292761276e-15, 0.0, 4.3711366970455856e-08, 1.0000001192092896, -0.9384097456932068, -0.0, -0.0, -0.0, 1.0],
+            [-5.8773643729637115e-09, 1.0, -1.628146435450617e-07, 9.703032333163719e-08, -0.9993491172790527, -6.867014690215001e-08, 0.03607500344514847, -0.02149910479784012, 0.03607500344514847, 1.6300369054533803e-07, 0.9993491172790527, -0.5955678224563599, -0.0, -0.0, -0.0, 1.0]
+        ],
+        "jointIndex": {
+            "Lower.Body": 0,"Upper.Body": 1,"Upper.Arm": 2,"Lower.Arm": 3
+        }
+    }
+    "#.to_string()
+}
+
 fn abs_path(path: &str) -> String {
     let path = Path::new(path);
     let mut abs_path = current_dir().unwrap();
@@ -76,6 +137,5 @@ fn abs_path(path: &str) -> String {
 
     abs_path.to_str().unwrap().to_string()
 }
-
 
 // bpy.ops.wm.open_mainfile( filepath = "/path/to/file.blend" )

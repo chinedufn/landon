@@ -1,5 +1,6 @@
 [workspace]
 members = [
+  "blender-armature",
   "blender-mesh",
   "mesh-visualizer"
 ]
