@@ -29,7 +29,7 @@ fn parse_skinned_letter_f_mesh_data() {
         .expect("Failed to execute Blender process");
 
     let stderr = String::from_utf8(blender_output.stderr).unwrap();
-    assert_eq!(stderr, "");
+    assert_eq!(stderr, "", "stderr = {}", stderr);
 
     let stdout = String::from_utf8(blender_output.stdout).unwrap();
 
@@ -67,10 +67,9 @@ fn parse_skinned_letter_f_armature_data() {
         .expect("Failed to execute Blender process");
 
     let stderr = String::from_utf8(blender_output.stderr).unwrap();
-    assert_eq!(stderr, "");
+    assert_eq!(stderr, "", "\nBLENDER STDERR = {}", stderr);
 
     let stdout = String::from_utf8(blender_output.stdout).unwrap();
-    println!("{}", stdout);
 
     let parsed_armatures = parse_armatures_from_blender_stdout(&stdout).unwrap();
 
@@ -81,7 +80,7 @@ fn parse_skinned_letter_f_armature_data() {
     let expected_armature = &expected_armature_data();
     let expected_armature: BlenderArmature = serde_json::from_str(expected_armature).unwrap();
 
-    assert_eq!(armature, &expected_armature)
+    assert_eq!(armature, &expected_armature, "Blender STDOUT: {}", stdout)
 }
 
 fn set_active_object_by_name(name: &str) -> String {
