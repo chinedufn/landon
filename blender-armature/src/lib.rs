@@ -60,6 +60,8 @@ pub enum Bone {
 pub struct BlenderArmature {
     pub joint_index: HashMap<String, u8>,
     pub inverse_bind_poses: Vec<Bone>,
+    // TODO: Generic type instead of string for your action names so that you can have an enum
+    // for your action names ... ?
     pub actions: HashMap<String, HashMap<String, Vec<Bone>>>,
 }
 
@@ -115,7 +117,7 @@ impl BlenderArmature {
     }
 
     /// https://github.com/chinedufn/dual-quat-to-mat4/blob/master/src/dual-quat-to-mat4.js
-    pub fn dual_quat_to_matrix (bone: &Bone) -> Bone {
+    pub fn dual_quat_to_matrix(bone: &Bone) -> Bone {
         match bone {
             Bone::Matrix(matrix) => Bone::Matrix(matrix.clone()),
             Bone::DualQuat(dual_quat) => {
@@ -215,6 +217,9 @@ fn find_first_armature_after_index(
 mod tests {
     use super::*;
 
+    // TODO: dual_quat_z_up_to_y_up... but we can just get the rendering working first
+    // https://github.com/chinedufn/change-mat4-coordinate-system/blob/master/change-mat4-coordinate-system.js
+
     #[test]
     fn matrix_to_dual_quat_and_back_again() {
         struct MatrixToDualQuatTest {
@@ -231,10 +236,32 @@ mod tests {
             },
             MatrixToDualQuatTest {
                 matrix: vec![
-                -0.8488113, -0.52869576, 0.00018605776, 0.0, 0.52503425, -0.8428914, 0.117783956, 0.0, -0.06211505, 0.100074045, 0.99303925, 0.0, 0.09010744, -0.23331697, 0.018946884, 1.0
+                    -0.8488113,
+                    -0.52869576,
+                    0.00018605776,
+                    0.0,
+                    0.52503425,
+                    -0.8428914,
+                    0.117783956,
+                    0.0,
+                    -0.06211505,
+                    0.100074045,
+                    0.99303925,
+                    0.0,
+                    0.09010744,
+                    -0.23331697,
+                    0.018946884,
+                    1.0,
                 ],
                 dual_quat: vec![
-                    -0.2744706, -0.01613097, 0.056746617, 0.9597841, -0.0017457254, -0.124870464, -0.011375335, -0.00192535
+                    -0.2744706,
+                    -0.01613097,
+                    0.056746617,
+                    0.9597841,
+                    -0.0017457254,
+                    -0.124870464,
+                    -0.011375335,
+                    -0.00192535,
                 ],
             },
         ];
@@ -246,7 +273,8 @@ mod tests {
             let matrix_bone = Bone::Matrix(matrix.clone());
             let dual_quat_bone = Bone::DualQuat(dual_quat.clone());
 
-            if let Bone::Matrix(new_matrix) = BlenderArmature::dual_quat_to_matrix(&dual_quat_bone) {
+            if let Bone::Matrix(new_matrix) = BlenderArmature::dual_quat_to_matrix(&dual_quat_bone)
+            {
                 // Round values to remove precision errors
                 let new_matrix: Vec<f32> = new_matrix.iter().map(|x| x * round / round).collect();
                 let matrix: Vec<f32> = matrix.iter().map(|x| x * round / round).collect();
@@ -255,9 +283,12 @@ mod tests {
                 panic!();
             }
 
-            if let Bone::DualQuat(new_dual_quat) = BlenderArmature::matrix_to_dual_quat(&dual_quat_bone) {
-                let new_dual_quat: Vec<f32> = new_dual_quat.iter().map(|x| x * round / round).collect();
-                let dual_quat : Vec<f32> = dual_quat.iter().map(|x| x * round / round).collect();
+            if let Bone::DualQuat(new_dual_quat) =
+                BlenderArmature::matrix_to_dual_quat(&dual_quat_bone)
+            {
+                let new_dual_quat: Vec<f32> =
+                    new_dual_quat.iter().map(|x| x * round / round).collect();
+                let dual_quat: Vec<f32> = dual_quat.iter().map(|x| x * round / round).collect();
                 assert_eq!(new_dual_quat, dual_quat);
             } else {
                 panic!();

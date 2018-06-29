@@ -23,6 +23,8 @@ use cgmath::Vector3;
 mod assets;
 use assets::Assets;
 
+mod shader;
+
 // A macro to provide `println!(..)`-style syntax for `console.log` logging.
 macro_rules! clog {
     ($($t:tt)*) => (log(&format!($($t)*)))
@@ -138,6 +140,10 @@ impl App {
         let gl = self.gl.as_ref().unwrap();
 
         let shader_program = self.non_skinned_shader_program.as_ref().unwrap();
+        // TODO breadcrumb - create self.skinned_shader_program and store it in our struct.. then
+        // send down an armature.. store it in our assets.rs and use the inverse bind poses to
+        // render our model (inverse the inverse bind poses to get the bind poses and pass those
+        // into our renderer as bones).
 
         let vert_pos_attrib = gl.get_attrib_location(&shader_program, "aVertexPos");
         gl.enable_vertex_attrib_array(vert_pos_attrib);
