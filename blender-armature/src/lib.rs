@@ -73,6 +73,7 @@ impl BlenderArmature {
     /// Note that we use `w, x, y, z` and not `x, y, z, w` for our quaternion representation
     pub fn matrix_to_dual_quat(bone: &Bone) -> Bone {
         match bone {
+            Bone::DualQuat(dual_quat) => Bone::DualQuat(dual_quat.to_vec()),
             Bone::Matrix(matrix) => {
                 let mut cg_matrix_4 = [[0.0; 4]; 4];
 
@@ -110,7 +111,37 @@ impl BlenderArmature {
 
                 Bone::DualQuat(dual_quat)
             }
-            Bone::DualQuat(dual_quat) => Bone::DualQuat(dual_quat.to_vec()),
+        }
+    }
+
+    /// https://github.com/chinedufn/dual-quat-to-mat4/blob/master/src/dual-quat-to-mat4.js
+    pub fn dual_quat_to_matrix (bone: &Bone) -> Bone {
+        match bone {
+            Bone::Matrix(matrix) => Bone::Matrix(matrix.clone()),
+            Bone::DualQuat(dual_quat) => {
+                let mut matrix = vec![];
+                matrix.resize(16, 0.0);
+                let dq = dual_quat;
+
+                matrix[0] = 1.0 - (2.0 * dq[2] * dq[2]) - (2.0 * dq[3] * dq[3]);
+                matrix[1] = (2.0 * dq[1] * dq[2]) + (2.0 * dq[0] * dq[3]);
+                matrix[2] = (2.0 * dq[1] * dq[3]) - (2.0 * dq[0] * dq[2]);
+                matrix[3] = 0.0;
+                matrix[4] = (2.0 * dq[1] * dq[2]) - (2.0 * dq[0] * dq[3]);
+                matrix[5] = 1.0 - (2.0 * dq[1] * dq[1]) - (2.0 * dq[3] * dq[3]);
+                matrix[6] = (2.0 * dq[2] * dq[3]) + (2.0 * dq[0] * dq[1]);
+                matrix[7] = 0.0;
+                matrix[8] = (2.0 * dq[1] * dq[3]) + (2.0 * dq[0] * dq[2]);
+                matrix[9] = (2.0 * dq[2] * dq[3]) - (2.0 * dq[0] * dq[1]);
+                matrix[10] = 1.0 - (2.0 * dq[1] * dq[1]) - (2.0 * dq[2] * dq[2]);
+                matrix[11] = 0.0;
+                matrix[12] = 2.0 * (-dq[4] * dq[1] + dq[5] * dq[0] - dq[6] * dq[3] + dq[7] * dq[2]);
+                matrix[13] = 2.0 * (-dq[4] * dq[2] + dq[5] * dq[3] + dq[6] * dq[0] - dq[7] * dq[1]);
+                matrix[14] = 2.0 * (-dq[4] * dq[3] - dq[5] * dq[2] + dq[6] * dq[1] + dq[7] * dq[0]);
+                matrix[15] = 1.0;
+
+                Bone::Matrix(matrix)
+            }
         }
     }
 }
@@ -185,7 +216,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn matrix_to_dual_quat() {
+    fn matrix_to_dual_quat_and_back_again() {
         struct MatrixToDualQuatTest {
             matrix: Vec<f32>,
             dual_quat: Vec<f32>,
@@ -200,31 +231,37 @@ mod tests {
             },
             MatrixToDualQuatTest {
                 matrix: vec![
-                    0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6,
+                -0.8488113, -0.52869576, 0.00018605776, 0.0, 0.52503425, -0.8428914, 0.117783956, 0.0, -0.06211505, 0.100074045, 0.99303925, 0.0, 0.09010744, -0.23331697, 0.018946884, 1.0
                 ],
                 dual_quat: vec![
-                    0.83666,
-                    -0.089642145,
-                    0.17928427,
-                    -0.089642145,
-                    0.000000007450581,
-                    0.34661633,
-                    0.5766978,
-                    0.8067793,
+                    -0.2744706, -0.01613097, 0.056746617, 0.9597841, -0.0017457254, -0.124870464, -0.011375335, -0.00192535
                 ],
             },
         ];
 
         for test in tests {
             let MatrixToDualQuatTest { matrix, dual_quat } = test;
+            let round = 10_000.0;
 
-            let matrix_bone = Bone::Matrix(matrix);
+            let matrix_bone = Bone::Matrix(matrix.clone());
+            let dual_quat_bone = Bone::DualQuat(dual_quat.clone());
 
-            let expected_dual_quat_bone = Bone::DualQuat(dual_quat);
+            if let Bone::Matrix(new_matrix) = BlenderArmature::dual_quat_to_matrix(&dual_quat_bone) {
+                // Round values to remove precision errors
+                let new_matrix: Vec<f32> = new_matrix.iter().map(|x| x * round / round).collect();
+                let matrix: Vec<f32> = matrix.iter().map(|x| x * round / round).collect();
+                assert_eq!(new_matrix, matrix);
+            } else {
+                panic!();
+            }
 
-            let dual_quat_bone = BlenderArmature::matrix_to_dual_quat(&matrix_bone);
-
-            assert_eq!(dual_quat_bone, expected_dual_quat_bone);
+            if let Bone::DualQuat(new_dual_quat) = BlenderArmature::matrix_to_dual_quat(&dual_quat_bone) {
+                let new_dual_quat: Vec<f32> = new_dual_quat.iter().map(|x| x * round / round).collect();
+                let dual_quat : Vec<f32> = dual_quat.iter().map(|x| x * round / round).collect();
+                assert_eq!(new_dual_quat, dual_quat);
+            } else {
+                panic!();
+            }
         }
     }
 }
