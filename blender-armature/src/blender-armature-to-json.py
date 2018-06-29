@@ -24,8 +24,8 @@ class ExportArmatureToJSON(bpy.types.Operator):
         def main():
             armatureJSON = {
                 'actions': {},
-                'inverseBindPoses': [],
-                'jointIndex': {}
+                'inverse_bind_poses': [],
+                'joint_index': {}
             }
 
             # Get the armature that is currently active. We will be parsing it's actions
@@ -98,12 +98,12 @@ class ExportArmatureToJSON(bpy.types.Operator):
                 boneBindMatrix = activeArmature.matrix_world * poseBone.bone.matrix_local
                 boneInverseBind = boneBindMatrix.copy().inverted()
 
-                armatureJSON['inverseBindPoses'].append({'Matrix': matrixToArray(boneInverseBind)})
+                armatureJSON['inverse_bind_poses'].append({'Matrix': matrixToArray(boneInverseBind)})
 
             # Now we create the JSON for the joint name indices. The bind poses and keyframe poses are
             # arrays of index 0...numBones - 1. To look up a bone in this array you use its joint name index
             for index, boneName in enumerate(allBoneNames):
-                armatureJSON['jointIndex'][boneName] = index
+                armatureJSON['joint_index'][boneName] = index
 
             print(armatureJSON)
             print("START_ARMATURE_JSON " + bpy.data.filepath + " " + activeArmature.name)

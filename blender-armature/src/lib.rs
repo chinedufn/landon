@@ -21,11 +21,14 @@
 
 #[macro_use]
 extern crate failure;
+extern crate cgmath;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
 
+use cgmath::Matrix3;
+use cgmath::Quaternion;
 use serde_json::Error;
 use std::cmp::max;
 use std::collections::HashMap;
@@ -40,8 +43,12 @@ pub enum BlenderError {
     Stderr(String),
 }
 
+/// TODO: Use cgmath::Matrix4 instead of our own custom matrix. We'll want a custom serializer /
+/// deserializer so that we don't need to litter our JSON with the names of our Rust structs
+/// when we output it from Blender.
+///
+/// But for now it's fine to litter out JSON while we get things working..
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(test, derive(Default))]
 pub enum Bone {
     Matrix(Vec<f32>),
     DualQuat(Vec<f32>),
@@ -51,14 +58,60 @@ pub enum Bone {
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(test, derive(Default))]
 pub struct BlenderArmature {
-    pub jointIndex: HashMap<String, u8>,
-    pub inverseBindPoses: Vec<Bone>,
+    pub joint_index: HashMap<String, u8>,
+    pub inverse_bind_poses: Vec<Bone>,
     pub actions: HashMap<String, HashMap<String, Vec<Bone>>>,
 }
 
 impl BlenderArmature {
     pub fn from_json(json_str: &str) -> Result<BlenderArmature, Error> {
         serde_json::from_str(json_str)
+    }
+
+    /// Convert a matrix into a dual quaternion
+    /// https://github.com/chinedufn/mat4-to-dual-quat/blob/master/src/mat4-to-dual-quat.js
+    /// Note that we use `w, x, y, z` and not `x, y, z, w` for our quaternion representation
+    pub fn matrix_to_dual_quat(bone: &Bone) -> Bone {
+        match bone {
+            Bone::Matrix(matrix) => {
+                let mut cg_matrix_4 = [[0.0; 4]; 4];
+
+                cg_matrix_4[0].copy_from_slice(&matrix[0..4]);
+                cg_matrix_4[1].copy_from_slice(&matrix[4..8]);
+                cg_matrix_4[2].copy_from_slice(&matrix[8..12]);
+                cg_matrix_4[3].copy_from_slice(&matrix[12..16]);
+
+                let matrix4 = cgmath::Matrix4::from(cg_matrix_4);
+
+                // https://github.com/stackgl/gl-mat3/blob/master/from-mat4.js
+                let mut mat3 = [[0.0; 3]; 3];
+                let m = matrix4;
+                mat3[0].copy_from_slice(&[m[0][0], m[0][1], m[0][2]]);
+                mat3[1].copy_from_slice(&[m[1][0], m[1][1], m[1][2]]);
+                mat3[2].copy_from_slice(&[m[2][0], m[2][1], m[2][2]]);
+
+                let rotation3 = Matrix3::from(mat3);
+                let rotation_quat = Quaternion::from(rotation3);
+
+                let mut trans_vec = vec![0.0];
+                let mut t = matrix[12..15].to_vec();
+
+                trans_vec.append(&mut t);
+
+                let mut translation_vec = [0.0; 4];
+                translation_vec.copy_from_slice(&trans_vec[..]);
+
+                let trans_quat = Quaternion::from(translation_vec);
+                let trans_quat = trans_quat * rotation_quat;
+                let mut trans_quat = trans_quat * 0.5;
+
+                let mut dual_quat: Vec<f32> = rotation_quat[0..4].to_vec();
+                dual_quat.append(&mut trans_quat[..].to_vec());
+
+                Bone::DualQuat(dual_quat)
+            }
+            Bone::DualQuat(dual_quat) => Bone::DualQuat(dual_quat.to_vec()),
+        }
     }
 }
 
@@ -130,4 +183,48 @@ fn find_first_armature_after_index(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn matrix_to_dual_quat() {
+        struct MatrixToDualQuatTest {
+            matrix: Vec<f32>,
+            dual_quat: Vec<f32>,
+        }
+
+        let tests = vec![
+            MatrixToDualQuatTest {
+                matrix: vec![
+                    1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+                ],
+                dual_quat: vec![1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            },
+            MatrixToDualQuatTest {
+                matrix: vec![
+                    0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6,
+                ],
+                dual_quat: vec![
+                    0.83666,
+                    -0.089642145,
+                    0.17928427,
+                    -0.089642145,
+                    0.000000007450581,
+                    0.34661633,
+                    0.5766978,
+                    0.8067793,
+                ],
+            },
+        ];
+
+        for test in tests {
+            let MatrixToDualQuatTest { matrix, dual_quat } = test;
+
+            let matrix_bone = Bone::Matrix(matrix);
+
+            let expected_dual_quat_bone = Bone::DualQuat(dual_quat);
+
+            let dual_quat_bone = BlenderArmature::matrix_to_dual_quat(&matrix_bone);
+
+            assert_eq!(dual_quat_bone, expected_dual_quat_bone);
+        }
+    }
 }
