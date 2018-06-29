@@ -48,8 +48,6 @@ fn main() {
         .expect("Failed to execute Blender process");
 
     let blender_stdout = String::from_utf8(blender_output.stdout).unwrap();
-    fs::write("./dist/foo", blender_stdout.clone()).unwrap();
-    fs::write("/tmp/foo", blender_stdout.clone()).unwrap();
 
     let meshes = blender_mesh::parse_meshes_from_blender_stdout(&blender_stdout).unwrap();
 
@@ -86,10 +84,12 @@ bpy.ops.wm.open_mainfile(filepath="{}")"#,
 fn export_all_meshes() -> String {
     r#"
 import bpy
+
+bpy.context.scene.objects.active = None
+
 for obj in bpy.context.scene.objects:
     if obj.type == 'MESH':
-      bpy.ops.object.select_all(action='DESELECT')
-      obj.select = True
+      bpy.context.scene.objects.active = obj
       bpy.ops.import_export.mesh2json()
     "#.to_string()
 }
