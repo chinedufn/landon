@@ -1,4 +1,5 @@
 extern crate blender_mesh;
+extern crate blender_armature;
 extern crate serde_json;
 
 use std::fs;
@@ -21,17 +22,27 @@ fn main() {
         }
     }
 
-    let install_addon = include_str!("../install-addon.py");
+    rm_and_create_dir("/tmp/blender-export");
+
+    let install_mesh2json = include_str!("../install-addon.py");
+    let install_mesh2json_path = "/tmp/install-mesh-exporter.py";
+    fs::write(install_mesh2json_path, install_mesh2json).unwrap();
+
     let addon = include_str!("../blender-mesh-to-json.py");
-    let temp_install_script = "/tmp/install-mesh-exporter.py";
     let temp_addon = "/tmp/blender-mesh-to-json.py";
-    fs::write(temp_install_script, install_addon).unwrap();
+    fs::write(temp_addon, addon).unwrap();
+
+    let addon = include_str!("../blender-armature/src/blender-armature-to-json.py");
+    let temp_addon = "/tmp/blender-export/blender-armature-to-json.py";
     fs::write(temp_addon, addon).unwrap();
 
     let mut blender_process = Command::new("blender");
     let mut blender_process = blender_process
         .arg("--background")
-        .args(&["--python", temp_install_script]);
+        .args(&["--python", install_mesh2json_path])
+        // TODO: An API in our root crate for writing the script to a tmp file and giving you
+        // a link to it
+        .args(&["--python", "./blender-armature/install-armature-to-json.py"]);
 
     for blender_file in blender_files {
         println!("cargo:rerun-if-changed=../tests/{}", blender_file);
@@ -40,7 +51,7 @@ fn main() {
 
         blender_process
             .args(&["--python-expr", open_script])
-            .args(&["--python-expr", &export_all_meshes()]);
+            .args(&["--python-expr", &export_blender_data()]);
     }
 
     let blender_output = blender_process
@@ -48,19 +59,13 @@ fn main() {
         .expect("Failed to execute Blender process");
 
     let blender_stdout = String::from_utf8(blender_output.stdout).unwrap();
+    fs::write("/tmp/foobar", blender_stdout.clone());
+    fs::write("/tmp/error", String::from_utf8(blender_output.stderr).unwrap());
 
     let meshes = blender_mesh::parse_meshes_from_blender_stdout(&blender_stdout).unwrap();
+    let armatures = blender_armature::parse_armatures_from_blender_stdout(&blender_stdout).unwrap();
 
-    let output_dir = "./dist";
-    DirBuilder::new()
-        .recursive(true)
-        .create(output_dir)
-        .unwrap();
-    fs::remove_dir_all(output_dir).unwrap();
-    DirBuilder::new()
-        .recursive(true)
-        .create(output_dir)
-        .unwrap();
+    rm_and_create_dir("./dist");
 
     for (_filename, meshes) in meshes.iter() {
         for (mesh_name, mesh) in meshes.iter() {
@@ -70,6 +75,27 @@ fn main() {
             fs::write(mesh_json_filename, mesh_json).unwrap();
         }
     }
+
+    for (_filename, armatures) in armatures.iter() {
+        for (armature_name, armature) in armatures.iter() {
+            let armature_json = serde_json::to_string(armature).unwrap();
+
+            let armature_json_filename = &format!("./dist/{}.json", armature_name);
+            fs::write(armature_json_filename, armature_json).unwrap();
+        }
+    }
+}
+
+fn rm_and_create_dir (dirname: &str) {
+        DirBuilder::new()
+        .recursive(true)
+        .create(dirname)
+        .unwrap();
+    fs::remove_dir_all(dirname).unwrap();
+    DirBuilder::new()
+        .recursive(true)
+        .create(dirname)
+        .unwrap();
 }
 
 fn open_blend_file<'a>(file: &str) -> String {
@@ -81,15 +107,18 @@ bpy.ops.wm.open_mainfile(filepath="{}")"#,
     )
 }
 
-fn export_all_meshes() -> String {
+fn export_blender_data() -> String {
     r#"
 import bpy
 
 bpy.context.scene.objects.active = None
 
 for obj in bpy.context.scene.objects:
+    bpy.context.scene.objects.active = obj
+
     if obj.type == 'MESH':
-      bpy.context.scene.objects.active = obj
       bpy.ops.import_export.mesh2json()
+    if obj.type == 'ARMATURE':
+      bpy.ops.import_export.armature2json()
     "#.to_string()
 }

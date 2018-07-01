@@ -34,10 +34,7 @@ impl ShaderSystem {
     pub fn new(gl: Rc<WebGLRenderingContext>) -> ShaderSystem {
         let mut shaders = ShaderSystem::init_shaders(&gl);
 
-        ShaderSystem {
-            shaders,
-            gl,
-        }
+        ShaderSystem { shaders, gl }
     }
 
     pub fn use_program(&self, shader_type: &ShaderType) {

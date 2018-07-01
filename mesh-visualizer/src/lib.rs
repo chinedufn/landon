@@ -1,5 +1,6 @@
 #![feature(proc_macro, wasm_custom_section, wasm_import_module)]
 
+extern crate blender_armature;
 extern crate blender_mesh;
 extern crate cgmath;
 extern crate wasm_bindgen;

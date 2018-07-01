@@ -163,6 +163,8 @@ impl Renderer {
 
         self.shader_sys.use_program(&ShaderType::NonSkinned);
 
+        // TODO: Breadcrumb - armature.buffer_data() to buffer the bone quaternions into the GPU
+
         mesh.render(
             &self.gl,
             self.shader_sys.get_program(&ShaderType::NonSkinned),
