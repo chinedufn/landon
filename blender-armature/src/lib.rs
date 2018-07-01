@@ -33,6 +33,8 @@ use serde_json::Error;
 use std::cmp::max;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use cgmath::Matrix4;
+use std::ops::Mul;
 
 /// Something went wrong in the Blender child process that was trying to parse your armature data.
 #[derive(Debug, Fail)]
@@ -49,6 +51,7 @@ pub enum BlenderError {
 ///
 /// But for now it's fine to litter out JSON while we get things working..
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(Clone))]
 pub enum Bone {
     Matrix(Vec<f32>),
     DualQuat(Vec<f32>),
@@ -56,12 +59,14 @@ pub enum Bone {
 
 /// All of the data about a Blender armature
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(test, derive(Default))]
+#[cfg_attr(test, derive(Default, Clone))]
 pub struct BlenderArmature {
     pub joint_index: HashMap<String, u8>,
     pub inverse_bind_poses: Vec<Bone>,
     // TODO: Generic type instead of string for your action names so that you can have an enum
     // for your action names ... ?
+    // TODO: Inner HashMap should have a float key not a string since it is a time in seconds
+    // but you can't have floats as keys so need a workaround.
     pub actions: HashMap<String, HashMap<String, Vec<Bone>>>,
 }
 
@@ -77,21 +82,11 @@ impl BlenderArmature {
         match bone {
             Bone::DualQuat(dual_quat) => Bone::DualQuat(dual_quat.to_vec()),
             Bone::Matrix(matrix) => {
-                let mut cg_matrix_4 = [[0.0; 4]; 4];
-
-                cg_matrix_4[0].copy_from_slice(&matrix[0..4]);
-                cg_matrix_4[1].copy_from_slice(&matrix[4..8]);
-                cg_matrix_4[2].copy_from_slice(&matrix[8..12]);
-                cg_matrix_4[3].copy_from_slice(&matrix[12..16]);
-
-                let matrix4 = cgmath::Matrix4::from(cg_matrix_4);
+                let mut cg_matrix_4 = BlenderArmature::matrix_array_to_slices(&matrix);
+                let matrix4 = Matrix4::from(cg_matrix_4);
 
                 // https://github.com/stackgl/gl-mat3/blob/master/from-mat4.js
-                let mut mat3 = [[0.0; 3]; 3];
-                let m = matrix4;
-                mat3[0].copy_from_slice(&[m[0][0], m[0][1], m[0][2]]);
-                mat3[1].copy_from_slice(&[m[1][0], m[1][1], m[1][2]]);
-                mat3[2].copy_from_slice(&[m[2][0], m[2][1], m[2][2]]);
+                let mut mat3 = BlenderArmature::matrix4_to_mat3_array(matrix4);
 
                 let rotation3 = Matrix3::from(mat3);
                 let rotation_quat = Quaternion::from(rotation3);
@@ -145,6 +140,81 @@ impl BlenderArmature {
                 Bone::Matrix(matrix)
             }
         }
+    }
+
+    fn matrix_array_to_slices(matrix: &Vec<f32>) -> [[f32; 4]; 4] {
+        let mut slices = [[0.0; 4]; 4];
+
+        slices[0].copy_from_slice(&matrix[0..4]);
+        slices[1].copy_from_slice(&matrix[4..8]);
+        slices[2].copy_from_slice(&matrix[8..12]);
+        slices[3].copy_from_slice(&matrix[12..16]);
+
+        slices
+    }
+
+    fn matrix4_to_mat3_array(mat4: Matrix4<f32>) -> [[f32; 3]; 3] {
+        // https://github.com/stackgl/gl-mat3/blob/master/from-mat4.js
+        let mut mat3 = [[0.0; 3]; 3];
+        let m = mat4;
+        mat3[0].copy_from_slice(&[m[0][0], m[0][1], m[0][2]]);
+        mat3[1].copy_from_slice(&[m[1][0], m[1][1], m[1][2]]);
+        mat3[2].copy_from_slice(&[m[2][0], m[2][1], m[2][2]]);
+
+        mat3
+    }
+}
+
+impl BlenderArmature {
+    pub fn apply_inverse_bind_poses(&mut self) {
+        for (_name, action) in self.actions.iter_mut() {
+            for (_keyframe, bones) in action.iter_mut() {
+                for (index, bone) in bones.iter_mut().enumerate() {
+                    bone.multiply(&mut self.inverse_bind_poses[index]);
+                }
+            }
+        }
+    }
+}
+//        let model_matrix = Matrix4::from_translation(Vector3::new(0.0, 0.0, 0.0));
+//
+//        let mut mv_matrix = Matrix4::look_at(
+//            Point3::new(1.0, 2.0, 2.0),
+//            Point3::new(0.0, 0.0, 0.0),
+//            Vector3::new(0.0, 1.0, 0.0),
+//        );
+//
+//        // TODO: Breadcrumb - add normal and point lighting to shader..
+//
+//        // TODO: Multiply without new allocation
+//        mv_matrix = mv_matrix * model_matrix;
+//
+//        let mv_matrix = vec_from_matrix4(&mv_matrix);
+
+
+impl Bone {
+    fn multiply (&mut self, rhs: &mut Bone) {
+        match self {
+            Bone::Matrix(ref mut lhs_matrix) => {
+                match rhs {
+                    Bone::Matrix(ref mut rhs_matrix) => {
+                        let lhs_slices = BlenderArmature::matrix_array_to_slices(lhs_matrix);
+                        let lhs_mat4 = Matrix4::from(lhs_slices);
+
+                        let rhs_slices = BlenderArmature::matrix_array_to_slices(rhs_matrix);
+                        let rhs_mat4 = Matrix4::from(rhs_slices);
+
+                        let multiplied = lhs_mat4 * rhs_mat4;
+                        let multiplied = vec_from_matrix4(&multiplied);
+
+                        lhs_matrix.copy_from_slice(&multiplied[..]);
+                    }
+                    Bone::DualQuat(_) => {}
+
+                }
+            },
+            Bone::DualQuat(_) => {}
+        };
     }
 }
 
@@ -212,6 +282,18 @@ fn find_first_armature_after_index(
 
     return None;
 }
+
+fn vec_from_matrix4(mat4: &Matrix4<f32>) -> Vec<f32> {
+    // TODO: Accept output vec instead of re-allocating
+    let mut vec = vec![];
+
+    for index in 0..16 {
+        vec.push(mat4[index / 4][index % 4]);
+    }
+
+    vec
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -289,5 +371,54 @@ mod tests {
                 panic!();
             }
         }
+    }
+
+    #[test]
+    fn applying_inv_bind_poses() {
+        let mut start_actions = HashMap::new();
+        let mut keyframes = HashMap::new();
+        keyframes.insert(
+            "1.0".to_string(),
+            vec![Bone::Matrix(concat_vecs!(
+                vec![1.0, 0.0, 0.0, 0.0],
+                vec![1.0, 0.0, 0.0, 0.0],
+                vec![1.0, 0.0, 0.0, 0.0],
+                vec![1.0, 0.0, 0.0, 0.0]
+            ))],
+        );
+        start_actions.insert("Fly".to_string(), keyframes);
+
+        let mut start_armature = BlenderArmature {
+            actions: start_actions,
+            inverse_bind_poses: vec![Bone::Matrix(concat_vecs!(
+                vec![1.0, 0.0, 0.0, 0.0],
+                vec![1.0, 0.0, 0.0, 0.0],
+                vec![1.0, 0.0, 0.0, 0.0],
+                vec![1.0, 0.0, 5.0, 0.0]
+            ))],
+            ..BlenderArmature::default()
+        };
+
+        start_armature.apply_inverse_bind_poses();
+
+        let mut end_actions = HashMap::new();
+        let mut keyframes = HashMap::new();
+        keyframes.insert(
+            "1.0".to_string(),
+            vec![Bone::Matrix(concat_vecs!(
+                vec![1.0, 0.0, 0.0, 0.0],
+                vec![1.0, 0.0, 0.0, 0.0],
+                vec![1.0, 0.0, 0.0, 0.0],
+                vec![6.0, 0.0, 0.0, 0.0]
+            ))],
+        );
+        end_actions.insert("Fly".to_string(), keyframes);
+
+        let expected_armature = BlenderArmature {
+            actions: end_actions,
+            ..start_armature.clone()
+        };
+
+        assert_eq!(start_armature, expected_armature);
     }
 }

@@ -39,6 +39,7 @@ impl Assets {
 
             if let Some(_) = mesh.armature_name {
                 mesh.set_groups_per_vertex(4);
+                mesh.apply_inverse_bind_poses();
             }
 
             meshes_clone
