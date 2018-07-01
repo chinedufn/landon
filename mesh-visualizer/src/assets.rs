@@ -59,9 +59,9 @@ impl Assets {
         let save_model_in_state = move |armature_name: String, armature_json: String| {
             let mut armature = BlenderArmature::from_json(&armature_json).unwrap();
 
-//            armature.combine_vertex_indices();
-//            armature.triangulate();
-//            armature.y_up();
+            //            armature.combine_vertex_indices();
+            //            armature.triangulate();
+            //            armature.y_up();
 
             armatures_clone
                 .borrow_mut()

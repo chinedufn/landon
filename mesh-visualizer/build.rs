@@ -1,5 +1,5 @@
-extern crate blender_mesh;
 extern crate blender_armature;
+extern crate blender_mesh;
 extern crate serde_json;
 
 use std::fs;
@@ -60,7 +60,10 @@ fn main() {
 
     let blender_stdout = String::from_utf8(blender_output.stdout).unwrap();
     fs::write("/tmp/foobar", blender_stdout.clone());
-    fs::write("/tmp/error", String::from_utf8(blender_output.stderr).unwrap());
+    fs::write(
+        "/tmp/error",
+        String::from_utf8(blender_output.stderr).unwrap(),
+    );
 
     let meshes = blender_mesh::parse_meshes_from_blender_stdout(&blender_stdout).unwrap();
     let armatures = blender_armature::parse_armatures_from_blender_stdout(&blender_stdout).unwrap();
@@ -86,16 +89,10 @@ fn main() {
     }
 }
 
-fn rm_and_create_dir (dirname: &str) {
-        DirBuilder::new()
-        .recursive(true)
-        .create(dirname)
-        .unwrap();
+fn rm_and_create_dir(dirname: &str) {
+    DirBuilder::new().recursive(true).create(dirname).unwrap();
     fs::remove_dir_all(dirname).unwrap();
-    DirBuilder::new()
-        .recursive(true)
-        .create(dirname)
-        .unwrap();
+    DirBuilder::new().recursive(true).create(dirname).unwrap();
 }
 
 fn open_blend_file<'a>(file: &str) -> String {

@@ -4,27 +4,60 @@ use cgmath;
 use cgmath::Matrix4;
 use cgmath::Point3;
 use cgmath::Vector3;
+use shader::Shader;
 use shader::ShaderSystem;
 use shader::ShaderType;
 use std::f32::consts::PI;
 use std::rc::Rc;
+use web_apis::log;
+use web_apis::WebGLBuffer;
 use web_apis::WebGLProgram;
 use web_apis::WebGLRenderingContext;
 use State;
+
+// Temporarily using u16's until I can get GLbitfield / Glenum etc working
+static gl_COLOR_BUFFER_BIT: u16 = 16384;
+static gl_DEPTH_BUFFER_BIT: u16 = 256;
+// color_buffer_bit | depth_buffer_bit
+static BITFIELD: u16 = 16640;
+
+static gl_ARRAY_BUFFER: u16 = 34962;
+static gl_ELEMENT_ARRAY_BUFFER: u16 = 34963;
+static gl_FLOAT: u16 = 5126;
+static gl_STATIC_DRAW: u16 = 35044;
 
 pub struct Renderer {
     gl: Rc<WebGLRenderingContext>,
     assets: Assets,
     shader_sys: ShaderSystem,
     state: Rc<State>,
+
 }
 
 trait Render {
     fn shader_type(&self) -> ShaderType;
-    fn render(&self, gl: &WebGLRenderingContext, shader_program: &WebGLProgram);
+    fn render(&self, gl: &WebGLRenderingContext, shader_program: &Shader);
+    fn buffer_f32_data(
+        &self,
+        gl: &WebGLRenderingContext,
+        buf: &WebGLBuffer,
+        // TODO: &Vec<f32>
+        data: Vec<f32>,
+        attrib_loc: u16,
+        size: u8
+    ) {
+        gl.bind_buffer(gl_ARRAY_BUFFER, &buf);
+        gl.buffer_f32_data(
+            gl_ARRAY_BUFFER,
+            data,
+            gl_STATIC_DRAW,
+        );
+        gl.vertex_attrib_pointer(attrib_loc, size, gl_FLOAT, false, 0, 0);
+    }
 }
 trait BlenderMeshRender {
-    fn render_non_skinned(&self, gl: &WebGLRenderingContext, shader_program: &WebGLProgram) {}
+    fn render_non_skinned(&self, gl: &WebGLRenderingContext, shader_program: &Shader);
+    fn render_dual_quat_skinned(&self, gl: &WebGLRenderingContext, shader_program: &Shader);
 }
 
 struct attribute<T>(T);
@@ -39,33 +72,32 @@ struct NonSkinnedRender {
 
 impl Render for BlenderMesh {
     fn shader_type(&self) -> ShaderType {
-        ShaderType::NonSkinned
-    }
-    fn render(&self, gl: &WebGLRenderingContext, shader_program: &WebGLProgram) {
         if let Some(_) = self.armature_name {
-            // TODO: Render skinned mesh in this case
-            self.render_non_skinned(&gl, &shader_program);
+            // ShaderType::DualQuatSkin
+            ShaderType::NonSkinned
         } else {
-            self.render_non_skinned(&gl, &shader_program);
+            ShaderType::NonSkinned
+        }
+    }
+    fn render(&self, gl: &WebGLRenderingContext, shader: &Shader) {
+        if let Some(_) = self.armature_name {
+            //            self.render_dual_quat_skinned(&gl, &shader_program);
+            self.render_non_skinned(&gl, &shader);
+        } else {
+            self.render_non_skinned(&gl, &shader);
         }
     }
 }
 
 impl BlenderMeshRender for BlenderMesh {
-    fn render_non_skinned(&self, gl: &WebGLRenderingContext, shader_program: &WebGLProgram) {
-        let vert_pos_attrib = gl.get_attrib_location(&shader_program, "aVertexPos");
-        gl.enable_vertex_attrib_array(vert_pos_attrib);
+    fn render_non_skinned(&self, gl: &WebGLRenderingContext, shader: &Shader) {
+        let vertex_pos_attrib = gl.get_attrib_location(&shader.program, "aVertexPosition");
+        gl.enable_vertex_attrib_array(vertex_pos_attrib);
 
-        let vert_normal_attrib = gl.get_attrib_location(&shader_program, "aVertexNormal");
-        gl.enable_vertex_attrib_array(vert_normal_attrib);
+        let vertex_normal_attrib = gl.get_attrib_location(&shader.program, "aVertexNormal");
+        gl.enable_vertex_attrib_array(vertex_normal_attrib);
 
-        // Temporarily using u16's until I can get GLbitfield / Glenum etc working
-        let color_buffer_bit = 16384;
-        let depth_buffer_bit = 256;
-        // color_buffer_bit | depth_buffer_bit
-        let bitfield = 16640;
-
-        gl.clear(bitfield);
+        gl.clear(BITFIELD);
 
         let fovy = cgmath::Rad(PI / 3.0);
         let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
@@ -86,29 +118,103 @@ impl BlenderMeshRender for BlenderMesh {
 
         let mv_matrix = vec_from_matrix4(&mv_matrix);
 
-        let p_matrix_uni = gl.get_uniform_location(&shader_program, "uPMatrix");
-        let mv_matrix_uni = gl.get_uniform_location(&shader_program, "uMVMatrix");
+        let p_matrix_uni = gl.get_uniform_location(&shader.program, "uPMatrix");
+        let mv_matrix_uni = gl.get_uniform_location(&shader.program, "uMVMatrix");
 
         gl.uniform_matrix_4fv(p_matrix_uni, false, p_matrix);
         gl.uniform_matrix_4fv(mv_matrix_uni, false, mv_matrix);
 
-        let gl_array_buffer = 34962;
-        let gl_ELEMENT_ARRAY_BUFFER = 34963;
-        let gl_FLOAT = 5126;
+        self.buffer_f32_data(
+            &gl,
+            &shader.buffers[0],
+            self.vertex_positions.clone(),
+            vertex_pos_attrib,
+            3,
+        );
+        self.buffer_f32_data(
+            &gl,
+            &shader.buffers[1],
+            self.vertex_normals.clone(),
+            vertex_normal_attrib,
+            3,
+        );
 
-        let static_draw = 35044;
+        let index_buffer = gl.create_buffer();
+        gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
-        let vert_pos_buffer = gl.create_buffer();
-        gl.bind_buffer(gl_array_buffer, &vert_pos_buffer);
-        // TODO: Remove clone
-        gl.buffer_f32_data(gl_array_buffer, self.vertex_positions.clone(), static_draw);
-        gl.vertex_attrib_pointer(vert_pos_attrib, 3, gl_FLOAT, false, 0, 0);
+        gl.buffer_u16_data(
+            gl_ELEMENT_ARRAY_BUFFER,
+            self.vertex_position_indices.clone(),
+            gl_STATIC_DRAW,
+        );
 
-        let vert_normal_buffer = gl.create_buffer();
-        gl.bind_buffer(gl_array_buffer, &vert_normal_buffer);
-        // TODO: Remove clone
-        gl.buffer_f32_data(gl_array_buffer, self.vertex_normals.clone(), static_draw);
-        gl.vertex_attrib_pointer(vert_normal_attrib, 3, gl_FLOAT, false, 0, 0);
+        let gl_TRIANGLES = 4;
+        let gl_UNSIGNED_SHORT = 5123;
+
+        gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
+
+        gl.draw_elements(
+            gl_TRIANGLES,
+            self.vertex_position_indices.len() as u16,
+            gl_UNSIGNED_SHORT,
+            0,
+        );
+    }
+
+    fn render_dual_quat_skinned(&self, gl: &WebGLRenderingContext, shader: &Shader) {
+        let vertex_pos_attrib = gl.get_attrib_location(&shader.program, "aVertexPosition");
+        gl.enable_vertex_attrib_array(vertex_pos_attrib);
+
+        let vertex_normal_attrib = gl.get_attrib_location(&shader.program, "aVertexNormal");
+        gl.enable_vertex_attrib_array(vertex_normal_attrib);
+
+        let joint_index_attrib = gl.get_attrib_location(&shader.program, "aJointIndex");
+        gl.enable_vertex_attrib_array(joint_index_attrib);
+
+        let joint_weight_attrib = gl.get_attrib_location(&shader.program, "aJointWeight");
+        gl.enable_vertex_attrib_array(joint_weight_attrib);
+
+        gl.clear(BITFIELD);
+
+        let fovy = cgmath::Rad(PI / 3.0);
+        let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
+        let mut p_matrix = vec_from_matrix4(&perspective);
+
+        let model_matrix = Matrix4::from_translation(Vector3::new(0.0, 0.0, 0.0));
+
+        let mut mv_matrix = Matrix4::look_at(
+            Point3::new(1.0, 2.0, 2.0),
+            Point3::new(0.0, 0.0, 0.0),
+            Vector3::new(0.0, 1.0, 0.0),
+        );
+
+        // TODO: Breadcrumb - add normal and point lighting to shader..
+
+        // TODO: Multiply without new allocation
+        mv_matrix = mv_matrix * model_matrix;
+
+        let mv_matrix = vec_from_matrix4(&mv_matrix);
+
+        let p_matrix_uni = gl.get_uniform_location(&shader.program, "uPMatrix");
+        let mv_matrix_uni = gl.get_uniform_location(&shader.program, "uMVMatrix");
+
+        gl.uniform_matrix_4fv(p_matrix_uni, false, p_matrix);
+        gl.uniform_matrix_4fv(mv_matrix_uni, false, mv_matrix);
+
+        self.buffer_f32_data(
+            &gl,
+            &shader.buffers[0],
+            self.vertex_positions.clone(),
+            vertex_pos_attrib,
+            3,
+        );
+        self.buffer_f32_data(
+            &gl,
+            &shader.buffers[1],
+            self.vertex_normals.clone(),
+            vertex_normal_attrib,
+            3,
+        );
 
         let index_buffer = gl.create_buffer();
         gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
@@ -117,7 +223,7 @@ impl BlenderMeshRender for BlenderMesh {
         gl.buffer_u16_data(
             gl_ELEMENT_ARRAY_BUFFER,
             self.vertex_position_indices.clone(),
-            static_draw,
+            gl_STATIC_DRAW
         );
 
         let gl_TRIANGLES = 4;
@@ -161,14 +267,11 @@ impl Renderer {
 
         let mesh = mesh.unwrap();
 
-        self.shader_sys.use_program(&ShaderType::NonSkinned);
+        self.shader_sys.use_program(&mesh.shader_type());
 
         // TODO: Breadcrumb - armature.buffer_data() to buffer the bone quaternions into the GPU
 
-        mesh.render(
-            &self.gl,
-            self.shader_sys.get_program(&ShaderType::NonSkinned),
-        );
+        mesh.render(&self.gl, self.shader_sys.get_shader(&mesh.shader_type()));
     }
 }
 

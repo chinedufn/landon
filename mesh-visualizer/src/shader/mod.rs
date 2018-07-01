@@ -4,6 +4,7 @@ use shader::ShaderType::*;
 use std::collections::HashMap;
 use std::rc::Rc;
 use web_apis::log;
+use web_apis::WebGLBuffer;
 use web_apis::WebGLProgram;
 use web_apis::WebGLRenderingContext;
 
@@ -26,7 +27,11 @@ pub enum ShaderType {
 }
 
 pub struct Shader {
-    program: WebGLProgram,
+    pub program: WebGLProgram,
+    // TODO: We don't need buffers for each shader.. shaders can share one set of
+    // buffers. This should be a &Vec<WebGLBuffer> but need to figure out the lifetimes
+    // w/ wasm-bindgen
+    pub buffers: Vec<WebGLBuffer>,
 }
 
 // TODO: Breadcrumb - get our F rendering using our shader system
@@ -42,8 +47,8 @@ impl ShaderSystem {
             .use_program(&self.shaders.get(shader_type).unwrap().program)
     }
 
-    pub fn get_program<'a>(&'a self, shader_type: &ShaderType) -> &'a WebGLProgram {
-        &self.shaders.get(shader_type).unwrap().program
+    pub fn get_shader<'a>(&'a self, shader_type: &ShaderType) -> &'a Shader {
+        &self.shaders.get(shader_type).unwrap()
     }
 
     fn init_shaders(gl: &WebGLRenderingContext) -> HashMap<ShaderType, Shader> {
@@ -59,16 +64,33 @@ impl ShaderSystem {
         let non_skinned_program =
             ShaderSystem::create_shader_program(&gl, non_skinned_vertex, non_skinned_fragment);
 
+        let buffers = vec![
+            gl.create_buffer(),
+            gl.create_buffer(),
+            gl.create_buffer(),
+            gl.create_buffer(),
+        ];
+
         shaders.insert(
             DualQuatSkin,
             Shader {
                 program: dual_quat_program,
+                buffers,
             },
         );
+
+        let buffers = vec![
+            gl.create_buffer(),
+            gl.create_buffer(),
+            gl.create_buffer(),
+            gl.create_buffer(),
+        ];
+
         shaders.insert(
             NonSkinned,
             Shader {
                 program: non_skinned_program,
+                buffers,
             },
         );
 

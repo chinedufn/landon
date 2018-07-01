@@ -1,6 +1,5 @@
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
-attribute vec2 aWeight;
 
 attribute vec4 aJointIndex;
 attribute vec4 aJointWeight;
@@ -13,8 +12,6 @@ uniform vec3 uDirectionalColor;
 uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
 
-// TODO: Generate this shader at runtime with proper num joints
-// TODO: Stopped working on mobile when we had a combined array length of > a few dozen
 uniform vec4 boneRotQuaternions[16];
 uniform vec4 boneTransQuaternions[16];
 

@@ -84,6 +84,9 @@ class MeshToJSON(bpy.types.Operator):
 
             mesh_json['num_groups_for_each_vertex'].append(num_groups)
 
+        if mesh.parent != None and mesh.parent.type == 'ARMATURE':
+            mesh_json['armature_name'] = mesh.parent.name
+
         # TODO: Add unit test for no mesh currently selected
         # if mesh == None or mesh.type != 'MESH':
         #     print("__NO_MESH_SELECTED__", file=sys.stderr)
