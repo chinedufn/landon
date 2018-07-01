@@ -49,20 +49,6 @@ trait Render {
         gl.buffer_f32_data(gl_ARRAY_BUFFER, data, gl_STATIC_DRAW);
         gl.vertex_attrib_pointer(attrib_loc, size, gl_FLOAT, false, 0, 0);
     }
-    // TODO: Generics
-    fn buffer_u8_data(
-        &self,
-        gl: &WebGLRenderingContext,
-        buf: &WebGLBuffer,
-        // TODO: &Vec<f32>
-        data: Vec<u8>,
-        attrib_loc: u16,
-        size: u8,
-    ) {
-        gl.bind_buffer(gl_ARRAY_BUFFER, &buf);
-        gl.buffer_u8_data(gl_ARRAY_BUFFER, data, gl_STATIC_DRAW);
-        gl.vertex_attrib_pointer(attrib_loc, size, gl_FLOAT, false, 0, 0);
-    }
 }
 trait BlenderMeshRender {
     fn render_non_skinned(&self, gl: &WebGLRenderingContext, shader_program: &Shader);
@@ -202,11 +188,11 @@ impl BlenderMeshRender for BlenderMesh {
         let norms = self.vertex_normals.clone();
         self.buffer_f32_data(&gl, &shader.buffers[1], norms, vertex_normal_attrib, 3);
 
-        let joints = self.vertex_group_indices.as_ref().unwrap().clone();
-        self.buffer_u8_data(&gl, &shader.buffers[2], joints, joint_index_attrib, 4);
+        let joints = vec_u8_to_f32(self.vertex_group_indices.as_ref().unwrap().clone());
+        self.buffer_f32_data(&gl, &shader.buffers[2], joints, joint_index_attrib, 4);
 
-        let weights = self.vertex_group_indices.as_ref().unwrap().clone();
-        self.buffer_u8_data(&gl, &shader.buffers[3], weights, joint_weight_attrib, 4);
+        let weights = vec_u8_to_f32(self.vertex_group_indices.as_ref().unwrap().clone());
+        self.buffer_f32_data(&gl, &shader.buffers[3], weights, joint_weight_attrib, 4);
 
         let index_buffer = gl.create_buffer();
         gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
@@ -276,4 +262,8 @@ fn vec_from_matrix4(mat4: &Matrix4<f32>) -> Vec<f32> {
     }
 
     vec
+}
+
+fn vec_u8_to_f32(vec: Vec<u8>) -> Vec<f32> {
+    vec.iter().map(|j| *j as f32).collect()
 }

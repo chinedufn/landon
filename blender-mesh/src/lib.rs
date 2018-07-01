@@ -332,7 +332,6 @@ impl BlenderMesh {
                         let mut vertex_indices = vec![];
                         let mut vertex_weights = vec![];
 
-                        eprintln!("current_index = {:#?}", current_index);
                         for index in current_index..(current_index + *group_count as u32) {
                             vertex_indices.push(index);
                             vertex_weights.push(weights[index as usize]);
@@ -345,8 +344,10 @@ impl BlenderMesh {
                                 .unwrap()
                         });
 
-                        let mut vertex_indices: Vec<u8> =
-                            vertex_indices.iter().map(|i| indices[*i as usize]).collect();
+                        let mut vertex_indices: Vec<u8> = vertex_indices
+                            .iter()
+                            .map(|i| indices[*i as usize])
+                            .collect();
 
                         vertex_indices.resize(count as usize, 0);
                         vertex_weights.resize(count as usize, 0.0);

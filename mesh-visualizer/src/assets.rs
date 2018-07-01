@@ -38,7 +38,7 @@ impl Assets {
             mesh.y_up();
 
             if let Some(_) = mesh.armature_name {
-                mesh.set_groups_per_vertex(3);
+                mesh.set_groups_per_vertex(4);
             }
 
             meshes_clone
