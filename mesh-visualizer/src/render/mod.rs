@@ -26,6 +26,9 @@ static gl_ELEMENT_ARRAY_BUFFER: u16 = 34963;
 static gl_FLOAT: u16 = 5126;
 static gl_STATIC_DRAW: u16 = 35044;
 
+static gl_TRIANGLES: u8 = 4;
+static gl_UNSIGNED_SHORT: u16 = 5123;
+
 pub struct Renderer {
     gl: Rc<WebGLRenderingContext>,
     assets: Assets,
@@ -126,20 +129,13 @@ impl BlenderMeshRender for BlenderMesh {
         let index_buffer = gl.create_buffer();
         gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
-        let ind = self.vertex_position_indices.clone();
-        gl.buffer_u16_data(gl_ELEMENT_ARRAY_BUFFER, ind, gl_STATIC_DRAW);
-
-        let gl_TRIANGLES = 4;
-        let gl_UNSIGNED_SHORT = 5123;
+        let pos_idx = self.vertex_position_indices.clone();
+        gl.buffer_u16_data(gl_ELEMENT_ARRAY_BUFFER, pos_idx, gl_STATIC_DRAW);
 
         gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
-        gl.draw_elements(
-            gl_TRIANGLES,
-            self.vertex_position_indices.len() as u16,
-            gl_UNSIGNED_SHORT,
-            0,
-        );
+        let pos_idx_len = self.vertex_position_indices.len();
+        gl.draw_elements(gl_TRIANGLES, pos_idx_len as u16, gl_UNSIGNED_SHORT, 0);
     }
 
     fn render_dual_quat_skinned(&self, gl: &WebGLRenderingContext, shader: &Shader) {
@@ -198,23 +194,13 @@ impl BlenderMeshRender for BlenderMesh {
         gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
         // TODO: Remove clone
-        gl.buffer_u16_data(
-            gl_ELEMENT_ARRAY_BUFFER,
-            self.vertex_position_indices.clone(),
-            gl_STATIC_DRAW,
-        );
-
-        let gl_TRIANGLES = 4;
-        let gl_UNSIGNED_SHORT = 5123;
+        let pos_idx = self.vertex_position_indices.clone();
+        gl.buffer_u16_data(gl_ELEMENT_ARRAY_BUFFER, pos_idx, gl_STATIC_DRAW);
 
         gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
-        gl.draw_elements(
-            gl_TRIANGLES,
-            self.vertex_position_indices.len() as u16,
-            gl_UNSIGNED_SHORT,
-            0,
-        );
+        let pos_idx_len = self.vertex_position_indices.len();
+        gl.draw_elements(gl_TRIANGLES, pos_idx_len as u16, gl_UNSIGNED_SHORT, 0);
     }
 }
 
