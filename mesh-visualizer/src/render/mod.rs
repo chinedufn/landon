@@ -31,7 +31,6 @@ pub struct Renderer {
     assets: Assets,
     shader_sys: ShaderSystem,
     state: Rc<State>,
-
 }
 
 trait Render {
@@ -44,14 +43,24 @@ trait Render {
         // TODO: &Vec<f32>
         data: Vec<f32>,
         attrib_loc: u16,
-        size: u8
+        size: u8,
     ) {
         gl.bind_buffer(gl_ARRAY_BUFFER, &buf);
-        gl.buffer_f32_data(
-            gl_ARRAY_BUFFER,
-            data,
-            gl_STATIC_DRAW,
-        );
+        gl.buffer_f32_data(gl_ARRAY_BUFFER, data, gl_STATIC_DRAW);
+        gl.vertex_attrib_pointer(attrib_loc, size, gl_FLOAT, false, 0, 0);
+    }
+    // TODO: Generics
+    fn buffer_u8_data(
+        &self,
+        gl: &WebGLRenderingContext,
+        buf: &WebGLBuffer,
+        // TODO: &Vec<f32>
+        data: Vec<u8>,
+        attrib_loc: u16,
+        size: u8,
+    ) {
+        gl.bind_buffer(gl_ARRAY_BUFFER, &buf);
+        gl.buffer_u8_data(gl_ARRAY_BUFFER, data, gl_STATIC_DRAW);
         gl.vertex_attrib_pointer(attrib_loc, size, gl_FLOAT, false, 0, 0);
     }
 }
@@ -124,29 +133,17 @@ impl BlenderMeshRender for BlenderMesh {
         gl.uniform_matrix_4fv(p_matrix_uni, false, p_matrix);
         gl.uniform_matrix_4fv(mv_matrix_uni, false, mv_matrix);
 
-        self.buffer_f32_data(
-            &gl,
-            &shader.buffers[0],
-            self.vertex_positions.clone(),
-            vertex_pos_attrib,
-            3,
-        );
-        self.buffer_f32_data(
-            &gl,
-            &shader.buffers[1],
-            self.vertex_normals.clone(),
-            vertex_normal_attrib,
-            3,
-        );
+        let pos = self.vertex_positions.clone();
+        self.buffer_f32_data(&gl, &shader.buffers[0], pos, vertex_pos_attrib, 3);
+
+        let norms = self.vertex_normals.clone();
+        self.buffer_f32_data(&gl, &shader.buffers[1], norms, vertex_normal_attrib, 3);
 
         let index_buffer = gl.create_buffer();
         gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
-        gl.buffer_u16_data(
-            gl_ELEMENT_ARRAY_BUFFER,
-            self.vertex_position_indices.clone(),
-            gl_STATIC_DRAW,
-        );
+        let ind = self.vertex_position_indices.clone();
+        gl.buffer_u16_data(gl_ELEMENT_ARRAY_BUFFER, ind, gl_STATIC_DRAW);
 
         let gl_TRIANGLES = 4;
         let gl_UNSIGNED_SHORT = 5123;
@@ -196,25 +193,23 @@ impl BlenderMeshRender for BlenderMesh {
         let mv_matrix = vec_from_matrix4(&mv_matrix);
 
         let p_matrix_uni = gl.get_uniform_location(&shader.program, "uPMatrix");
-        let mv_matrix_uni = gl.get_uniform_location(&shader.program, "uMVMatrix");
-
         gl.uniform_matrix_4fv(p_matrix_uni, false, p_matrix);
+
+        let mv_matrix_uni = gl.get_uniform_location(&shader.program, "uMVMatrix");
         gl.uniform_matrix_4fv(mv_matrix_uni, false, mv_matrix);
 
-        self.buffer_f32_data(
-            &gl,
-            &shader.buffers[0],
-            self.vertex_positions.clone(),
-            vertex_pos_attrib,
-            3,
-        );
-        self.buffer_f32_data(
-            &gl,
-            &shader.buffers[1],
-            self.vertex_normals.clone(),
-            vertex_normal_attrib,
-            3,
-        );
+
+        let pos = self.vertex_positions.clone();
+        self.buffer_f32_data(&gl, &shader.buffers[0], pos, vertex_pos_attrib, 3);
+
+        let norms = self.vertex_normals.clone();
+        self.buffer_f32_data(&gl, &shader.buffers[1], norms, vertex_normal_attrib, 3);
+
+        let joints = self.vertex_group_indices.as_ref().unwrap().clone();
+        self.buffer_u8_data(&gl, &shader.buffers[2], joints, joint_index_attrib, 3);
+
+        let weights = self.vertex_group_indices.as_ref().unwrap().clone();
+        self.buffer_u8_data(&gl, &shader.buffers[2], weights, joint_weight_attrib, 3);
 
         let index_buffer = gl.create_buffer();
         gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
@@ -223,7 +218,7 @@ impl BlenderMeshRender for BlenderMesh {
         gl.buffer_u16_data(
             gl_ELEMENT_ARRAY_BUFFER,
             self.vertex_position_indices.clone(),
-            gl_STATIC_DRAW
+            gl_STATIC_DRAW,
         );
 
         let gl_TRIANGLES = 4;

@@ -119,6 +119,13 @@ extern "C" {
         value: Vec<f32>,
     );
 
+    #[wasm_bindgen(method, js_name = uniform4fv)]
+    pub fn uniform_4fv(
+        this: &WebGLRenderingContext,
+        loc: WebGLUniformLocation,
+        value: Vec<f32>,
+    );
+
     #[wasm_bindgen(method, js_name = createBuffer)]
     pub fn create_buffer(this: &WebGLRenderingContext) -> WebGLBuffer;
 
@@ -138,6 +145,14 @@ extern "C" {
         this: &WebGLRenderingContext,
         buffer_type: u16,
         data: Vec<u16>,
+        usage: u16,
+    );
+
+    #[wasm_bindgen(method, js_name = bufferData)]
+    pub fn buffer_u8_data(
+        this: &WebGLRenderingContext,
+        buffer_type: u16,
+        data: Vec<u8>,
         usage: u16,
     );
 
