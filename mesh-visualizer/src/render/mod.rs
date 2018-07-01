@@ -82,16 +82,14 @@ struct NonSkinnedRender {
 impl Render for BlenderMesh {
     fn shader_type(&self) -> ShaderType {
         if let Some(_) = self.armature_name {
-            // ShaderType::DualQuatSkin
-            ShaderType::NonSkinned
+            ShaderType::DualQuatSkin
         } else {
             ShaderType::NonSkinned
         }
     }
     fn render(&self, gl: &WebGLRenderingContext, shader: &Shader) {
         if let Some(_) = self.armature_name {
-            //            self.render_dual_quat_skinned(&gl, &shader_program);
-            self.render_non_skinned(&gl, &shader);
+            self.render_dual_quat_skinned(&gl, &shader);
         } else {
             self.render_non_skinned(&gl, &shader);
         }
@@ -198,7 +196,6 @@ impl BlenderMeshRender for BlenderMesh {
         let mv_matrix_uni = gl.get_uniform_location(&shader.program, "uMVMatrix");
         gl.uniform_matrix_4fv(mv_matrix_uni, false, mv_matrix);
 
-
         let pos = self.vertex_positions.clone();
         self.buffer_f32_data(&gl, &shader.buffers[0], pos, vertex_pos_attrib, 3);
 
@@ -206,10 +203,10 @@ impl BlenderMeshRender for BlenderMesh {
         self.buffer_f32_data(&gl, &shader.buffers[1], norms, vertex_normal_attrib, 3);
 
         let joints = self.vertex_group_indices.as_ref().unwrap().clone();
-        self.buffer_u8_data(&gl, &shader.buffers[2], joints, joint_index_attrib, 3);
+        self.buffer_u8_data(&gl, &shader.buffers[2], joints, joint_index_attrib, 4);
 
         let weights = self.vertex_group_indices.as_ref().unwrap().clone();
-        self.buffer_u8_data(&gl, &shader.buffers[2], weights, joint_weight_attrib, 3);
+        self.buffer_u8_data(&gl, &shader.buffers[3], weights, joint_weight_attrib, 4);
 
         let index_buffer = gl.create_buffer();
         gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);

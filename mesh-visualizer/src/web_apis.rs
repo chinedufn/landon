@@ -120,11 +120,7 @@ extern "C" {
     );
 
     #[wasm_bindgen(method, js_name = uniform4fv)]
-    pub fn uniform_4fv(
-        this: &WebGLRenderingContext,
-        loc: WebGLUniformLocation,
-        value: Vec<f32>,
-    );
+    pub fn uniform_4fv(this: &WebGLRenderingContext, loc: WebGLUniformLocation, value: Vec<f32>);
 
     #[wasm_bindgen(method, js_name = createBuffer)]
     pub fn create_buffer(this: &WebGLRenderingContext) -> WebGLBuffer;

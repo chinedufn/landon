@@ -217,6 +217,19 @@ fn find_first_armature_after_index(
 mod tests {
     use super::*;
 
+    // Concatenate a series of vectors into one vector
+    macro_rules! concat_vecs {
+        ( $( $vec:expr),* ) => {
+            {
+                let mut concatenated_vec = Vec::new();
+                $(
+                    concatenated_vec.append(&mut $vec.clone());
+                )*
+                concatenated_vec
+            }
+        }
+    }
+
     // TODO: dual_quat_z_up_to_y_up... but we can just get the rendering working first
     // https://github.com/chinedufn/change-mat4-coordinate-system/blob/master/change-mat4-coordinate-system.js
 
@@ -235,34 +248,16 @@ mod tests {
                 dual_quat: vec![1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
             },
             MatrixToDualQuatTest {
-                matrix: vec![
-                    -0.8488113,
-                    -0.52869576,
-                    0.00018605776,
-                    0.0,
-                    0.52503425,
-                    -0.8428914,
-                    0.117783956,
-                    0.0,
-                    -0.06211505,
-                    0.100074045,
-                    0.99303925,
-                    0.0,
-                    0.09010744,
-                    -0.23331697,
-                    0.018946884,
-                    1.0,
-                ],
-                dual_quat: vec![
-                    -0.2744706,
-                    -0.01613097,
-                    0.056746617,
-                    0.9597841,
-                    -0.0017457254,
-                    -0.124870464,
-                    -0.011375335,
-                    -0.00192535,
-                ],
+                matrix: concat_vecs!(
+                    vec![-0.8488113, -0.52869576, 0.00018605776, 0.0],
+                    vec![0.52503425, -0.8428914, 0.117783956, 0.0],
+                    vec![-0.06211505, 0.100074045, 0.99303925, 0.0],
+                    vec![0.09010744, -0.23331697, 0.018946884, 1.0]
+                ),
+                dual_quat: concat_vecs!(
+                    vec![-0.2744706, -0.01613097, 0.056746617, 0.9597841],
+                    vec![-0.0017457254, -0.124870464, -0.011375335, -0.00192535]
+                ),
             },
         ];
 
