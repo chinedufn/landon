@@ -37,6 +37,10 @@ impl Assets {
             mesh.triangulate();
             mesh.y_up();
 
+            if let Some(_) = mesh.armature_name {
+                mesh.set_groups_per_vertex(3);
+            }
+
             meshes_clone
                 .borrow_mut()
                 .insert(mesh_name.to_string(), mesh);
@@ -59,7 +63,6 @@ impl Assets {
         let save_model_in_state = move |armature_name: String, armature_json: String| {
             let mut armature = BlenderArmature::from_json(&armature_json).unwrap();
 
-            //            armature.combine_vertex_indices();
             //            armature.triangulate();
             //            armature.y_up();
 

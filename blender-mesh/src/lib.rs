@@ -317,7 +317,7 @@ impl BlenderMesh {
         let mut normalized_group_indices = vec![];
         let mut normalized_group_weights = vec![];
 
-        let mut current_index = 0;
+        let mut current_index: u32 = 0;
 
         {
             let mut indices = self.vertex_group_indices.as_mut().unwrap();
@@ -332,7 +332,8 @@ impl BlenderMesh {
                         let mut vertex_indices = vec![];
                         let mut vertex_weights = vec![];
 
-                        for index in current_index..(current_index + group_count) {
+                        eprintln!("current_index = {:#?}", current_index);
+                        for index in current_index..(current_index + *group_count as u32) {
                             vertex_indices.push(index);
                             vertex_weights.push(weights[index as usize]);
                         }
@@ -353,7 +354,7 @@ impl BlenderMesh {
                         normalized_group_indices.append(&mut vertex_indices);
                         normalized_group_weights.append(&mut vertex_weights);
 
-                        current_index += group_count;
+                        current_index += *group_count as u32;
                         count
                     })
                     .collect(),
