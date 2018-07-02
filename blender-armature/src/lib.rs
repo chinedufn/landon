@@ -168,6 +168,7 @@ impl BlenderArmature {
 
 // TODO: These methods can be abstracted into calling a method that takes a callback
 impl BlenderArmature {
+    // TODO: another function to apply bind shape matrix?
     pub fn apply_inverse_bind_poses(&mut self) {
         for (_name, action) in self.actions.iter_mut() {
             for (_keyframe, bones) in action.iter_mut() {
@@ -405,7 +406,7 @@ mod tests {
                 vec![1.0, 0.0, 0.0, 0.0],
                 vec![0.0, 1.0, 0.0, 0.0],
                 vec![0.0, 0.0, 1.0, 0.0],
-                vec![0.0, 0.0, 2.0, 1.0]
+                vec![1.0, 2.0, 2.0, 1.0]
             ))],
         );
         start_actions.insert("Fly".to_string(), keyframes);
@@ -416,7 +417,7 @@ mod tests {
                 vec![1.0, 0.0, 0.0, 0.0],
                 vec![0.0, 1.0, 0.0, 0.0],
                 vec![0.0, 0.0, 1.0, 0.0],
-                vec![0.0, 0.0, 5.0, 1.0]
+                vec![3.0, 4.0, 5.0, 1.0]
             ))],
             ..BlenderArmature::default()
         };
@@ -431,7 +432,7 @@ mod tests {
                 vec![1.0, 0.0, 0.0, 0.0],
                 vec![0.0, 1.0, 0.0, 0.0],
                 vec![0.0, 0.0, 1.0, 0.0],
-                vec![0.0, 0.0, 7.0, 1.0]
+                vec![4.0, 6.0, 7.0, 1.0]
             ))],
         );
         end_actions.insert("Fly".to_string(), keyframes);

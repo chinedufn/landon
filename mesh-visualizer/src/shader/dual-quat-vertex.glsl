@@ -30,25 +30,25 @@ void main (void) {
     boneTransQuaternions[int(aJointIndex.w)] * aJointWeight.w;
 
   // Normalize our dual quaternion (necessary for nlerp)
-  float xRot = weightedRotQuats[0];
-  float yRot = weightedRotQuats[1];
-  float zRot = weightedRotQuats[2];
-  float wRot = weightedRotQuats[3];
+  float wRot = weightedRotQuats[0];
+  float xRot = weightedRotQuats[1];
+  float yRot = weightedRotQuats[2];
+  float zRot = weightedRotQuats[3];
   float magnitude = sqrt(xRot * xRot + yRot * yRot + zRot * zRot + wRot * wRot);
   weightedRotQuats = weightedRotQuats / magnitude;
   weightedTransQuats = weightedTransQuats / magnitude;
 
   // Convert out dual quaternion in a 4x4 matrix
   //  equation: https://www.cs.utah.edu/~ladislav/kavan07skinning/kavan07skinning.pdf
-  float xR = weightedRotQuats[0];
-  float yR = weightedRotQuats[1];
-  float zR = weightedRotQuats[2];
-  float wR = weightedRotQuats[3];
+  float wR = weightedRotQuats[0];
+  float xR = weightedRotQuats[1];
+  float yR = weightedRotQuats[2];
+  float zR = weightedRotQuats[3];
 
-  float xT = weightedTransQuats[0];
-  float yT = weightedTransQuats[1];
-  float zT = weightedTransQuats[2];
-  float wT = weightedTransQuats[3];
+  float wT = weightedTransQuats[0];
+  float xT = weightedTransQuats[1];
+  float yT = weightedTransQuats[2];
+  float zT = weightedTransQuats[3];
 
   float t0 = 2.0 * (-wT * xR + xT * wR - yT * zR + zT * yR);
   float t1 = 2.0 * (-wT * yR + xT * zR + yT * wR - zT * xR);

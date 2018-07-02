@@ -35,7 +35,7 @@ impl Assets {
 
             mesh.combine_vertex_indices();
             mesh.triangulate();
-            mesh.y_up();
+//            mesh.y_up();
 
             if let Some(_) = mesh.armature_name {
                 mesh.set_groups_per_vertex(4);
@@ -64,8 +64,8 @@ impl Assets {
             let mut armature = BlenderArmature::from_json(&armature_json).unwrap();
 
             armature.apply_inverse_bind_poses();
-            armature.actions_to_dual_quats();
             armature.transpose_actions();
+            armature.actions_to_dual_quats();
 
             armatures_clone
                 .borrow_mut()

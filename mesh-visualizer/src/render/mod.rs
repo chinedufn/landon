@@ -164,6 +164,7 @@ impl BlenderMeshRender for BlenderMesh {
             Point3::new(1.0, 2.0, 2.0),
             Point3::new(0.0, 0.0, 0.0),
             Vector3::new(0.0, 1.0, 0.0),
+
         );
 
         // TODO: Breadcrumb - add normal and point lighting to shader..
@@ -188,7 +189,7 @@ impl BlenderMeshRender for BlenderMesh {
         let joints = vec_u8_to_f32(self.vertex_group_indices.as_ref().unwrap().clone());
         self.buffer_f32_data(&gl, &shader.buffers[2], joints, joint_index_attrib, 4);
 
-        let weights = vec_u8_to_f32(self.vertex_group_indices.as_ref().unwrap().clone());
+        let weights = self.vertex_group_weights.as_ref().unwrap().clone();
         self.buffer_f32_data(&gl, &shader.buffers[3], weights, joint_weight_attrib, 4);
 
         let index_buffer = gl.create_buffer();
