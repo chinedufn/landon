@@ -28,12 +28,12 @@ extern crate serde_derive;
 extern crate serde_json;
 
 use cgmath::Matrix3;
+use cgmath::Matrix4;
 use cgmath::Quaternion;
 use serde_json::Error;
 use std::cmp::max;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use cgmath::Matrix4;
 use std::ops::Mul;
 
 /// Something went wrong in the Blender child process that was trying to parse your armature data.
@@ -176,42 +176,36 @@ impl BlenderArmature {
         }
     }
 }
-//        let model_matrix = Matrix4::from_translation(Vector3::new(0.0, 0.0, 0.0));
-//
-//        let mut mv_matrix = Matrix4::look_at(
-//            Point3::new(1.0, 2.0, 2.0),
-//            Point3::new(0.0, 0.0, 0.0),
-//            Vector3::new(0.0, 1.0, 0.0),
-//        );
-//
-//        // TODO: Breadcrumb - add normal and point lighting to shader..
-//
-//        // TODO: Multiply without new allocation
-//        mv_matrix = mv_matrix * model_matrix;
-//
-//        let mv_matrix = vec_from_matrix4(&mv_matrix);
 
+impl BlenderArmature {
+    pub fn actions_to_dual_quats (&mut self) {
+        for (_, keyframe) in self.actions.iter_mut() {
+            for (_, bones) in keyframe.iter_mut() {
+                for bone in bones.iter_mut() {
+                    *bone = BlenderArmature::matrix_to_dual_quat(bone);
+                }
+            }
+        }
+    }
+}
 
 impl Bone {
-    fn multiply (&mut self, rhs: &mut Bone) {
+    fn multiply(&mut self, rhs: &mut Bone) {
         match self {
-            Bone::Matrix(ref mut lhs_matrix) => {
-                match rhs {
-                    Bone::Matrix(ref mut rhs_matrix) => {
-                        let lhs_slices = BlenderArmature::matrix_array_to_slices(lhs_matrix);
-                        let lhs_mat4 = Matrix4::from(lhs_slices);
+            Bone::Matrix(ref mut lhs_matrix) => match rhs {
+                Bone::Matrix(ref mut rhs_matrix) => {
+                    let lhs_slices = BlenderArmature::matrix_array_to_slices(lhs_matrix);
+                    let lhs_mat4 = Matrix4::from(lhs_slices);
 
-                        let rhs_slices = BlenderArmature::matrix_array_to_slices(rhs_matrix);
-                        let rhs_mat4 = Matrix4::from(rhs_slices);
+                    let rhs_slices = BlenderArmature::matrix_array_to_slices(rhs_matrix);
+                    let rhs_mat4 = Matrix4::from(rhs_slices);
 
-                        let multiplied = lhs_mat4 * rhs_mat4;
-                        let multiplied = vec_from_matrix4(&multiplied);
+                    let multiplied = lhs_mat4 * rhs_mat4;
+                    let multiplied = vec_from_matrix4(&multiplied);
 
-                        lhs_matrix.copy_from_slice(&multiplied[..]);
-                    }
-                    Bone::DualQuat(_) => {}
-
+                    lhs_matrix.copy_from_slice(&multiplied[..]);
                 }
+                Bone::DualQuat(_) => {}
             },
             Bone::DualQuat(_) => {}
         };
@@ -219,12 +213,8 @@ impl Bone {
 
     pub fn vec(&self) -> Vec<f32> {
         match self {
-            Bone::Matrix(matrix) => {
-                matrix.clone()
-            }
-            Bone::DualQuat(dual_quat) => {
-                dual_quat.clone()
-            }
+            Bone::Matrix(matrix) => matrix.clone(),
+            Bone::DualQuat(dual_quat) => dual_quat.clone(),
         }
     }
 }
@@ -304,7 +294,6 @@ fn vec_from_matrix4(mat4: &Matrix4<f32>) -> Vec<f32> {
 
     vec
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -392,9 +381,9 @@ mod tests {
             "1.0".to_string(),
             vec![Bone::Matrix(concat_vecs!(
                 vec![1.0, 0.0, 0.0, 0.0],
-                vec![1.0, 0.0, 0.0, 0.0],
-                vec![1.0, 0.0, 0.0, 0.0],
-                vec![1.0, 0.0, 0.0, 0.0]
+                vec![0.0, 1.0, 0.0, 0.0],
+                vec![0.0, 0.0, 1.0, 0.0],
+                vec![0.0, 0.0, 2.0, 1.0]
             ))],
         );
         start_actions.insert("Fly".to_string(), keyframes);
@@ -403,9 +392,9 @@ mod tests {
             actions: start_actions,
             inverse_bind_poses: vec![Bone::Matrix(concat_vecs!(
                 vec![1.0, 0.0, 0.0, 0.0],
-                vec![1.0, 0.0, 0.0, 0.0],
-                vec![1.0, 0.0, 0.0, 0.0],
-                vec![1.0, 0.0, 5.0, 0.0]
+                vec![0.0, 1.0, 0.0, 0.0],
+                vec![0.0, 0.0, 1.0, 0.0],
+                vec![0.0, 0.0, 5.0, 1.0]
             ))],
             ..BlenderArmature::default()
         };
@@ -418,9 +407,50 @@ mod tests {
             "1.0".to_string(),
             vec![Bone::Matrix(concat_vecs!(
                 vec![1.0, 0.0, 0.0, 0.0],
+                vec![0.0, 1.0, 0.0, 0.0],
+                vec![0.0, 0.0, 1.0, 0.0],
+                vec![0.0, 0.0, 7.0, 1.0]
+            ))],
+        );
+        end_actions.insert("Fly".to_string(), keyframes);
+
+        let expected_armature = BlenderArmature {
+            actions: end_actions,
+            ..start_armature.clone()
+        };
+
+        assert_eq!(start_armature, expected_armature);
+    }
+
+    #[test]
+    fn convert_actions_to_dual_quats() {
+        let mut start_actions = HashMap::new();
+        let mut keyframes = HashMap::new();
+        keyframes.insert(
+            "1.0".to_string(),
+            vec![Bone::Matrix(concat_vecs!(
                 vec![1.0, 0.0, 0.0, 0.0],
+                vec![0.0, 1.0, 0.0, 0.0],
+                vec![0.0, 0.0, 1.0, 0.0],
+                vec![0.0, 0.0, 0.0, 1.0]
+            ))],
+        );
+        start_actions.insert("Fly".to_string(), keyframes);
+
+        let mut start_armature = BlenderArmature {
+            actions: start_actions,
+            ..BlenderArmature::default()
+        };
+
+        start_armature.actions_to_dual_quats();
+
+        let mut end_actions = HashMap::new();
+        let mut keyframes = HashMap::new();
+        keyframes.insert(
+            "1.0".to_string(),
+            vec![Bone::DualQuat(concat_vecs!(
                 vec![1.0, 0.0, 0.0, 0.0],
-                vec![6.0, 0.0, 0.0, 0.0]
+                vec![0.0, 0.0, 0.0, 0.0]
             ))],
         );
         end_actions.insert("Fly".to_string(), keyframes);

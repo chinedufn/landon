@@ -1,4 +1,5 @@
 use assets::Assets;
+use blender_armature::BlenderArmature;
 use blender_mesh::BlenderMesh;
 use cgmath;
 use cgmath::Matrix4;
@@ -14,7 +15,6 @@ use web_apis::WebGLBuffer;
 use web_apis::WebGLProgram;
 use web_apis::WebGLRenderingContext;
 use State;
-use blender_armature::BlenderArmature;
 
 // Temporarily using u16's until I can get GLbitfield / Glenum etc working
 static gl_COLOR_BUFFER_BIT: u16 = 16384;
@@ -227,7 +227,7 @@ impl Renderer {
         let mesh = mesh.get("LetterF");
 
         let armature = self.assets.armatures();
-        let armature =armature.borrow();
+        let armature = armature.borrow();
         let armature = armature.get("LetterFArmature");
 
         if mesh.is_none() || armature.is_none() {
@@ -247,17 +247,16 @@ impl Renderer {
 }
 
 trait ArmatureDataBuffer {
-    fn buffer_data (&self, gl: &WebGLRenderingContext, shader: &Shader);
+    fn buffer_data(&self, gl: &WebGLRenderingContext, shader: &Shader);
 }
 
 impl ArmatureDataBuffer for BlenderArmature {
-    fn buffer_data (&self, gl: &WebGLRenderingContext, shader: &Shader) {
+    fn buffer_data(&self, gl: &WebGLRenderingContext, shader: &Shader) {
         let bones = self.actions.get("Twist").unwrap().iter().next().unwrap().1;
 
         for (index, bone) in bones.iter().enumerate() {
             let bone = bone.vec();
             let (rot_quat, trans_quat) = bone.split_at(4);
-
 
             let rot_quat = rot_quat.to_vec();
             let rot_quat_uni = &format!("boneRotQuaternions[{}]", index);

@@ -64,6 +64,7 @@ impl Assets {
             let mut armature = BlenderArmature::from_json(&armature_json).unwrap();
 
             armature.apply_inverse_bind_poses();
+            armature.actions_to_dual_quats();
 
             armatures_clone
                 .borrow_mut()
