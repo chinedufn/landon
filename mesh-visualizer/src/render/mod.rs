@@ -254,7 +254,7 @@ trait ArmatureDataBuffer {
 
 impl ArmatureDataBuffer for BlenderArmature {
     fn buffer_data(&self, gl: &WebGLRenderingContext, shader: &Shader) {
-        let bones = self.actions.get("Twist").unwrap().get("0.0").unwrap();
+        let bones = self.actions.get("Twist").unwrap().get("2.5").unwrap();
 
         for (index, bone) in bones.iter().enumerate() {
             let bone = bone.vec();

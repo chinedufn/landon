@@ -210,7 +210,7 @@ impl Bone {
                     let rhs_slices = BlenderArmature::matrix_array_to_slices(rhs_matrix);
                     let rhs_mat4 = Matrix4::from(rhs_slices);
 
-                    let multiplied = vec_from_matrix4(&(lhs_mat4 * rhs_mat4));
+                    let multiplied = vec_from_matrix4(&(rhs_mat4 * lhs_mat4));
 
                     *lhs_matrix = multiplied;
                 }
@@ -400,10 +400,10 @@ mod tests {
         keyframes.insert(
             "1.0".to_string(),
             vec![Bone::Matrix(concat_vecs!(
-                vec![1.0, 0.0, 0.0, 0.0],
-                vec![0.0, 1.0, 0.0, 0.0],
-                vec![0.0, 0.0, 1.0, 0.0],
-                vec![1.0, 2.0, 2.0, 1.0]
+                vec![1.0, 6.0, 2.0, 1.0],
+                vec![7.0, 1.0, 2.0, 5.0],
+                vec![0.0, 4.0, 1.0, 0.0],
+                vec![0.0, 0.0, 0.0, 1.0]
             ))],
         );
         start_actions.insert("Fly".to_string(), keyframes);
@@ -414,7 +414,7 @@ mod tests {
                 vec![1.0, 0.0, 0.0, 0.0],
                 vec![0.0, 1.0, 0.0, 0.0],
                 vec![0.0, 0.0, 1.0, 0.0],
-                vec![3.0, 4.0, 5.0, 1.0]
+                vec![0.0, 0.0, 5.0, 1.0]
             ))],
             ..BlenderArmature::default()
         };
@@ -426,10 +426,10 @@ mod tests {
         keyframes.insert(
             "1.0".to_string(),
             vec![Bone::Matrix(concat_vecs!(
-                vec![1.0, 0.0, 0.0, 0.0],
-                vec![0.0, 1.0, 0.0, 0.0],
-                vec![0.0, 0.0, 1.0, 0.0],
-                vec![4.0, 6.0, 7.0, 1.0]
+                vec![1.0, 6.0, 7.0, 1.0],
+                vec![7.0, 1.0, 27.0, 5.0],
+                vec![0.0, 4.0, 1.0, 0.0],
+                vec![0.0, 0.0, 5.0, 1.0]
             ))],
         );
         end_actions.insert("Fly".to_string(), keyframes);
