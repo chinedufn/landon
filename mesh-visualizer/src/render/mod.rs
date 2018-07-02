@@ -51,6 +51,7 @@ trait Render {
     ) {
         gl.bind_buffer(gl_ARRAY_BUFFER, &buf);
         gl.buffer_f32_data(gl_ARRAY_BUFFER, data, gl_STATIC_DRAW);
+        // TODO: buffer_u8_data and use gl_byte for joint indices
         gl.vertex_attrib_pointer(attrib_loc, size, gl_FLOAT, false, 0, 0);
     }
 }
@@ -253,7 +254,7 @@ trait ArmatureDataBuffer {
 
 impl ArmatureDataBuffer for BlenderArmature {
     fn buffer_data(&self, gl: &WebGLRenderingContext, shader: &Shader) {
-        let bones = self.actions.get("Twist").unwrap().iter().next().unwrap().1;
+        let bones = self.actions.get("Twist").unwrap().get("0.0").unwrap();
 
         for (index, bone) in bones.iter().enumerate() {
             let bone = bone.vec();

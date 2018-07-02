@@ -32,10 +32,7 @@ use cgmath::Matrix4;
 use cgmath::Quaternion;
 use cgmath::Matrix;
 use serde_json::Error;
-use std::cmp::max;
 use std::collections::HashMap;
-use std::collections::HashSet;
-use std::ops::Mul;
 
 /// Something went wrong in the Blender child process that was trying to parse your armature data.
 #[derive(Debug, Fail)]
@@ -182,7 +179,7 @@ impl BlenderArmature {
     pub fn transpose_actions(&mut self) {
         for (_name, action) in self.actions.iter_mut() {
             for (_keyframe, bones) in action.iter_mut() {
-                for (index, bone) in bones.iter_mut().enumerate() {
+                for (_index, bone) in bones.iter_mut().enumerate() {
                     bone.transpose();
                 }
             }
