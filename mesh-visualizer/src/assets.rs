@@ -65,6 +65,7 @@ impl Assets {
 
             armature.apply_inverse_bind_poses();
             armature.actions_to_dual_quats();
+            armature.transpose_actions();
 
             armatures_clone
                 .borrow_mut()

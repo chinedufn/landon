@@ -30,6 +30,7 @@ extern crate serde_json;
 use cgmath::Matrix3;
 use cgmath::Matrix4;
 use cgmath::Quaternion;
+use cgmath::Matrix;
 use serde_json::Error;
 use std::cmp::max;
 use std::collections::HashMap;
@@ -165,12 +166,23 @@ impl BlenderArmature {
     }
 }
 
+// TODO: These methods can be abstracted into calling a method that takes a callback
 impl BlenderArmature {
     pub fn apply_inverse_bind_poses(&mut self) {
         for (_name, action) in self.actions.iter_mut() {
             for (_keyframe, bones) in action.iter_mut() {
                 for (index, bone) in bones.iter_mut().enumerate() {
                     bone.multiply(&mut self.inverse_bind_poses[index]);
+                }
+            }
+        }
+    }
+
+    pub fn transpose_actions(&mut self) {
+        for (_name, action) in self.actions.iter_mut() {
+            for (_keyframe, bones) in action.iter_mut() {
+                for (index, bone) in bones.iter_mut().enumerate() {
+                    bone.transpose();
                 }
             }
         }
@@ -200,12 +212,22 @@ impl Bone {
                     let rhs_slices = BlenderArmature::matrix_array_to_slices(rhs_matrix);
                     let rhs_mat4 = Matrix4::from(rhs_slices);
 
-                    let multiplied = lhs_mat4 * rhs_mat4;
-                    let multiplied = vec_from_matrix4(&multiplied);
+                    let multiplied = vec_from_matrix4(&(lhs_mat4 * rhs_mat4));
 
-                    lhs_matrix.copy_from_slice(&multiplied[..]);
+                    *lhs_matrix = multiplied;
                 }
                 Bone::DualQuat(_) => {}
+            },
+            Bone::DualQuat(_) => {}
+        };
+    }
+
+    fn transpose(&mut self) {
+        match self {
+            Bone::Matrix(ref mut matrix) => {
+                let slices = BlenderArmature::matrix_array_to_slices(matrix);
+                let mut mat4 = Matrix4::from(slices);
+                *matrix = vec_from_matrix4(&mat4.transpose());
             },
             Bone::DualQuat(_) => {}
         };
@@ -451,6 +473,50 @@ mod tests {
             vec![Bone::DualQuat(concat_vecs!(
                 vec![1.0, 0.0, 0.0, 0.0],
                 vec![0.0, 0.0, 0.0, 0.0]
+            ))],
+        );
+        end_actions.insert("Fly".to_string(), keyframes);
+
+        let expected_armature = BlenderArmature {
+            actions: end_actions,
+            ..start_armature.clone()
+        };
+
+        assert_eq!(start_armature, expected_armature);
+    }
+
+    // TODO: Function to return these start_actions that we keep using
+    #[test]
+    fn transpose_actions() {
+                let mut start_actions = HashMap::new();
+        let mut keyframes = HashMap::new();
+        keyframes.insert(
+            "1.0".to_string(),
+            vec![Bone::Matrix(concat_vecs!(
+                vec![1.0, 0.0, 0.0, 0.0],
+                vec![0.0, 1.0, 0.0, 0.0],
+                vec![0.0, 0.0, 1.0, 0.0],
+                vec![0.0, 0.0, 5.0, 1.0]
+            ))],
+        );
+        start_actions.insert("Fly".to_string(), keyframes);
+
+        let mut start_armature = BlenderArmature {
+            actions: start_actions,
+            ..BlenderArmature::default()
+        };
+
+        start_armature.transpose_actions();
+
+        let mut end_actions = HashMap::new();
+        let mut keyframes = HashMap::new();
+        keyframes.insert(
+            "1.0".to_string(),
+            vec![Bone::Matrix(concat_vecs!(
+                vec![1.0, 0.0, 0.0, 0.0],
+                vec![0.0, 1.0, 0.0, 0.0],
+                vec![0.0, 0.0, 1.0, 5.0],
+                vec![0.0, 0.0, 0.0, 1.0]
             ))],
         );
         end_actions.insert("Fly".to_string(), keyframes);
