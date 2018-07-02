@@ -216,6 +216,17 @@ impl Bone {
             Bone::DualQuat(_) => {}
         };
     }
+
+    pub fn vec(&self) -> Vec<f32> {
+        match self {
+            Bone::Matrix(matrix) => {
+                matrix.clone()
+            }
+            Bone::DualQuat(dual_quat) => {
+                dual_quat.clone()
+            }
+        }
+    }
 }
 
 pub type ArmatureNamesToData = HashMap<String, BlenderArmature>;

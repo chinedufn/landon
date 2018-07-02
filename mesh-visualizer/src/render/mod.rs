@@ -14,6 +14,7 @@ use web_apis::WebGLBuffer;
 use web_apis::WebGLProgram;
 use web_apis::WebGLRenderingContext;
 use State;
+use blender_armature::BlenderArmature;
 
 // Temporarily using u16's until I can get GLbitfield / Glenum etc working
 static gl_COLOR_BUFFER_BIT: u16 = 16384;
@@ -225,17 +226,49 @@ impl Renderer {
         // let mesh = mesh.get(&state.current_model);
         let mesh = mesh.get("LetterF");
 
-        if mesh.is_none() {
+        let armature = self.assets.armatures();
+        let armature =armature.borrow();
+        let armature = armature.get("LetterFArmature");
+
+        if mesh.is_none() || armature.is_none() {
             return;
         }
 
         let mesh = mesh.unwrap();
+        let armature = armature.unwrap();
 
         self.shader_sys.use_program(&mesh.shader_type());
 
-        // TODO: Breadcrumb - armature.buffer_data() to buffer the bone quaternions into the GPU
+        let shader = self.shader_sys.get_shader(&mesh.shader_type());
 
-        mesh.render(&self.gl, self.shader_sys.get_shader(&mesh.shader_type()));
+        armature.buffer_data(&self.gl, &shader);
+        mesh.render(&self.gl, &shader);
+    }
+}
+
+trait ArmatureDataBuffer {
+    fn buffer_data (&self, gl: &WebGLRenderingContext, shader: &Shader);
+}
+
+impl ArmatureDataBuffer for BlenderArmature {
+    fn buffer_data (&self, gl: &WebGLRenderingContext, shader: &Shader) {
+        let bones = self.actions.get("Twist").unwrap().iter().next().unwrap().1;
+
+        for (index, bone) in bones.iter().enumerate() {
+            let bone = bone.vec();
+            let (rot_quat, trans_quat) = bone.split_at(4);
+
+
+            let rot_quat = rot_quat.to_vec();
+            let rot_quat_uni = &format!("boneRotQuaternions[{}]", index);
+            let rot_quat_uni = gl.get_uniform_location(&shader.program, rot_quat_uni);
+            gl.uniform_4fv(rot_quat_uni, rot_quat);
+
+            let trans_quat = trans_quat.to_vec();
+            let trans_quat_uni = &format!("boneTransQuaternions[{}]", index);
+            let trans_quat_uni = gl.get_uniform_location(&shader.program, trans_quat_uni);
+            gl.uniform_4fv(trans_quat_uni, trans_quat);
+        }
     }
 }
 

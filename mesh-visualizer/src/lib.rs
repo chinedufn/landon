@@ -70,6 +70,7 @@ impl App {
 
         let mut assets = Assets::new();
         assets.load_mesh(&self.current_model);
+        assets.load_armature("LetterFArmature");
 
         let canvas_id = "mesh-visualizer";
 

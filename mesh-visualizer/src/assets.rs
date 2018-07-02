@@ -39,7 +39,6 @@ impl Assets {
 
             if let Some(_) = mesh.armature_name {
                 mesh.set_groups_per_vertex(4);
-                mesh.apply_inverse_bind_poses();
             }
 
             meshes_clone
@@ -64,8 +63,7 @@ impl Assets {
         let save_model_in_state = move |armature_name: String, armature_json: String| {
             let mut armature = BlenderArmature::from_json(&armature_json).unwrap();
 
-            //            armature.triangulate();
-            //            armature.y_up();
+            armature.apply_inverse_bind_poses();
 
             armatures_clone
                 .borrow_mut()
@@ -85,5 +83,9 @@ impl Assets {
 
     pub fn meshes(&self) -> Meshes {
         Rc::clone(&self.meshes)
+    }
+
+    pub fn armatures(&self) -> Armatures {
+        Rc::clone(&self.armatures)
     }
 }

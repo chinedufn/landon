@@ -12,8 +12,8 @@ uniform vec3 uDirectionalColor;
 uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
 
-uniform vec4 boneRotQuaternions[16];
-uniform vec4 boneTransQuaternions[16];
+uniform vec4 boneRotQuaternions[20];
+uniform vec4 boneTransQuaternions[20];
 
 varying vec3 vLightWeighting;
 
