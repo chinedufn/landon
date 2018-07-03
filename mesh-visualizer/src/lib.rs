@@ -35,13 +35,8 @@ extern "C" {
     fn download_mesh(mesh_name: &str, mesh_url: &str, cb: &Closure<FnMut(String, String)>);
 }
 
-// TODO: state.rs module
-pub struct State {}
-impl State {
-    fn new() -> State {
-        State {}
-    }
-}
+mod state;
+use state::State;
 
 #[wasm_bindgen]
 pub struct App {

@@ -188,6 +188,14 @@ extern "C" {
 
 #[wasm_bindgen]
 extern "C" {
+    pub type Performance;
+    pub static performance: Performance;
+    #[wasm_bindgen(method)]
+    pub fn now(this: &Performance) -> f64;
+}
+
+#[wasm_bindgen]
+extern "C" {
     pub type GLenum;
     pub type GLbitfield;
     pub type WebGLShader;
