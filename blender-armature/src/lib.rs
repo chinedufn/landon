@@ -27,10 +27,10 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
+use cgmath::Matrix;
 use cgmath::Matrix3;
 use cgmath::Matrix4;
 use cgmath::Quaternion;
-use cgmath::Matrix;
 use serde_json::Error;
 use std::collections::HashMap;
 
@@ -66,6 +66,7 @@ pub struct BlenderArmature {
     // for your action names ... ?
     // TODO: Inner HashMap should have a float key not a string since it is a time in seconds
     // but you can't have floats as keys so need a workaround.
+    // TODO: &str for action name instead of String?
     pub actions: HashMap<String, HashMap<String, Vec<Bone>>>,
 }
 
@@ -189,7 +190,7 @@ impl BlenderArmature {
 }
 
 impl BlenderArmature {
-    pub fn actions_to_dual_quats (&mut self) {
+    pub fn actions_to_dual_quats(&mut self) {
         for (_, keyframe) in self.actions.iter_mut() {
             for (_, bones) in keyframe.iter_mut() {
                 for bone in bones.iter_mut() {
@@ -227,7 +228,7 @@ impl Bone {
                 let slices = BlenderArmature::matrix_array_to_slices(matrix);
                 let mut mat4 = Matrix4::from(slices);
                 *matrix = vec_from_matrix4(&mat4.transpose());
-            },
+            }
             Bone::DualQuat(_) => {}
         };
     }
@@ -487,7 +488,7 @@ mod tests {
     // TODO: Function to return these start_actions that we keep using
     #[test]
     fn transpose_actions() {
-                let mut start_actions = HashMap::new();
+        let mut start_actions = HashMap::new();
         let mut keyframes = HashMap::new();
         keyframes.insert(
             "1.0".to_string(),

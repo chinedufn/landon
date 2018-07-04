@@ -8,13 +8,13 @@ use cgmath::Vector3;
 use shader::Shader;
 use shader::ShaderSystem;
 use shader::ShaderType;
+use state::State;
 use std::f32::consts::PI;
 use std::rc::Rc;
 use web_apis::log;
 use web_apis::WebGLBuffer;
 use web_apis::WebGLProgram;
 use web_apis::WebGLRenderingContext;
-use state::State;
 
 // Temporarily using u16's until I can get GLbitfield / Glenum etc working
 static gl_COLOR_BUFFER_BIT: u16 = 16384;
@@ -165,7 +165,6 @@ impl BlenderMeshRender for BlenderMesh {
             Point3::new(1.0, 2.0, 2.0),
             Point3::new(0.0, 0.0, 0.0),
             Vector3::new(0.0, 1.0, 0.0),
-
         );
 
         // TODO: Breadcrumb - add normal and point lighting to shader..

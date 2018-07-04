@@ -35,7 +35,7 @@ impl Assets {
 
             mesh.combine_vertex_indices();
             mesh.triangulate();
-//            mesh.y_up();
+            //            mesh.y_up();
 
             if let Some(_) = mesh.armature_name {
                 mesh.set_groups_per_vertex(4);
