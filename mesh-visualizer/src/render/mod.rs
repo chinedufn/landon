@@ -14,7 +14,7 @@ use web_apis::log;
 use web_apis::WebGLBuffer;
 use web_apis::WebGLProgram;
 use web_apis::WebGLRenderingContext;
-use State;
+use state::State;
 
 // Temporarily using u16's until I can get GLbitfield / Glenum etc working
 static gl_COLOR_BUFFER_BIT: u16 = 16384;

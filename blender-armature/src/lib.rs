@@ -34,6 +34,9 @@ use cgmath::Matrix;
 use serde_json::Error;
 use std::collections::HashMap;
 
+mod interpolate;
+pub use interpolate::InterpolationSettings;
+
 /// Something went wrong in the Blender child process that was trying to parse your armature data.
 #[derive(Debug, Fail)]
 pub enum BlenderError {
@@ -43,11 +46,9 @@ pub enum BlenderError {
     Stderr(String),
 }
 
-/// TODO: Use cgmath::Matrix4 instead of our own custom matrix. We'll want a custom serializer /
-/// deserializer so that we don't need to litter our JSON with the names of our Rust structs
+/// TODO: Maybe? Use cgmath::Matrix4 instead of our Vec<f32>. We'd want a custom serializer /
+/// deserializer so that we don't need to litter our JSON with `Matrix4` object declarations
 /// when we output it from Blender.
-///
-/// But for now it's fine to litter out JSON while we get things working..
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(test, derive(Clone))]
 pub enum Bone {
