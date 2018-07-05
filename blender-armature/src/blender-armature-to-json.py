@@ -69,18 +69,25 @@ class ExportArmatureToJSON(bpy.types.Operator):
                 if actionKeyframes == []:
                      continue
 
-                armatureJSON['actions'][actionInfo.name] = {}
+                armatureJSON['actions'][actionInfo.name] = []
                 # Loop through the keyframes and build the frame data for the action
                 # We convert keyframes into times in seconds
+                index = 0
                 for frame in actionKeyframes:
                     # Round the keyframes time in seconds to 6 decimal places.
                     # i.e. 10.333333 seconds
                     # So here, at 24FPS, frame 12 would become `0.5` (seconds)
                     timeOfKeyframe = round(frame / bpy.context.scene.render.fps, 6)
                     # Get all of the bone pose matrices for this frame -> [bone1Matrix, bone2Matrix, ..]
-                    armatureJSON['actions'][actionInfo.name][str(timeOfKeyframe)] = [];
+                    armatureJSON['actions'][actionInfo.name].append({
+                        'bones': [],
+                        'frame_time_secs': None
+                    });
                     for bone in getBonePosesAtKeyframe(frame, activeArmature, allBoneNames):
-                        armatureJSON['actions'][actionInfo.name][str(timeOfKeyframe)].append({'Matrix': matrixToArray(bone.matrix)})
+                        armatureJSON['actions'][actionInfo.name][index]['bones'].append({'Matrix': matrixToArray(bone.matrix)})
+                        armatureJSON['actions'][actionInfo.name][index]['frame_time_secs'] = timeOfKeyframe
+
+                    index += 1
 
             # Now that we've added our actions we add our bind poses
             # We iterate over pose bones instead of edit bones to ensure a consistent ordering
