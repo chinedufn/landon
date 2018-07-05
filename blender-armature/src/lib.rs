@@ -67,7 +67,15 @@ pub struct BlenderArmature {
     // TODO: Inner HashMap should have a float key not a string since it is a time in seconds
     // but you can't have floats as keys so need a workaround.
     // TODO: &str for action name instead of String?
-    pub actions: HashMap<String, HashMap<String, Vec<Bone>>>,
+    pub actions: HashMap<String, Vec<Keyframe>>,
+}
+
+/// The pose bones at an individual keyframe time
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(Default, Clone))]
+pub struct Keyframe {
+    frame_time_secs: f32,
+    bones: Vec<Bone>
 }
 
 impl BlenderArmature {
@@ -170,8 +178,8 @@ impl BlenderArmature {
     // TODO: another function to apply bind shape matrix?
     pub fn apply_inverse_bind_poses(&mut self) {
         for (_name, action) in self.actions.iter_mut() {
-            for (_keyframe, bones) in action.iter_mut() {
-                for (index, bone) in bones.iter_mut().enumerate() {
+            for keyframe in action.iter_mut() {
+                for (index, bone) in keyframe.bones.iter_mut().enumerate() {
                     bone.multiply(&mut self.inverse_bind_poses[index]);
                 }
             }
@@ -180,8 +188,8 @@ impl BlenderArmature {
 
     pub fn transpose_actions(&mut self) {
         for (_name, action) in self.actions.iter_mut() {
-            for (_keyframe, bones) in action.iter_mut() {
-                for (_index, bone) in bones.iter_mut().enumerate() {
+            for keyframe in action.iter_mut() {
+                for (_index, bone) in keyframe.bones.iter_mut().enumerate() {
                     bone.transpose();
                 }
             }
@@ -191,9 +199,9 @@ impl BlenderArmature {
 
 impl BlenderArmature {
     pub fn actions_to_dual_quats(&mut self) {
-        for (_, keyframe) in self.actions.iter_mut() {
-            for (_, bones) in keyframe.iter_mut() {
-                for bone in bones.iter_mut() {
+        for (_, keyframes) in self.actions.iter_mut() {
+            for keyframe in keyframes.iter_mut() {
+                for bone in keyframe.bones.iter_mut() {
                     *bone = BlenderArmature::matrix_to_dual_quat(bone);
                 }
             }
@@ -398,16 +406,16 @@ mod tests {
     #[test]
     fn applying_inv_bind_poses() {
         let mut start_actions = HashMap::new();
-        let mut keyframes = HashMap::new();
-        keyframes.insert(
-            "1.0".to_string(),
-            vec![Bone::Matrix(concat_vecs!(
+        let mut keyframes = vec![];
+        keyframes.push(Keyframe {
+            frame_time_secs: 1.0,
+            bones: vec![Bone::Matrix(concat_vecs!(
                 vec![1.0, 6.0, 2.0, 1.0],
                 vec![7.0, 1.0, 2.0, 5.0],
                 vec![0.0, 4.0, 1.0, 0.0],
                 vec![0.0, 0.0, 0.0, 1.0]
-            ))],
-        );
+            ))]
+        });
         start_actions.insert("Fly".to_string(), keyframes);
 
         let mut start_armature = BlenderArmature {
@@ -424,16 +432,16 @@ mod tests {
         start_armature.apply_inverse_bind_poses();
 
         let mut end_actions = HashMap::new();
-        let mut keyframes = HashMap::new();
-        keyframes.insert(
-            "1.0".to_string(),
-            vec![Bone::Matrix(concat_vecs!(
+        let mut keyframes = vec![];
+        keyframes.push(Keyframe {
+            frame_time_secs: 1.0,
+            bones:  vec![Bone::Matrix(concat_vecs!(
                 vec![1.0, 6.0, 7.0, 1.0],
                 vec![7.0, 1.0, 27.0, 5.0],
                 vec![0.0, 4.0, 1.0, 0.0],
                 vec![0.0, 0.0, 5.0, 1.0]
-            ))],
-        );
+            ))]
+        });
         end_actions.insert("Fly".to_string(), keyframes);
 
         let expected_armature = BlenderArmature {
@@ -447,16 +455,16 @@ mod tests {
     #[test]
     fn convert_actions_to_dual_quats() {
         let mut start_actions = HashMap::new();
-        let mut keyframes = HashMap::new();
-        keyframes.insert(
-            "1.0".to_string(),
-            vec![Bone::Matrix(concat_vecs!(
+        let mut keyframes = vec![];
+        keyframes.push(Keyframe {
+            frame_time_secs: 1.0,
+            bones:  vec![Bone::Matrix(concat_vecs!(
                 vec![1.0, 0.0, 0.0, 0.0],
                 vec![0.0, 1.0, 0.0, 0.0],
                 vec![0.0, 0.0, 1.0, 0.0],
                 vec![0.0, 0.0, 0.0, 1.0]
-            ))],
-        );
+            ))]
+        });
         start_actions.insert("Fly".to_string(), keyframes);
 
         let mut start_armature = BlenderArmature {
@@ -467,14 +475,14 @@ mod tests {
         start_armature.actions_to_dual_quats();
 
         let mut end_actions = HashMap::new();
-        let mut keyframes = HashMap::new();
-        keyframes.insert(
-            "1.0".to_string(),
-            vec![Bone::DualQuat(concat_vecs!(
+        let mut keyframes = vec![];
+        keyframes.push(Keyframe {
+            frame_time_secs: 1.0,
+            bones:  vec![Bone::DualQuat(concat_vecs!(
                 vec![1.0, 0.0, 0.0, 0.0],
                 vec![0.0, 0.0, 0.0, 0.0]
-            ))],
-        );
+            ))]
+        });
         end_actions.insert("Fly".to_string(), keyframes);
 
         let expected_armature = BlenderArmature {
@@ -489,16 +497,17 @@ mod tests {
     #[test]
     fn transpose_actions() {
         let mut start_actions = HashMap::new();
-        let mut keyframes = HashMap::new();
-        keyframes.insert(
-            "1.0".to_string(),
-            vec![Bone::Matrix(concat_vecs!(
+        let mut keyframes = vec![];
+        keyframes.push(Keyframe {
+            frame_time_secs: 1.0,
+            bones: vec![Bone::Matrix(concat_vecs!(
                 vec![1.0, 0.0, 0.0, 0.0],
                 vec![0.0, 1.0, 0.0, 0.0],
                 vec![0.0, 0.0, 1.0, 0.0],
                 vec![0.0, 0.0, 5.0, 1.0]
-            ))],
-        );
+            ))]
+        });
+
         start_actions.insert("Fly".to_string(), keyframes);
 
         let mut start_armature = BlenderArmature {
@@ -509,16 +518,16 @@ mod tests {
         start_armature.transpose_actions();
 
         let mut end_actions = HashMap::new();
-        let mut keyframes = HashMap::new();
-        keyframes.insert(
-            "1.0".to_string(),
-            vec![Bone::Matrix(concat_vecs!(
+        let mut keyframes = vec![];
+        keyframes.push( Keyframe {
+            frame_time_secs: 1.0,
+            bones: vec![Bone::Matrix(concat_vecs!(
                 vec![1.0, 0.0, 0.0, 0.0],
                 vec![0.0, 1.0, 0.0, 0.0],
                 vec![0.0, 0.0, 1.0, 5.0],
                 vec![0.0, 0.0, 0.0, 1.0]
-            ))],
-        );
+            ))]
+        });
         end_actions.insert("Fly".to_string(), keyframes);
 
         let expected_armature = BlenderArmature {

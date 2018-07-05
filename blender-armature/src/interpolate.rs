@@ -28,6 +28,7 @@
 use std::collections::HashMap;
 use BlenderArmature;
 use Bone;
+use Keyframe;
 
 /// Settings for how to interpolate your BlenderArmature's bone data. These can be used to do
 /// things such as:
@@ -191,18 +192,16 @@ impl BlenderArmature {
         let mut interpolated_bones = HashMap::new();
 
         let keyframes = self.actions.get(action.action_name).unwrap();
-        let mut keyframe_times: Vec<f32> = keyframes
-            .iter()
-            .map(|(time, _)| time.parse::<f32>().unwrap())
-            .collect();
-        keyframe_times.sort_by(|a, b| a.partial_cmp(b).unwrap());
+//        let mut keyframe_times: Vec<f32> = keyframes
+//            .iter()
+//        .sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-        let first_keyframe_time = keyframe_times[0];
+        let first_keyframe = &keyframes[0];
 
         let mut action_elapsed = opts.current_time - action.start_time;
-        let mut key_time_to_sample = first_keyframe_time + action_elapsed;
+        let mut key_time_to_sample = first_keyframe.frame_time_secs + action_elapsed;
 
-        let action_duration = keyframe_times.last().unwrap() - first_keyframe_time;
+        let action_duration = keyframes.last().unwrap().frame_time_secs - first_keyframe.frame_time_secs;
 
         if action_elapsed > action_duration {
             if action.should_loop {
@@ -211,7 +210,7 @@ impl BlenderArmature {
                 action_elapsed = action_duration;
             }
 
-            key_time_to_sample = first_keyframe_time + action_elapsed;
+            key_time_to_sample = first_keyframe.frame_time_secs + action_elapsed;
         }
 
         // The keyframes surrounding the current key time that we're going to sample
@@ -219,12 +218,12 @@ impl BlenderArmature {
         let mut action_lower_keyframe = None;
         let mut action_upper_keyframe = None;
 
-        'lower_upper: for keyframe_time in keyframe_times {
-            if key_time_to_sample >= keyframe_time {
-                action_lower_keyframe = Some(keyframe_time);
+        'lower_upper: for keyframe in keyframes {
+            if key_time_to_sample >= keyframe.frame_time_secs {
+                action_lower_keyframe = Some(keyframe);
             }
-            if key_time_to_sample <= keyframe_time {
-                action_upper_keyframe = Some(keyframe_time);
+            if key_time_to_sample <= keyframe.frame_time_secs {
+                action_upper_keyframe = Some(keyframe);
             }
 
             if action_lower_keyframe.is_some() && action_upper_keyframe.is_some() {
@@ -237,22 +236,15 @@ impl BlenderArmature {
         let percent_elapsed_into_keyframe = if action_lower_keyframe == action_upper_keyframe {
             0.0
         } else {
-            (key_time_to_sample - action_lower_keyframe)
-                / (action_upper_keyframe - action_lower_keyframe)
+            (key_time_to_sample - action_lower_keyframe.frame_time_secs)
+                / (action_upper_keyframe.frame_time_secs - action_lower_keyframe.frame_time_secs)
         };
-
-        let lower_keyframe_bones = keyframes
-            .get(&format!("{}", action_lower_keyframe))
-            .unwrap();
-        let upper_keyframe_bones = keyframes
-            .get(&format!("{}", action_upper_keyframe))
-            .unwrap();
 
         for joint_index in &opts.joint_indices {
             let joint_index = *joint_index;
 
-            let lower_bone = &lower_keyframe_bones[joint_index as usize];
-            let upper_bone = &upper_keyframe_bones[joint_index as usize];
+            let lower_bone = &action_lower_keyframe.bones[joint_index as usize];
+            let upper_bone = &action_upper_keyframe.bones[joint_index as usize];
 
             let interpolated_bone =
                 interpolate_bones(&lower_bone, &upper_bone, percent_elapsed_into_keyframe);
@@ -293,6 +285,7 @@ fn dot_product(a: &Vec<f32>, b: &Vec<f32>) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use Keyframe;
 
     // TODO: Breadcrumb - make out first case create a test case then run it through some generic
     // test function that we can re-use
@@ -450,11 +443,11 @@ mod tests {
         let armature = r#"
         {
           "actions": {
-            "Twist": {
-              "0.0": [{"Matrix": [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]}],
-              "2.5": [{"Matrix": [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]}],
-              "4.166667": [{"Matrix": [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]}]
-            }
+            "Twist": [
+              {"frame_time_secs": 0.0, "bones": [{"Matrix": [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]}]},
+              {"frame_time_secs": 2.5, "bones": [{"Matrix": [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]}]},
+              {"frame_time_secs": 4.166667, "bones":  [{"Matrix": [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]}]}
+            ]
           },
           "inverse_bind_poses": [],
           "joint_index": {}
@@ -477,13 +470,13 @@ mod tests {
 
     fn run_test_case(test_case: DualQuatTestCase) {
         let mut actions = HashMap::new();
-        let mut keyframes = HashMap::new();
+        let mut keyframes = vec![];
 
         for keyframe in test_case.keyframes {
-            keyframes.insert(
-                format!("{}", keyframe.frame),
-                vec![Bone::DualQuat(keyframe.bone)],
-            );
+            keyframes.push(Keyframe {
+                frame_time_secs: keyframe.frame,
+                bones: vec![Bone::DualQuat(keyframe.bone)]
+            });
         }
 
         actions.insert("test".to_string(), keyframes);
