@@ -129,7 +129,7 @@ impl BlenderArmature {
     ///
     /// Panics if you pass in previous actions that do not have the exact same joint indices
     /// as your current action.
-    pub fn interpolate_bones(&self, opts: InterpolationSettings) -> HashMap<u8, Bone> {
+    pub fn interpolate_bones(&self, opts: &InterpolationSettings) -> HashMap<u8, Bone> {
         let mut interpolated_bones = self.interpolate_action(&opts, &opts.current_action);
 
         if let Some(ref previous_action) = opts.previous_action {
@@ -206,7 +206,7 @@ impl BlenderArmature {
 
         if action_elapsed > action_duration {
             if action.should_loop {
-                action_elapsed = action_duration % action_duration;
+                action_elapsed = action_elapsed % action_duration;
             } else {
                 action_elapsed = action_duration;
             }
@@ -444,6 +444,37 @@ mod tests {
         });
     }
 
+    #[test]
+    fn trimmed_down_armature_that_was_panicking_when_calling_interpolate() {
+        // Ripped this out of the skinned_letter_f.blend's JSON
+        let armature = r#"
+        {
+          "actions": {
+            "Twist": {
+              "0.0": [{"Matrix": [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]}],
+              "2.5": [{"Matrix": [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]}],
+              "4.166667": [{"Matrix": [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]}]
+            }
+          },
+          "inverse_bind_poses": [],
+          "joint_index": {}
+        }
+    "#;
+        let mut armature = BlenderArmature::from_json(armature).unwrap();
+        armature.actions_to_dual_quats();
+
+        let interp_opts = InterpolationSettings {
+            current_time: 209.109,
+            // TODO: self.get_bone_group(BlenderArmature::ALL_BONES)
+            joint_indices: vec![0],
+            blend_fn: None,
+            current_action: ActionSettings::new("Twist", 0.0, true),
+            previous_action: None,
+        };
+        // Just making sure that this no longer panics..
+        armature.interpolate_bones(&interp_opts);
+    }
+
     fn run_test_case(test_case: DualQuatTestCase) {
         let mut actions = HashMap::new();
         let mut keyframes = HashMap::new();
@@ -462,7 +493,7 @@ mod tests {
             ..BlenderArmature::default()
         };
 
-        let interpolated_bones = armature.interpolate_bones(test_case.interp_settings);
+        let interpolated_bones = armature.interpolate_bones(&test_case.interp_settings);
         let interpolated_bone = interpolated_bones.get(&0).unwrap();
 
         assert_eq!(interpolated_bone.vec(), test_case.expected_bone);

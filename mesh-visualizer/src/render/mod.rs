@@ -1,5 +1,8 @@
 use assets::Assets;
+use blender_armature::ActionSettings;
 use blender_armature::BlenderArmature;
+use blender_armature::Bone;
+use blender_armature::InterpolationSettings;
 use blender_mesh::BlenderMesh;
 use cgmath;
 use cgmath::Matrix4;
@@ -12,6 +15,7 @@ use state::State;
 use std::f32::consts::PI;
 use std::rc::Rc;
 use web_apis::log;
+use web_apis::performance;
 use web_apis::WebGLBuffer;
 use web_apis::WebGLProgram;
 use web_apis::WebGLRenderingContext;
@@ -221,7 +225,7 @@ impl Renderer {
         }
     }
 
-    pub fn render(&self) {
+    pub fn render(&self, state: &State) {
         let mesh = self.assets.meshes();
         let mesh = mesh.borrow();
         // let mesh = mesh.get(&state.current_model);
@@ -242,17 +246,38 @@ impl Renderer {
 
         let shader = self.shader_sys.get_shader(&mesh.shader_type());
 
-        armature.buffer_data(&self.gl, &shader);
+        armature.buffer_data(&self.gl, &shader, &state);
         mesh.render(&self.gl, &shader);
     }
 }
 
 trait ArmatureDataBuffer {
-    fn buffer_data(&self, gl: &WebGLRenderingContext, shader: &Shader);
+    fn buffer_data(&self, gl: &WebGLRenderingContext, shader: &Shader, state: &State);
 }
 
 impl ArmatureDataBuffer for BlenderArmature {
-    fn buffer_data(&self, gl: &WebGLRenderingContext, shader: &Shader) {
+    fn buffer_data(&self, gl: &WebGLRenderingContext, shader: &Shader, state: &State) {
+        let now = State::performance_now_to_system_time();
+
+        let current_time = now.duration_since(state.app_start_time).unwrap();
+        let seconds = current_time.as_secs();
+        let millis = current_time.subsec_millis();
+        let current_time_secs = seconds as f32 + (millis as f32 / 1000.0);
+
+        clog!("{}", current_time_secs);
+        let interp_opts = InterpolationSettings {
+            current_time: current_time_secs,
+            // TODO: self.get_bone_group(BlenderArmature::ALL_BONES)
+            joint_indices: vec![0, 1, 2, 3],
+            blend_fn: None,
+
+            current_action: ActionSettings::new("Twist", 0.0, true),
+            previous_action: None,
+        };
+        let bones = self.interpolate_bones(&interp_opts);
+
+        let bones: Vec<&Bone> = bones.iter().to_owned().map(|(_, bone)| bone).collect();
+
         let bones = self.actions.get("Twist").unwrap().get("2.5").unwrap();
 
         for (index, bone) in bones.iter().enumerate() {

@@ -4,17 +4,19 @@ use std::time::UNIX_EPOCH;
 use web_apis::performance;
 
 pub struct State {
-    last_tick_time: SystemTime,
+    pub last_tick_time: SystemTime,
+    pub app_start_time: SystemTime,
 }
 
 impl State {
     pub fn new() -> State {
         State {
             last_tick_time: State::performance_now_to_system_time(),
+            app_start_time: State::performance_now_to_system_time(),
         }
     }
 
-    fn performance_now_to_system_time() -> SystemTime {
+    pub fn performance_now_to_system_time() -> SystemTime {
         let now = performance.now();
 
         let seconds = (now as u64) / 1_000;

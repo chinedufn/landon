@@ -100,7 +100,7 @@ impl App {
             return;
         }
 
-        self.renderer.as_ref().unwrap().render();
+        self.renderer.as_ref().unwrap().render(&self.state);
         // TODO breadcrumb - create self.skinned_shader_program and store it in our struct.. then
         // send down an armature.. store it in our assets.rs and use the inverse bind poses to
         // render our model (inverse the inverse bind poses to get the bind poses and pass those
