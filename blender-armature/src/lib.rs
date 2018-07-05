@@ -383,11 +383,11 @@ mod tests {
             }
 
             if let Bone::DualQuat(new_dual_quat) =
-                BlenderArmature::matrix_to_dual_quat(&dual_quat_bone)
+                BlenderArmature::matrix_to_dual_quat(&matrix_bone)
             {
                 let new_dual_quat: Vec<f32> =
-                    new_dual_quat.iter().map(|x| x * round / round).collect();
-                let dual_quat: Vec<f32> = dual_quat.iter().map(|x| x * round / round).collect();
+                    new_dual_quat.iter().map(|x| (x * round).round()).collect();
+                let dual_quat: Vec<f32> = dual_quat.iter().map(|x| (x * round).round()).collect();
                 assert_eq!(new_dual_quat, dual_quat);
             } else {
                 panic!();
