@@ -16,9 +16,6 @@
 //! @see https://docs.blender.org/manual/en/dev/modeling/armature/introduction.html - Armature Introduction
 //! @see https://github.com/chinedufn/blender-actions-to-json - Exporting blender armatures / actions
 
-// TODO: - breadcrumb -> convert this file into blender armature.. and add armature export
-// to letter_f.rs test and verify that it matches the expected BlenderArmature
-
 #[macro_use]
 extern crate failure;
 extern crate cgmath;
@@ -47,6 +44,10 @@ pub enum BlenderError {
     Stderr(String),
 }
 
+/// A bone in an armature. Can either be a dual quaternion or a matrix. When you export bones
+/// from Blender they come as matrices - BlenderArmature lets you convert them into dual
+/// quaternions which are usually more favorable for when implementing skeletal animation.
+///
 /// TODO: Maybe? Use cgmath::Matrix4 instead of our Vec<f32>. We'd want a custom serializer /
 /// deserializer so that we don't need to litter our JSON with `Matrix4` object declarations
 /// when we output it from Blender.
@@ -57,7 +58,13 @@ pub enum Bone {
     DualQuat(Vec<f32>),
 }
 
-/// All of the data about a Blender armature
+/// All of the data about a Blender armature that we've exported from Blender.
+/// A BlenderArmature should have all of the data that you need to implement skeletal
+/// animation.
+///
+/// If you have other needs, such as a way to know the model space position of any bone at any
+/// time so that you can, say, render a baseball in on top of your hand bone.. Open an issue.
+/// (I plan to support this specific example in the future)
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(test, derive(Default, Clone))]
 pub struct BlenderArmature {
@@ -80,6 +87,10 @@ pub struct Keyframe {
 }
 
 impl BlenderArmature {
+    /// Given a string of JSON we deserialize a BlenderArmature. This is here as a convenience
+    /// since we already depend on serde anyway.
+    /// In a real application you might want to serialize and deserialize to a smaller file
+    /// format.. such as `bincode`.
     pub fn from_json(json_str: &str) -> Result<BlenderArmature, Error> {
         serde_json::from_str(json_str)
     }
@@ -176,7 +187,10 @@ impl BlenderArmature {
 
 // TODO: These methods can be abstracted into calling a method that takes a callback
 impl BlenderArmature {
-    // TODO: another function to apply bind shape matrix?
+    /// Iterate over all of the action bones and apply and multiply in the inverse bind pose.
+    ///
+    /// TODO: another function to apply bind shape matrix? Most armatures seem to export an identity
+    /// bind shape matrix but that might not be the same for every armature.
     pub fn apply_inverse_bind_poses(&mut self) {
         for (_name, action) in self.actions.iter_mut() {
             for keyframe in action.iter_mut() {
@@ -187,6 +201,9 @@ impl BlenderArmature {
         }
     }
 
+    /// Tranpose all of the bone matrices in our armature's action keyframes.
+    /// Blender uses row major matrices, but OpenGL uses column major matrices so you'll
+    /// usually want to transpose your matrices before using them.
     pub fn transpose_actions(&mut self) {
         for (_name, action) in self.actions.iter_mut() {
             for keyframe in action.iter_mut() {
@@ -199,6 +216,8 @@ impl BlenderArmature {
 }
 
 impl BlenderArmature {
+    /// Convert your action matrices into dual quaternions so that you can implement
+    /// dual quaternion linear blending.
     pub fn actions_to_dual_quats(&mut self) {
         for (_, keyframes) in self.actions.iter_mut() {
             for keyframe in keyframes.iter_mut() {
@@ -242,6 +261,8 @@ impl Bone {
         };
     }
 
+    /// Get a vector representation of your bone data.
+    /// You'll usually pass this vector of your bone data to the GPU.
     pub fn vec(&self) -> Vec<f32> {
         match self {
             Bone::Matrix(matrix) => matrix.clone(),
