@@ -35,6 +35,7 @@ use serde_json::Error;
 use std::collections::HashMap;
 
 mod interpolate;
+pub use interpolate::ActionSettings;
 pub use interpolate::InterpolationSettings;
 
 /// Something went wrong in the Blender child process that was trying to parse your armature data.
@@ -75,7 +76,7 @@ pub struct BlenderArmature {
 #[cfg_attr(test, derive(Default, Clone))]
 pub struct Keyframe {
     frame_time_secs: f32,
-    bones: Vec<Bone>
+    bones: Vec<Bone>,
 }
 
 impl BlenderArmature {
@@ -414,7 +415,7 @@ mod tests {
                 vec![7.0, 1.0, 2.0, 5.0],
                 vec![0.0, 4.0, 1.0, 0.0],
                 vec![0.0, 0.0, 0.0, 1.0]
-            ))]
+            ))],
         });
         start_actions.insert("Fly".to_string(), keyframes);
 
@@ -435,12 +436,12 @@ mod tests {
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
             frame_time_secs: 1.0,
-            bones:  vec![Bone::Matrix(concat_vecs!(
+            bones: vec![Bone::Matrix(concat_vecs!(
                 vec![1.0, 6.0, 7.0, 1.0],
                 vec![7.0, 1.0, 27.0, 5.0],
                 vec![0.0, 4.0, 1.0, 0.0],
                 vec![0.0, 0.0, 5.0, 1.0]
-            ))]
+            ))],
         });
         end_actions.insert("Fly".to_string(), keyframes);
 
@@ -458,12 +459,12 @@ mod tests {
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
             frame_time_secs: 1.0,
-            bones:  vec![Bone::Matrix(concat_vecs!(
+            bones: vec![Bone::Matrix(concat_vecs!(
                 vec![1.0, 0.0, 0.0, 0.0],
                 vec![0.0, 1.0, 0.0, 0.0],
                 vec![0.0, 0.0, 1.0, 0.0],
                 vec![0.0, 0.0, 0.0, 1.0]
-            ))]
+            ))],
         });
         start_actions.insert("Fly".to_string(), keyframes);
 
@@ -478,10 +479,10 @@ mod tests {
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
             frame_time_secs: 1.0,
-            bones:  vec![Bone::DualQuat(concat_vecs!(
+            bones: vec![Bone::DualQuat(concat_vecs!(
                 vec![1.0, 0.0, 0.0, 0.0],
                 vec![0.0, 0.0, 0.0, 0.0]
-            ))]
+            ))],
         });
         end_actions.insert("Fly".to_string(), keyframes);
 
@@ -505,7 +506,7 @@ mod tests {
                 vec![0.0, 1.0, 0.0, 0.0],
                 vec![0.0, 0.0, 1.0, 0.0],
                 vec![0.0, 0.0, 5.0, 1.0]
-            ))]
+            ))],
         });
 
         start_actions.insert("Fly".to_string(), keyframes);
@@ -519,14 +520,14 @@ mod tests {
 
         let mut end_actions = HashMap::new();
         let mut keyframes = vec![];
-        keyframes.push( Keyframe {
+        keyframes.push(Keyframe {
             frame_time_secs: 1.0,
             bones: vec![Bone::Matrix(concat_vecs!(
                 vec![1.0, 0.0, 0.0, 0.0],
                 vec![0.0, 1.0, 0.0, 0.0],
                 vec![0.0, 0.0, 1.0, 5.0],
                 vec![0.0, 0.0, 0.0, 1.0]
-            ))]
+            ))],
         });
         end_actions.insert("Fly".to_string(), keyframes);
 

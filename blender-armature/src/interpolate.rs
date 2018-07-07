@@ -160,7 +160,7 @@ impl BlenderArmature {
                         // dot product is negative we negative the rotation portion of the first
                         // dual quaternion in order to ensure the shortest path rotation.
                         // http://www.xbdev.net/misc_demos/demos/dual_quaternions_beyond/paper.pdf
-                        if dot_product(&prev_action_bone, & cur_action_bone) < 0.0 {
+                        if dot_product(&prev_action_bone, &cur_action_bone) < 0.0 {
                             prev_action_bone[0] = -prev_action_bone[0];
                             prev_action_bone[1] = -prev_action_bone[1];
                             prev_action_bone[2] = -prev_action_bone[2];
@@ -192,16 +192,17 @@ impl BlenderArmature {
         let mut interpolated_bones = HashMap::new();
 
         let keyframes = self.actions.get(action.action_name).unwrap();
-//        let mut keyframe_times: Vec<f32> = keyframes
-//            .iter()
-//        .sort_by(|a, b| a.partial_cmp(b).unwrap());
+        //        let mut keyframe_times: Vec<f32> = keyframes
+        //            .iter()
+        //        .sort_by(|a, b| a.partial_cmp(b).unwrap());
 
         let first_keyframe = &keyframes[0];
 
         let mut action_elapsed = opts.current_time - action.start_time;
         let mut key_time_to_sample = first_keyframe.frame_time_secs + action_elapsed;
 
-        let action_duration = keyframes.last().unwrap().frame_time_secs - first_keyframe.frame_time_secs;
+        let action_duration =
+            keyframes.last().unwrap().frame_time_secs - first_keyframe.frame_time_secs;
 
         if action_elapsed > action_duration {
             if action.should_loop {
@@ -475,7 +476,7 @@ mod tests {
         for keyframe in test_case.keyframes {
             keyframes.push(Keyframe {
                 frame_time_secs: keyframe.frame,
-                bones: vec![Bone::DualQuat(keyframe.bone)]
+                bones: vec![Bone::DualQuat(keyframe.bone)],
             });
         }
 

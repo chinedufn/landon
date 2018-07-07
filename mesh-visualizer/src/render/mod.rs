@@ -14,29 +14,28 @@ use shader::ShaderType;
 use state::State;
 use std::f32::consts::PI;
 use std::rc::Rc;
-use web_apis::log;
-use web_apis::performance;
-use web_apis::WebGLBuffer;
-use web_apis::WebGLProgram;
 use web_apis::WebGLRenderingContext;
+use web_apis::WebGLBuffer;
+use std::cell::RefCell;
 
-// Temporarily using u16's until I can get GLbitfield / Glenum etc working
-static gl_COLOR_BUFFER_BIT: u16 = 16384;
-static gl_DEPTH_BUFFER_BIT: u16 = 256;
+// Temporarily using u16's until I can get GLbitfield / Glenum etc working. Take a look at the
+// commented out code in mod webapis to see what I mean.
+static GL_COLOR_BUFFER_BIT: u16 = 16384;
+static GL_DEPTH_BUFFER_BIT: u16 = 256;
 // color_buffer_bit | depth_buffer_bit
 static BITFIELD: u16 = 16640;
 
-static gl_ARRAY_BUFFER: u16 = 34962;
-static gl_ELEMENT_ARRAY_BUFFER: u16 = 34963;
-static gl_FLOAT: u16 = 5126;
-static gl_STATIC_DRAW: u16 = 35044;
+static GL_ARRAY_BUFFER: u16 = 34962;
+static GL_ELEMENT_ARRAY_BUFFER: u16 = 34963;
+static GL_FLOAT: u16 = 5126;
+static GL_STATIC_DRAW: u16 = 35044;
 
-static gl_TRIANGLES: u8 = 4;
-static gl_UNSIGNED_SHORT: u16 = 5123;
+static GL_TRIANGLES: u8 = 4;
+static GL_UNSIGNED_SHORT: u16 = 5123;
 
 pub struct Renderer {
     gl: Rc<WebGLRenderingContext>,
-    assets: Assets,
+    assets: Rc<RefCell<Assets>>,
     shader_sys: ShaderSystem,
     state: Rc<State>,
 }
@@ -53,10 +52,10 @@ trait Render {
         attrib_loc: u16,
         size: u8,
     ) {
-        gl.bind_buffer(gl_ARRAY_BUFFER, &buf);
-        gl.buffer_f32_data(gl_ARRAY_BUFFER, data, gl_STATIC_DRAW);
+        gl.bind_buffer(GL_ARRAY_BUFFER, &buf);
+        gl.buffer_f32_data(GL_ARRAY_BUFFER, data, GL_STATIC_DRAW);
         // TODO: buffer_u8_data and use gl_byte for joint indices
-        gl.vertex_attrib_pointer(attrib_loc, size, gl_FLOAT, false, 0, 0);
+        gl.vertex_attrib_pointer(attrib_loc, size, GL_FLOAT, false, 0, 0);
     }
 }
 trait BlenderMeshRender {
@@ -99,8 +98,6 @@ impl BlenderMeshRender for BlenderMesh {
         let vertex_normal_attrib = gl.get_attrib_location(&shader.program, "aVertexNormal");
         gl.enable_vertex_attrib_array(vertex_normal_attrib);
 
-        gl.clear(BITFIELD);
-
         let fovy = cgmath::Rad(PI / 3.0);
         let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
         let mut p_matrix = vec_from_matrix4(&perspective);
@@ -133,15 +130,15 @@ impl BlenderMeshRender for BlenderMesh {
         self.buffer_f32_data(&gl, &shader.buffers[1], norms, vertex_normal_attrib, 3);
 
         let index_buffer = gl.create_buffer();
-        gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
+        gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
         let pos_idx = self.vertex_position_indices.clone();
-        gl.buffer_u16_data(gl_ELEMENT_ARRAY_BUFFER, pos_idx, gl_STATIC_DRAW);
+        gl.buffer_u16_data(GL_ELEMENT_ARRAY_BUFFER, pos_idx, GL_STATIC_DRAW);
 
-        gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
+        gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
         let pos_idx_len = self.vertex_position_indices.len();
-        gl.draw_elements(gl_TRIANGLES, pos_idx_len as u16, gl_UNSIGNED_SHORT, 0);
+        gl.draw_elements(GL_TRIANGLES, pos_idx_len as u16, GL_UNSIGNED_SHORT, 0);
     }
 
     fn render_dual_quat_skinned(&self, gl: &WebGLRenderingContext, shader: &Shader) {
@@ -156,8 +153,6 @@ impl BlenderMeshRender for BlenderMesh {
 
         let joint_weight_attrib = gl.get_attrib_location(&shader.program, "aJointWeight");
         gl.enable_vertex_attrib_array(joint_weight_attrib);
-
-        gl.clear(BITFIELD);
 
         let fovy = cgmath::Rad(PI / 3.0);
         let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
@@ -197,23 +192,23 @@ impl BlenderMeshRender for BlenderMesh {
         self.buffer_f32_data(&gl, &shader.buffers[3], weights, joint_weight_attrib, 4);
 
         let index_buffer = gl.create_buffer();
-        gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
+        gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
         // TODO: Remove clone
         let pos_idx = self.vertex_position_indices.clone();
-        gl.buffer_u16_data(gl_ELEMENT_ARRAY_BUFFER, pos_idx, gl_STATIC_DRAW);
+        gl.buffer_u16_data(GL_ELEMENT_ARRAY_BUFFER, pos_idx, GL_STATIC_DRAW);
 
-        gl.bind_buffer(gl_ELEMENT_ARRAY_BUFFER, &index_buffer);
+        gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
         let pos_idx_len = self.vertex_position_indices.len();
-        gl.draw_elements(gl_TRIANGLES, pos_idx_len as u16, gl_UNSIGNED_SHORT, 0);
+        gl.draw_elements(GL_TRIANGLES, pos_idx_len as u16, GL_UNSIGNED_SHORT, 0);
     }
 }
 
 impl Renderer {
     pub fn new(
         gl: Rc<WebGLRenderingContext>,
-        assets: Assets,
+        assets: Rc<RefCell<Assets>>,
         shader_sys: ShaderSystem,
         state: Rc<State>,
     ) -> Renderer {
@@ -226,12 +221,14 @@ impl Renderer {
     }
 
     pub fn render(&self, state: &State) {
-        let mesh = self.assets.meshes();
+        self.gl.clear(BITFIELD);
+
+        let mesh = self.assets.borrow().meshes();
         let mesh = mesh.borrow();
         // let mesh = mesh.get(&state.current_model);
         let mesh = mesh.get("LetterF");
 
-        let armature = self.assets.armatures();
+        let armature = self.assets.borrow().armatures();
         let armature = armature.borrow();
         let armature = armature.get("LetterFArmature");
 
@@ -264,7 +261,6 @@ impl ArmatureDataBuffer for BlenderArmature {
         let millis = current_time.subsec_millis();
         let current_time_secs = seconds as f32 + (millis as f32 / 1000.0);
 
-        clog!("{}", current_time_secs);
         let interp_opts = InterpolationSettings {
             current_time: current_time_secs,
             // TODO: self.get_bone_group(BlenderArmature::ALL_BONES)
@@ -276,9 +272,9 @@ impl ArmatureDataBuffer for BlenderArmature {
         };
         let bones = self.interpolate_bones(&interp_opts);
 
-        let bones: Vec<&Bone> = bones.iter().to_owned().map(|(_, bone)| bone).collect();
-
-        let bones = self.actions.get("Twist").unwrap().get("2.5").unwrap();
+        let mut bones: Vec<(&u8, &Bone)> = bones.iter().to_owned().collect();
+        bones.sort_by(|a, b| a.0.partial_cmp(b.0).unwrap());
+        let bones: Vec<&Bone> = bones.iter().map(|(_, bone)| *bone).collect();
 
         for (index, bone) in bones.iter().enumerate() {
             let bone = bone.vec();

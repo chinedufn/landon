@@ -33,7 +33,7 @@ extern "C" {
     pub fn append_child(this: &Element, other: Element);
 
     #[wasm_bindgen(method, js_name = appendChild)]
-    pub fn append_canvas_child(this: &Element, other: HTMLCanvasElement);
+    pub fn append_canvas_child(this: &Element, other: &HTMLCanvasElement);
 
     pub type HTMLCanvasElement;
 
