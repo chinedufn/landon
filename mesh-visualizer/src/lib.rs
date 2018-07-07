@@ -74,7 +74,6 @@ impl App {
         }
     }
 
-    // TODO: Breadcrumb - refactor this method
     pub fn start(&mut self) {
         self.assets.borrow_mut().load_mesh(&self.current_model);
         self.assets.borrow_mut().load_armature("LetterFArmature");

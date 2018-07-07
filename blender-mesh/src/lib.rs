@@ -71,15 +71,17 @@ impl BlenderMesh {
 impl BlenderMesh {
     /// We export our models with indices for positions, normals and uvs because
     ///
-    ///  1) Easier because ... todo ...
-    ///  2) Reduces amount of data required to represent the model on disk
+    ///  1) Easier because we we can unit test that here vs. a blender python script that's much
+    ///     trickier to test.
+    ///  2) Reduces amount of data required to represent the model on disk.
     ///
     /// OpenGL only supports one index buffer, we convert our vertex data
     /// from having three indices to having one. This usually requires some duplication of
-    /// data. We duplicate the minimum amount of vertex data necessary.
+    /// vertex data. We duplicate the minimum amount of vertex data necessary.
     ///
     /// FIXME: Wrote a test and threw code at the wall until it passed. Need to refactor
     /// this extensively! Any work on this before refactoring will not be worth the time
+    /// Split this up into smaller functions that it calls, and clean up those functions.
     pub fn combine_vertex_indices(&mut self) {
         type PosIndex = u16;
         type NormalIndex = u16;
@@ -119,7 +121,6 @@ impl BlenderMesh {
             }
             None => None,
         };
-        println!("{}", "Made it to for loop");
 
         for (elem_array_index, vert_id) in self.vertex_position_indices.iter().enumerate() {
             let vert_id = *vert_id;
@@ -313,6 +314,16 @@ impl BlenderMesh {
 }
 
 impl BlenderMesh {
+    /// Different vertices might have different numbers of bones that influence them.
+    /// A vertex near the shoulder might be influenced by the neck and upper arm and sternum,
+    /// while a vertex in a toe might only be influenced by a toe bone.
+    ///
+    /// When passing data to the GPU, each vertex needs the same number of bone attributes, so
+    /// we must add/remove bones from each vertex to get them equal.
+    ///
+    /// Say we're setting 3 groups per vertex:
+    ///  - If a vertex has one vertex group (bone) we will create two fake bones with 0.0 weight.
+    ///  - If a vertex has 5 bones we'll remove the one with the smallest weighting (influence).
     pub fn set_groups_per_vertex(&mut self, count: u8) {
         let mut normalized_group_indices = vec![];
         let mut normalized_group_weights = vec![];
@@ -394,10 +405,6 @@ pub fn parse_meshes_from_blender_stdout(
         index = next_start_index;
     }
 
-    // TODO: Breadcrumb - Plan mesh visualizer to visualizer our basic_cube.rs on paper.
-    // Step 1 is adding a function to our main crate that expands our 3 vertex indices into just one.
-    // Unit test it
-
     Ok(filenames_to_meshes)
 }
 
@@ -457,9 +464,6 @@ mod tests {
     fn combine_pos_norm_uv_indices() {
         let start_positions = concat_vecs!(v(0), v(1), v(2), v(3));
         let start_normals = concat_vecs!(v(4), v(5), v(6));
-
-        // TODO: Breadcrumb - add vertex group weights and indices into the
-        // start mesh and verify that we end up with the proper valuse
 
         let mut mesh_to_combine = BlenderMesh {
             vertex_positions: start_positions,
