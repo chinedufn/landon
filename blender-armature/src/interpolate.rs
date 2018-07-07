@@ -192,47 +192,26 @@ impl BlenderArmature {
         let mut interpolated_bones = HashMap::new();
 
         let keyframes = self.actions.get(action.action_name).unwrap();
-        //        let mut keyframe_times: Vec<f32> = keyframes
-        //            .iter()
-        //        .sort_by(|a, b| a.partial_cmp(b).unwrap());
 
         let first_keyframe = &keyframes[0];
 
-        let mut action_elapsed = opts.current_time - action.start_time;
-        let mut key_time_to_sample = first_keyframe.frame_time_secs + action_elapsed;
+        let mut time_elapsed_since_first_keyframe = opts.current_time - action.start_time;
+        let mut key_time_to_sample = first_keyframe.frame_time_secs + time_elapsed_since_first_keyframe;
 
         let action_duration =
             keyframes.last().unwrap().frame_time_secs - first_keyframe.frame_time_secs;
 
-        if action_elapsed > action_duration {
+        if time_elapsed_since_first_keyframe > action_duration {
             if action.should_loop {
-                action_elapsed = action_elapsed % action_duration;
+                time_elapsed_since_first_keyframe = time_elapsed_since_first_keyframe % action_duration;
             } else {
-                action_elapsed = action_duration;
+                time_elapsed_since_first_keyframe = action_duration;
             }
 
-            key_time_to_sample = first_keyframe.frame_time_secs + action_elapsed;
+            key_time_to_sample = first_keyframe.frame_time_secs + time_elapsed_since_first_keyframe;
         }
 
-        // The keyframes surrounding the current key time that we're going to sample
-        // TODO: get_surrounding_keyframes()
-        let mut action_lower_keyframe = None;
-        let mut action_upper_keyframe = None;
-
-        'lower_upper: for keyframe in keyframes {
-            if key_time_to_sample >= keyframe.frame_time_secs {
-                action_lower_keyframe = Some(keyframe);
-            }
-            if key_time_to_sample <= keyframe.frame_time_secs {
-                action_upper_keyframe = Some(keyframe);
-            }
-
-            if action_lower_keyframe.is_some() && action_upper_keyframe.is_some() {
-                break 'lower_upper;
-            }
-        }
-        let action_lower_keyframe = action_lower_keyframe.unwrap();
-        let action_upper_keyframe = action_upper_keyframe.unwrap();
+        let (action_lower_keyframe, action_upper_keyframe) = get_surrounding_keyframes(keyframes, key_time_to_sample);
 
         let percent_elapsed_into_keyframe = if action_lower_keyframe == action_upper_keyframe {
             0.0
@@ -275,6 +254,28 @@ fn interpolate_bones(start_bone: &Bone, end_bone: &Bone, amount: f32) -> Bone {
         },
         &Bone::Matrix(ref _matrix) => unimplemented!(),
     }
+}
+
+// If you're sampling time 1.5seconds and there are three keyframes, 0.0s, 1.8s, 2.2s the
+// surrounding keyframes are 0.0s and 1.8s
+fn get_surrounding_keyframes(keyframes: &Vec<Keyframe>, key_time_to_sample: f32) -> (&Keyframe, &Keyframe) {
+        let mut action_lower_keyframe = None;
+        let mut action_upper_keyframe = None;
+
+        'lower_upper: for keyframe in keyframes {
+            if key_time_to_sample >= keyframe.frame_time_secs {
+                action_lower_keyframe = Some(keyframe);
+            }
+            if key_time_to_sample <= keyframe.frame_time_secs {
+                action_upper_keyframe = Some(keyframe);
+            }
+
+            if action_lower_keyframe.is_some() && action_upper_keyframe.is_some() {
+                break 'lower_upper;
+            }
+        }
+
+    (action_lower_keyframe.unwrap(), action_upper_keyframe.unwrap())
 }
 
 fn dot_product(a: &Vec<f32>, b: &Vec<f32>) -> f32 {

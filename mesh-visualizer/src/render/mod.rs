@@ -18,6 +18,9 @@ use web_apis::WebGLRenderingContext;
 use web_apis::WebGLBuffer;
 use std::cell::RefCell;
 
+mod mesh_render;
+mod armature_render;
+
 // Temporarily using u16's until I can get GLbitfield / Glenum etc working. Take a look at the
 // commented out code in mod webapis to see what I mean.
 static GL_COLOR_BUFFER_BIT: u16 = 16384;

@@ -24,7 +24,7 @@ mod shader;
 
 mod render;
 
-static gl_DEPTH_TEST: u16 = 2929;
+static GL_DEPTH_TEST: u16 = 2929;
 
 #[wasm_bindgen(module = "./index")]
 extern "C" {
@@ -109,7 +109,7 @@ impl App {
     fn create_webgl_context(canvas: &HTMLCanvasElement) -> WebGLRenderingContext {
         let gl = canvas.get_context("webgl");
 
-        gl.enable(gl_DEPTH_TEST);
+        gl.enable(GL_DEPTH_TEST);
         gl.clear_color(0.0, 0.0, 0.0, 1.0);
         gl.viewport(0, 0, 500, 500);
 
