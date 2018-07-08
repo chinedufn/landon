@@ -1,4 +1,4 @@
-blender-exporter [![npm version](https://badge.fury.io/js/blender-exporter.svg)](http://badge.fury.io/js/blender-exporter) [![Build Status](https://travis-ci.org/chinedufn/blender-exporter.svg?branch=master)](https://travis-ci.org/chinedufn/blender-exporter)
+blender-exporter [![Build Status](https://travis-ci.org/chinedufn/blender-exporter.svg?branch=master)](https://travis-ci.org/chinedufn/blender-exporter) [![docs](https://docs.rs/blender-exporter/badge.svg)](https://docs.rs/blender-exporter)
 ===============
 
 > Blender python scripts/addons and Rust powered tooling for exporting data such as meshes and armatures from Blender
