@@ -3,6 +3,8 @@ blender-exporter [![Build Status](https://travis-ci.org/chinedufn/blender-export
 
 > Blender python scripts/addons and Rust powered tooling for exporting data such as meshes and armatures from Blender
 
+[blender-exporter cargo documentation](https://docs.rs/blender-exporter/badge.svg)
+
 ## Initial Background / Motivation
 
 Before this module I would export blender mesh / armature data to COLLADA using blender's collada exporter,
