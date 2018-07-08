@@ -8,3 +8,6 @@ mesh-visualizer/mesh_visualizer*
 
 # Generated serialized blender meshes
 mesh-visualizer/dist
+
+# GH Pages website
+mesh-visualizer/site-dist

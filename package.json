@@ -8,6 +8,7 @@
     "serve": "webpack-dev-server",
     "start": "lil-pids bin/visualizer-services",
     "watch:wasm": "chokidar 'mesh-visualizer/src' -c 'npm run build-visualizer'",
+    "release:site": "./bin/build-site.sh && webpack --config webpack.prod.js",
     "test": "standard"
   },
   "repository": {

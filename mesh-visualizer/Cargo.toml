@@ -27,7 +27,7 @@ serde_json = "1.0"
 
 # # Uncomment these lines to create smaller `.wasm` binaries, at the cost of
 # # longer compile times.
-# codegen-units = 1
-# incremental = false
-# lto = true
-# opt-level = "z"
+codegen-units = 1
+incremental = false
+lto = true
+opt-level = "z"
