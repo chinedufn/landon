@@ -1,7 +1,21 @@
+[package]
+name = "blender-exporter"
+version = "0.1.0"
+authors = ["Chinedu Francis Nwafili <frankie.nwafili@gmail.com>"]
+publish = true
+
+[dependencies]
+blender-armature = { path = "./blender-armature" }
+blender-mesh = { path = "./blender-mesh" }
+
+[dev-dependencies]
+serde = "1"
+serde_derive = "1"
+serde_json = "1"
+
 [workspace]
 members = [
   "blender-armature",
   "blender-mesh",
   "mesh-visualizer"
 ]
-

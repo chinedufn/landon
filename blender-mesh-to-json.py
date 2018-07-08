@@ -82,10 +82,17 @@ class MeshToJSON(bpy.types.Operator):
                 mesh_json['vertex_group_weights'].append(group.weight)
                 # groupName = mesh.vertex_groups[group.group].name
 
-            mesh_json['num_groups_for_each_vertex'].append(num_groups)
+            if mesh_json['armature_name'] != None:
+                mesh_json['num_groups_for_each_vertex'].append(num_groups)
 
         if mesh.parent != None and mesh.parent.type == 'ARMATURE':
             mesh_json['armature_name'] = mesh.parent.name
+
+
+        if mesh_json['armature_name'] == None:
+            mesh_json['vertex_group_indices'] = None
+            mesh_json['vertex_group_weights'] = None
+            mesh_json['num_groups_for_each_vertex'] = None
 
         # TODO: Add unit test for no mesh currently selected
         # if mesh == None or mesh.type != 'MESH':
