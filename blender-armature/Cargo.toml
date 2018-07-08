@@ -2,6 +2,9 @@
 name = "blender-armature"
 version = "0.0.1"
 authors = ["Chinedu Francis Nwafili <frankie.nwafili@gmail.com>"]
+description = "Serialize / deserialize Blender armatures"
+keywords = ["blender", "skeleton", "armature", "bone", "vertex"]
+license = "MIT"
 
 [dependencies]
 failure = "0.1"

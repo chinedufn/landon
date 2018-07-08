@@ -2,6 +2,10 @@
 name = "blender-mesh"
 version = "0.0.1"
 authors = ["Chinedu Francis Nwafili <frankie.nwafili@gmail.com>"]
+publish = true
+description = "Serialize / deserialize Blender armatures"
+keywords = ["blender", "skeleton", "armature", "bone", "vertex"]
+license = "MIT"
 
 [dependencies]
 failure = "0.1"
