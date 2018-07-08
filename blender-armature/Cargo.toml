@@ -5,6 +5,8 @@ authors = ["Chinedu Francis Nwafili <frankie.nwafili@gmail.com>"]
 description = "Serialize / deserialize Blender armatures"
 keywords = ["blender", "skeleton", "armature", "bone", "vertex"]
 license = "MIT"
+repository = "https://github.com/chinedufn/blender-exporter"
+documentation = "https://docs.rs/blender-exporter"
 
 [dependencies]
 failure = "0.1"

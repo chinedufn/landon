@@ -6,6 +6,8 @@ publish = true
 description = "Tooling for exporting data such as meshes and armatures from Blender"
 keywords = ["blender", "export", "exporter", "mesh", "armature"]
 license = "MIT"
+repository = "https://github.com/chinedufn/blender-exporter"
+documentation = "https://docs.rs/blender-exporter"
 
 [dependencies]
 blender-armature = { version = "0.0.1", path = "./blender-armature" }
