@@ -201,11 +201,9 @@ impl BlenderMesh {
         self.vertex_positions.resize(largest_vert_id * 3 + 3, 0.0);
         self.vertex_normals.resize(largest_vert_id * 3 + 3, 0.0);
 
-        if self.armature_name.is_some() {
-            self.vertex_group_indices = new_group_indices;
-            self.num_groups_for_each_vertex = new_groups_for_each_vert;
-            self.vertex_group_weights = new_group_weights;
-        }
+        self.vertex_group_indices = new_group_indices;
+        self.num_groups_for_each_vertex = new_groups_for_each_vert;
+        self.vertex_group_weights = new_group_weights;
 
         self.vertex_normal_indices = None;
     }

@@ -15,7 +15,7 @@ use std::process::Command;
 #[test]
 fn parse_skinned_letter_f_mesh_data() {
     let skinned_letter_f_blend = &abs_path("tests/skinned_letter_f.blend");
-    let run_addon = &abs_path("../run-addon.py");
+    let run_addon = &abs_path("./run-addon.py");
 
     // TODO: Move the CLI spawning and parsing into `lib.rs`. In our test just verify
     // the returned mesh data
@@ -48,12 +48,11 @@ fn parse_skinned_letter_f_mesh_data() {
     assert_eq!(mesh, &expected_mesh)
 }
 
-// TODO: Move these integration tests to the root directory since they encompass meshes and armatures
 #[test]
 fn parse_skinned_letter_f_armature_data() {
     let skinned_letter_f_blend = &abs_path("tests/skinned_letter_f.blend");
-    let install_addon = &abs_path("../blender-armature/install-armature-to-json.py");
-    let run_addon = &abs_path("../blender-armature/run-armature-to-json.py");
+    let install_addon = &abs_path("./blender-armature/install-armature-to-json.py");
+    let run_addon = &abs_path("./blender-armature/run-armature-to-json.py");
 
     // TODO: Move the CLI spawning and parsing into `lib.rs`. In our test just verify
     // the returned mesh data
@@ -71,8 +70,6 @@ fn parse_skinned_letter_f_armature_data() {
 
     let stderr = String::from_utf8(blender_output.stderr).unwrap();
     let stdout = String::from_utf8(blender_output.stdout).unwrap();
-
-    eprintln!("stdout = {}", stdout);
 
     assert_eq!(
         stderr, "",

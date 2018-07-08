@@ -43,6 +43,9 @@ class MeshToJSON(bpy.types.Operator):
             'num_groups_for_each_vertex': []
         }
 
+        if mesh.parent != None and mesh.parent.type == 'ARMATURE':
+            mesh_json['armature_name'] = mesh.parent.name
+
         # TODO: Handle triangular polygons, not just quads
         # cube.data.polygons[1].vertices[0]. Check if length
         # of face is 4... Use a triangular face in Blender to unit test.
@@ -84,10 +87,6 @@ class MeshToJSON(bpy.types.Operator):
 
             if mesh_json['armature_name'] != None:
                 mesh_json['num_groups_for_each_vertex'].append(num_groups)
-
-        if mesh.parent != None and mesh.parent.type == 'ARMATURE':
-            mesh_json['armature_name'] = mesh.parent.name
-
 
         if mesh_json['armature_name'] == None:
             mesh_json['vertex_group_indices'] = None
