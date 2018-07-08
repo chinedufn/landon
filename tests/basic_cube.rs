@@ -14,8 +14,8 @@ fn parse_data() {
     let install_addon = &abs_path("install-addon.py");
     let run_addon = &abs_path("run-addon.py");
 
-    // TODO: Move the CLI spawning and parsing into `lib.rs`. In our test just verify
-    // the returned mesh data
+    // TODO: Move the CLI spawning and parsing into `lib.rs`? In our test just verify
+    // the returned mesh data?
 
     let mut blender_output = Command::new("blender")
         .args(&["--background", basic_cube_blend])
