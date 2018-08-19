@@ -35,7 +35,7 @@ as `triangulating` your mesh you need `Rust` installed.
 So we need a binary with a CLI that you can use to interface with the API without needing Rust. As well as examples of integrating
 the tooling into your non-Rust application via foreign function interface... WebAssembly... etc.
 
-But for now.. Take a look at the [mesh-visualizer`](/mesh-visualizer) directory to see a full working example of implementing skeletal
+But for now.. Take a look at the [mesh-visualizer](/mesh-visualizer) directory to see a full working example of implementing skeletal
 animation with models that were exported using `blender-exporter`.
 
 ## Running the mesh visualizer locally
