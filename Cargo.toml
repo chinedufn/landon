@@ -11,7 +11,7 @@ documentation = "https://docs.rs/blender-exporter"
 
 [dependencies]
 blender-armature = { version = "0.0.1", path = "./blender-armature" }
-blender-mesh = { version = "0.0.1", path = "./blender-mesh" }
+blender-mesh = { version = "0.0.2", path = "./blender-mesh" }
 
 [dev-dependencies]
 serde = "1"
