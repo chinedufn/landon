@@ -437,7 +437,7 @@ fn find_first_mesh_after_index(
         mesh_name_to_data.insert(mesh_name, mesh_data);
         filenames_to_meshes.insert(mesh_filename, mesh_name_to_data);
 
-        return Some((filenames_to_meshes, mesh_end_index + 1));
+        return Some((filenames_to_meshes, index + mesh_end_index + 1));
     }
 
     return None;
@@ -503,8 +503,6 @@ mod tests {
 
         assert_eq!(combined_mesh, expected_mesh);
     }
-
-    // TODO: TDD a Method to normalize groups per vertex to all be the same number
 
     #[test]
     fn triangulate_faces() {
