@@ -10,7 +10,7 @@ use std::process::Command;
 
 #[test]
 fn parse_data() {
-    let basic_cube_blend = &abs_path("tests/basic_cube.blend");
+    let textured_cube_blend = &abs_path("tests/textured_cube.blend");
     let install_addon = &abs_path("install-addon.py");
     let run_addon = &abs_path("run-addon.py");
 
@@ -18,16 +18,20 @@ fn parse_data() {
     // the returned mesh data?
 
     let mut blender_output = Command::new("blender")
-        .args(&["--background", basic_cube_blend])
+        .args(&["--background", textured_cube_blend])
         .args(&["--python", run_addon])
         .arg("--")
         .output()
         .expect("Failed to execute Blender process");
 
-    let stderr = String::from_utf8(blender_output.stderr).unwrap();
-    assert_eq!(stderr, "");
 
     let stdout = String::from_utf8(blender_output.stdout).unwrap();
+    let stderr = String::from_utf8(blender_output.stderr).unwrap();
+
+    eprintln!("STDOUT!!!\n\n = {}", stdout);
+    eprintln!("STDERR!!!\n\n = {}", stderr);
+    
+    assert_eq!(stderr, "");
 
     let parsed_meshes = parse_meshes_from_blender_stdout(&stdout).unwrap();
 
@@ -35,8 +39,11 @@ fn parse_data() {
 
     let mesh = mesh.get("Cube").unwrap();
 
+    eprintln!("mesh = {:#?}", mesh);
+
     let expected_mesh = &expected_mesh_data();
     let expected_mesh: BlenderMesh = serde_json::from_str(expected_mesh).unwrap();
+
 
     assert_eq!(mesh, &expected_mesh)
 }
@@ -48,7 +55,8 @@ fn expected_mesh_data() -> String {
             "num_vertices_in_each_face": [ 4, 4, 4, 4, 4, 4 ],
             "vertex_normals": [ 0.0, 0.0, -1.0, 0.0, -0.0, 1.0, 1.0, -0.00000028312206, 0.000000044703413, -0.00000028312206, -1.0, -0.00000010430819, -1.0, 0.00000022351745, -0.00000013411044, 0.00000023841858, 1.0, 0.00000020861626 ],
             "vertex_normal_indices": [ 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5 ],
-            "armature_name": null
+            "armature_name": null,
+            "texture_name": "textured_cube-uv-layout"
         }
     "#.to_string()
 }

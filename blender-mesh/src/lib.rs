@@ -41,16 +41,25 @@ pub enum BlenderError {
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(test, derive(Default))]
 pub struct BlenderMesh {
+    /// All of the mesh's vertices. Three items in the vector make one vertex.
+    /// So indices 0, 1 and 2 are a vertex, 3, 4 and 5 are a vertex.. etc.
     /// [v1x, v1y, v1z, v2x, v2y, v2z, ...]
     pub vertex_positions: Vec<f32>,
     /// The indices within vertex positions that make up each triangle in our mesh.
     /// Three vertex position indices correspond to one triangle
     /// [0, 1, 2, 0, 2, 3, ...]
     pub vertex_position_indices: Vec<u16>,
-    /// TODO: enum.. if they're all equal we replace the MyEnum::PerVertex(u8) with MyEnum::Equal(4)
+    /// TODO: enum..? if they're all equal we replace the MyEnum::PerVertex(Vec<u8>) with MyEnum::Equal(4)
     pub num_vertices_in_each_face: Vec<u8>,
     pub vertex_normals: Vec<f32>,
     pub vertex_normal_indices: Option<Vec<u16>>,
+    /// If your mesh is textured these will be all of the mesh's vertices' uv coordinates.
+    /// Every vertex has two UV coordinates.
+    /// [v1s, v1t, v2s, v2t, v3s, v3t]
+    /// TODO: Combine vertex_uvs, vertex_uv_indices, texture_name into texture_info
+    pub vertex_uvs: Option<Vec<f32>>,
+    pub vertex_uv_indices: Option<Vec<f32>>,
+    pub texture_name: Option<String>,
     pub armature_name: Option<String>,
     /// TODO: When we move to single index triangulate and add new vertices give those vertices the same group indices / weights
     /// TODO: A function that trims this down to `n` weights and indices per vertex. Similar to our
@@ -58,7 +67,7 @@ pub struct BlenderMesh {
     /// TODO: Make sure that when we combine vertex indices we expand our group weights
     pub vertex_group_indices: Option<Vec<u8>>,
     pub vertex_group_weights: Option<Vec<f32>>,
-    /// TODO: enum.. if they're all equal we replace the MyEnum::PerVertex(u8) with MyEnum::Equal(4)
+    /// TODO: enum..? if they're all equal we replace the MyEnum::PerVertex(Vec<u8>) with MyEnum::Equal(4)
     pub num_groups_for_each_vertex: Option<Vec<u8>>, // TODO: textures: HashMap<TextureNameString, {uvs, uv_indices}>
 }
 

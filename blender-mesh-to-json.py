@@ -8,7 +8,7 @@ bl_info = {
 
 import bpy
 import json
-# import sys
+import os
 
 # Write our JSON to stdout by default or to a file if specified.
 # Stdout mesh JSON is wrapped in a start and end indicators
@@ -30,6 +30,8 @@ class MeshToJSON(bpy.types.Operator):
     # filepath = bpy.props.StringProperty(name='filepath')
 
     def execute(self, context):
+        bpy.ops.object.mode_set(mode = 'OBJECT')
+
         mesh = bpy.context.active_object
         mesh_json = {
             'vertex_positions': [],
@@ -37,6 +39,9 @@ class MeshToJSON(bpy.types.Operator):
             'vertex_position_indices': [],
             'vertex_normals': [],
             'vertex_normal_indices': [],
+            'vertex_uvs': [],
+            'vertex_uv_indices': [],
+            'texture_name': None,
             'armature_name': None,
             'vertex_group_indices': [],
             'vertex_group_weights': [],
@@ -45,6 +50,10 @@ class MeshToJSON(bpy.types.Operator):
 
         if mesh.parent != None and mesh.parent.type == 'ARMATURE':
             mesh_json['armature_name'] = mesh.parent.name
+
+        if mesh.data.uv_textures:
+            texture_name = mesh.data.uv_textures.active.data[0].image.name
+            mesh_json['texture_name'] = os.path.splitext(texture_name)[0]
 
         # TODO: Handle triangular polygons, not just quads
         # cube.data.polygons[1].vertices[0]. Check if length
@@ -62,11 +71,13 @@ class MeshToJSON(bpy.types.Operator):
                 # for smoothed models that mostly re-use the same normals. Test this by
                 # making a cube with to faces that have the same normal
                 mesh_json['vertex_normal_indices'].append(index)
+                mesh_json['vertex_uv_indices'].append(face.loop_indices[i])
 
             # TODO: Don't append normals if we've already encountered them
             mesh_json['vertex_normals'].append(face.normal.x)
             mesh_json['vertex_normals'].append(face.normal.y)
             mesh_json['vertex_normals'].append(face.normal.z)
+
             index += 1
 
         # TODO: Breadcrumb - iterate over the vertices and add them to mesh_json
@@ -88,10 +99,18 @@ class MeshToJSON(bpy.types.Operator):
             if mesh_json['armature_name'] != None:
                 mesh_json['num_groups_for_each_vertex'].append(num_groups)
 
+        for loop in mesh.data.uv_layers.active.data:
+            mesh_json['vertex_uvs'].append(loop.uv.x)
+            mesh_json['vertex_uvs'].append(loop.uv.y)
+
         if mesh_json['armature_name'] == None:
             mesh_json['vertex_group_indices'] = None
             mesh_json['vertex_group_weights'] = None
             mesh_json['num_groups_for_each_vertex'] = None
+
+        if mesh_json['texture_name'] == None:
+            mesh_json['vertex_uvs'] = None
+            mesh_json['vertex_uv_indices'] = None
 
         # TODO: Add unit test for no mesh currently selected
         # if mesh == None or mesh.type != 'MESH':
@@ -117,3 +136,4 @@ def unregister():
 
 if __name__ == "__main__":
     register()
+
