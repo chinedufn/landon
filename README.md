@@ -3,7 +3,14 @@ blender-exporter [![Build Status](https://travis-ci.org/chinedufn/blender-export
 
 > Blender python scripts/addons and Rust powered tooling for exporting data such as meshes and armatures from Blender
 
-[blender-exporter cargo documentation](https://docs.rs/blender-exporter/badge.svg)
+[The Blender Exporter Book](https://chinedufn.github.io/blender-exporter/)
+
+- [blender-exporter cargo documentation](https://docs.rs/blender-exporter/badge.svg)
+
+- [blender-mesh API docs](https://chinedufn.github.io/percy/api/blender_mesh)
+
+- [blender-armature API docs](https://chinedufn.github.io/percy/api/blender_armature)
+
 
 ## Initial Background / Motivation
 
