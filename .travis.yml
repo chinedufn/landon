@@ -1,0 +1,38 @@
+language: rust
+sudo: false
+
+cache:
+    - cargo
+
+matrix:
+  include:
+    # Run tests for all crates
+    - rust: nightly
+      env: JOB=test-everything
+      script:
+        - cargo test --all
+    # Build documentation for the gh-pages branch
+    - rust: nightly
+      env: JOB=book-build-and-deploy
+      cache:
+        directories:
+          - $HOME/.cargo
+      before_script:
+        - (test -x $HOME/.cargo/bin/cargo-install-update || cargo install cargo-update)
+        - (test -x $HOME/.cargo/bin/mdbook || cargo install --vers "^0.1" mdbook)
+        - cargo install-update -a
+      script:
+        - (cd guide && mdbook build)
+        - cargo doc --no-deps -p blender-mesh -p blender-armature
+        - mv target/doc book/book/api
+      deploy:
+        provider: pages
+        skip-cleanup: true
+        github-token: $GITHUB_TOKEN  # Set in travis-ci.org dashboard, marked secure
+        local-dir: guide/book
+        keep-history: false
+      if: branch = master
+
+notifications:
+  email:
+    on_success: never
