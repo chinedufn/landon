@@ -8,10 +8,13 @@ build = "build.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-wasm-bindgen = "0.2.4"
 blender-mesh = { path = "../blender-mesh" }
 blender-armature = { path = "../blender-armature" }
 cgmath = "0.16"
+
+[dependencies.wasm-bindgen]
+version = "0.2.19"
+features = ["nightly"]
 
 [build-dependencies]
 blender-mesh = { path = "../blender-mesh" }

@@ -1,4 +1,4 @@
-#![feature(proc_macro, wasm_custom_section, wasm_import_module)]
+#![feature(use_extern_macros)]
 
 extern crate blender_armature;
 extern crate blender_mesh;
@@ -67,7 +67,7 @@ impl App {
         );
 
         App {
-            current_model: "LetterF".to_string(),
+            current_model: "TexturedCube".to_string(),
             state: Rc::clone(&state),
             assets: Rc::clone(&assets),
             renderer,

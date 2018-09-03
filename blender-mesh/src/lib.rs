@@ -33,7 +33,10 @@ use std::collections::HashSet;
 pub enum BlenderError {
     /// Errors in Blender are written to stderr. We capture the stderr from the `blender` child
     /// process that we spawned when attempting to export meshes from a `.blend` file.
-    #[fail(display = "There was an issue while exporting meshes: Blender stderr output: {}", _0)]
+    #[fail(
+        display = "There was an issue while exporting meshes: Blender stderr output: {}",
+        _0
+    )]
     Stderr(String),
 }
 
@@ -58,7 +61,7 @@ pub struct BlenderMesh {
     /// [v1s, v1t, v2s, v2t, v3s, v3t]
     /// TODO: Combine vertex_uvs, vertex_uv_indices, texture_name into texture_info
     pub vertex_uvs: Option<Vec<f32>>,
-    pub vertex_uv_indices: Option<Vec<f32>>,
+    pub vertex_uv_indices: Option<Vec<u16>>,
     pub texture_name: Option<String>,
     pub armature_name: Option<String>,
     /// TODO: When we move to single index triangulate and add new vertices give those vertices the same group indices / weights
@@ -77,165 +80,7 @@ impl BlenderMesh {
     }
 }
 
-impl BlenderMesh {
-    /// We export our models with indices for positions, normals and uvs because
-    ///
-    ///  1) Easier because we we can unit test that here vs. a blender python script that's much
-    ///     trickier to test.
-    ///  2) Reduces amount of data required to represent the model on disk.
-    ///
-    /// OpenGL only supports one index buffer, we convert our vertex data
-    /// from having three indices to having one. This usually requires some duplication of
-    /// vertex data. We duplicate the minimum amount of vertex data necessary.
-    ///
-    /// FIXME: Wrote a test and threw code at the wall until it passed. Need to refactor
-    /// this extensively! Any work on this before refactoring will not be worth the time
-    /// Split this up into smaller functions that it calls, and clean up those functions.
-    pub fn combine_vertex_indices(&mut self) {
-        type PosIndex = u16;
-        type NormalIndex = u16;
-        type UvIndex = Option<u16>;
-        type EncounteredIndices = HashMap<(PosIndex, NormalIndex, UvIndex), PosIndex>;
-
-        let mut largest_vert_id = *self.vertex_position_indices.iter().max().unwrap() as usize;
-
-        let mut encountered_vert_data: EncounteredIndices = HashMap::new();
-        let mut encountered_vert_ids = HashSet::new();
-
-        let mut single_normals = vec![];
-        single_normals.resize(
-            max(self.vertex_positions.len(), self.vertex_normals.len()),
-            0.0,
-        );
-
-        let mut new_pos_indices = vec![];
-
-        let mut new_group_indices = self.vertex_group_indices.clone();
-        let mut new_group_weights = self.vertex_group_weights.clone();
-        let mut new_groups_for_each_vert = self.num_groups_for_each_vertex.clone();
-
-        new_pos_indices.resize(self.vertex_position_indices.len(), 0);
-
-        let mut total_previous: u32 = 0;
-        let vert_group_map = match self.num_groups_for_each_vertex.as_ref() {
-            Some(num_groups_per) => {
-                let mut map = HashMap::new();
-
-                for (index, num) in num_groups_per.iter().enumerate() {
-                    map.insert(index, total_previous);
-                    total_previous += *num as u32;
-                }
-
-                Some(map)
-            }
-            None => None,
-        };
-
-        for (elem_array_index, vert_id) in self.vertex_position_indices.iter().enumerate() {
-            let vert_id = *vert_id;
-            let normal_index = self.vertex_normal_indices.as_ref().unwrap()[elem_array_index];
-
-            let mut vert_id_to_reuse = encountered_vert_data
-                .get(&(vert_id, normal_index, None))
-                .cloned();
-
-            if vert_id_to_reuse.is_some() || !encountered_vert_ids.contains(&vert_id) {
-                let vert_id = match vert_id_to_reuse {
-                    Some(i) => i,
-                    None => vert_id,
-                };
-
-                // TODO: vert_num -> element_array_index
-                // TODO: pos_index / index_to_reuse -> vertex_id / vertex_id_to_reuse
-                new_pos_indices[elem_array_index] = vert_id;
-
-                // TODO: Six methods to get and set the normal, pos, and uv for a vertex_num
-
-                single_normals[vert_id as usize * 3] = self.vertex_x_normal(normal_index);
-                single_normals[vert_id as usize * 3 + 1] = self.vertex_y_normal(normal_index);
-                single_normals[vert_id as usize * 3 + 2] = self.vertex_z_normal(normal_index);
-
-                encountered_vert_ids.insert(vert_id);
-                encountered_vert_data.insert((vert_id, normal_index, None), vert_id);
-            } else {
-                largest_vert_id += 1;
-
-                new_pos_indices[elem_array_index] = largest_vert_id as u16;
-
-                let x = self.vertex_x_pos(vert_id);
-                self.vertex_positions.push(x);
-
-                let y = self.vertex_y_pos(vert_id);
-                self.vertex_positions.push(y);
-
-                let z = self.vertex_z_pos(vert_id);
-                self.vertex_positions.push(z);
-
-                single_normals.push(self.vertex_x_normal(normal_index));
-                single_normals.push(self.vertex_y_normal(normal_index));
-                single_normals.push(self.vertex_z_normal(normal_index));
-
-                match self.num_groups_for_each_vertex.as_ref() {
-                    Some(num_groups_for_each_vertex) => {
-                        let pos_index = vert_id as usize;
-                        let foo =
-                            *vert_group_map.as_ref().unwrap().get(&pos_index).unwrap() as usize;
-
-                        let num_groups_for_this_vertex =
-                            num_groups_for_each_vertex[pos_index as usize];
-                        new_groups_for_each_vert
-                            .as_mut()
-                            .unwrap()
-                            .push(num_groups_for_this_vertex);
-
-                        for i in 0..num_groups_for_this_vertex {
-                            let weight = new_group_weights.as_ref().unwrap()[foo + i as usize];
-                            new_group_weights.as_mut().unwrap().push(weight);
-
-                            let index = new_group_indices.as_ref().unwrap()[foo + i as usize];
-                            new_group_indices.as_mut().unwrap().push(index);
-                        }
-                    }
-                    None => {}
-                };
-
-                encountered_vert_data
-                    .insert((vert_id as u16, normal_index, None), largest_vert_id as u16);
-            }
-        }
-
-        self.vertex_position_indices = new_pos_indices;
-        self.vertex_normals = single_normals;
-
-        self.vertex_positions.resize(largest_vert_id * 3 + 3, 0.0);
-        self.vertex_normals.resize(largest_vert_id * 3 + 3, 0.0);
-
-        self.vertex_group_indices = new_group_indices;
-        self.num_groups_for_each_vertex = new_groups_for_each_vert;
-        self.vertex_group_weights = new_group_weights;
-
-        self.vertex_normal_indices = None;
-    }
-
-    fn vertex_x_pos(&self, vertex_id: u16) -> f32 {
-        self.vertex_positions[vertex_id as usize * 3 + 0]
-    }
-    fn vertex_y_pos(&self, vertex_id: u16) -> f32 {
-        self.vertex_positions[vertex_id as usize * 3 + 1]
-    }
-    fn vertex_z_pos(&self, vertex_id: u16) -> f32 {
-        self.vertex_positions[vertex_id as usize * 3 + 2]
-    }
-    fn vertex_x_normal(&self, vertex_id: u16) -> f32 {
-        self.vertex_normals[vertex_id as usize * 3 + 0]
-    }
-    fn vertex_y_normal(&self, vertex_id: u16) -> f32 {
-        self.vertex_normals[vertex_id as usize * 3 + 1]
-    }
-    fn vertex_z_normal(&self, vertex_id: u16) -> f32 {
-        self.vertex_normals[vertex_id as usize * 3 + 2]
-    }
-}
+mod combine_indices;
 
 impl BlenderMesh {
     /// When exporting a mesh from Blender, faces will usually have 4 vertices (quad) but some
@@ -377,8 +222,7 @@ impl BlenderMesh {
 
                         current_index += *group_count as u32;
                         count
-                    })
-                    .collect(),
+                    }).collect(),
             );
         }
 
@@ -469,16 +313,31 @@ mod tests {
         }
     }
 
-    #[test]
-    fn combine_pos_norm_uv_indices() {
+    struct CombineIndicesTest {
+        mesh_to_combine: BlenderMesh,
+        expected_combined_mesh: BlenderMesh,
+    }
+
+    fn test_combine_indices(mut combine_indices_test: CombineIndicesTest) {
+        combine_indices_test
+            .mesh_to_combine
+            .combine_vertex_indices();
+        let combined_mesh = combine_indices_test.mesh_to_combine;
+        assert_eq!(combined_mesh, combine_indices_test.expected_combined_mesh);
+    }
+
+    fn make_mesh_to_combine_without_uvs() -> BlenderMesh {
         let start_positions = concat_vecs!(v(0), v(1), v(2), v(3));
         let start_normals = concat_vecs!(v(4), v(5), v(6));
 
-        let mut mesh_to_combine = BlenderMesh {
+        BlenderMesh {
             vertex_positions: start_positions,
             vertex_position_indices: vec![0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3],
             num_vertices_in_each_face: vec![4, 4, 4],
             vertex_normals: start_normals,
+            // Our last 4 vertices already exist so our expected mesh will generate
+            // position indices 4, 5, 6 and 7 and use those for the second to last 4 and
+            // then last 4 indices
             vertex_normal_indices: Some(vec![0, 1, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2]),
             num_groups_for_each_vertex: Some(vec![3, 2, 5, 1]),
             vertex_group_indices: Some(vec![0, 1, 2, 0, 3, 4, 5, 6, 7, 8, 11]),
@@ -486,12 +345,14 @@ mod tests {
                 0.05, 0.8, 0.15, 0.5, 0.5, 0.1, 0.2, 0.2, 0.2, 0.3, 0.999,
             ]),
             ..BlenderMesh::default()
-        };
+        }
+    }
 
+    fn make_expected_combined_mesh() -> BlenderMesh {
         let end_positions = concat_vecs!(v(0), v(1), v(2), v(3), v(0), v(1), v(2), v(3));
         let end_normals = concat_vecs!(v(4), v(5), v(4), v(5), v(6), v(6), v(6), v(6));
 
-        let expected_mesh = BlenderMesh {
+        BlenderMesh {
             vertex_positions: end_positions,
             vertex_position_indices: vec![0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7],
             num_vertices_in_each_face: vec![4, 4, 4],
@@ -505,12 +366,81 @@ mod tests {
                 0.5, 0.1, 0.2, 0.2, 0.2, 0.3, 0.999,
             ]),
             ..BlenderMesh::default()
+        }
+    }
+
+    #[test]
+    fn combine_pos_norm_indices() {
+        let mesh_to_combine = make_mesh_to_combine_without_uvs();
+        let expected_combined_mesh = make_expected_combined_mesh();
+
+        test_combine_indices(CombineIndicesTest {
+            mesh_to_combine,
+            expected_combined_mesh,
+        });
+    }
+
+    #[test]
+    fn combine_pos_norm_uv_indices() {
+        // We create a mesh where our first three triangles have no repeating vertices
+        // (across norms, uvs and positions) then our fourth triangle has all repeating vertices
+        let mesh_to_combine = BlenderMesh {
+            vertex_positions: concat_vecs!(v(0), v(1), v(2), v(3)),
+            vertex_normals: concat_vecs!(v(4), v(5), v(6)),
+            num_vertices_in_each_face: vec![4, 4, 4, 4],
+            vertex_position_indices: concat_vecs!(
+                vec![0, 1, 2, 3],
+                vec![0, 1, 2, 3],
+                vec![0, 1, 2, 3],
+                vec![0, 1, 2, 3]
+            ),
+            vertex_normal_indices: Some(concat_vecs!(
+                vec![0, 1, 0, 1],
+                vec![2, 2, 2, 2],
+                vec![2, 2, 2, 2],
+                vec![2, 2, 2, 2]
+            )),
+            vertex_uvs: Some(concat_vecs!(v2(7), v2(8), v2(9), v2(10))),
+            vertex_uv_indices: Some(concat_vecs!(
+                vec![0, 1, 0, 1],
+                vec![2, 2, 2, 2],
+                vec![3, 3, 3, 3],
+                vec![3, 3, 3, 3]
+            )),
+            // We already tested vertex group indices / weights about so not bothering setting up
+            // more test data
+            num_groups_for_each_vertex: None,
+            vertex_group_indices: None,
+            vertex_group_weights: None,
+            ..BlenderMesh::default()
         };
 
-        mesh_to_combine.combine_vertex_indices();
-        let combined_mesh = mesh_to_combine;
+        let expected_combined_mesh = BlenderMesh {
+            vertex_positions: concat_vecs!(v3_x4(0, 1, 2, 3), v3_x4(0, 1, 2, 3), v3_x4(0, 1, 2, 3)),
+            vertex_position_indices: concat_vecs![
+                // First Triangle
+                vec![0, 1, 2, 3,],
+                // Second Triangle
+                vec![4, 5, 6, 7],
+                // Third Triangle
+                vec![8, 9, 10, 11],
+                // Fourth Triangle
+                vec![8, 9, 10, 11]
+            ],
+            num_vertices_in_each_face: vec![4, 4, 4, 4],
+            vertex_normals: concat_vecs!(v3_x4(4, 5, 4, 5), v3_x4(6, 6, 6, 6), v3_x4(6, 6, 6, 6)),
+            vertex_uvs: Some(concat_vecs!(
+                v2_x4(7, 8, 7, 8),
+                v2_x4(9, 9, 9, 9),
+                v2_x4(10, 10, 10, 10)
+            )),
+            ..BlenderMesh::default()
+        };
 
-        assert_eq!(combined_mesh, expected_mesh);
+        test_combine_indices(CombineIndicesTest {
+            mesh_to_combine,
+            expected_combined_mesh,
+        });
     }
 
     #[test]
@@ -580,5 +510,17 @@ mod tests {
     // v(0.0) -> vec![0.0, 0.0, 0.0]
     fn v(val: u8) -> Vec<f32> {
         vec![val as f32, val as f32, val as f32]
+    }
+
+    fn v2_x4(vert1: u8, vert2: u8, vert3: u8, vert4: u8) -> Vec<f32> {
+        concat_vecs!(v2(vert1), v2(vert2), v2(vert3), v2(vert4))
+    }
+
+    fn v3_x4(v1: u8, v2: u8, v3: u8, v4: u8) -> Vec<f32> {
+        concat_vecs!(v(v1), v(v2), v(v3), v(v4))
+    }
+
+    fn v2(val: u8) -> Vec<f32> {
+        vec![val as f32, val as f32]
     }
 }

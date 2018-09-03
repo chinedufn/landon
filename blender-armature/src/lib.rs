@@ -40,7 +40,10 @@ pub use interpolate::InterpolationSettings;
 pub enum BlenderError {
     /// Errors in Blender are written to stderr. We capture the stderr from the `blender` child
     /// process that we spawned when attempting to export armature from a `.blend` file.
-    #[fail(display = "There was an issue while exporting armature: Blender stderr output: {}", _0)]
+    #[fail(
+        display = "There was an issue while exporting armature: Blender stderr output: {}",
+        _0
+    )]
     Stderr(String),
 }
 

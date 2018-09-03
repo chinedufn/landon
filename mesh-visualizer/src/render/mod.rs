@@ -12,14 +12,14 @@ use shader::Shader;
 use shader::ShaderSystem;
 use shader::ShaderType;
 use state::State;
+use std::cell::RefCell;
 use std::f32::consts::PI;
 use std::rc::Rc;
-use web_apis::WebGLRenderingContext;
 use web_apis::WebGLBuffer;
-use std::cell::RefCell;
+use web_apis::WebGLRenderingContext;
 
-mod mesh_render;
 mod armature_render;
+mod mesh_render;
 
 // Temporarily using u16's until I can get GLbitfield / Glenum etc working. Take a look at the
 // commented out code in mod webapis to see what I mean.

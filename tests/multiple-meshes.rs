@@ -4,15 +4,15 @@
 
 extern crate blender_mesh;
 
+use blender_mesh::parse_meshes_from_blender_stdout;
+use blender_mesh::BlenderMesh;
+use std::collections::HashMap;
+use std::env::current_dir;
 use std::fs;
 use std::fs::DirBuilder;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
-use std::collections::HashMap;
-use blender_mesh::BlenderMesh;
-use blender_mesh::parse_meshes_from_blender_stdout;
-use std::path::Path;
-use std::env::current_dir;
 
 #[test]
 fn parse_file_with_multiple_meshes() {
@@ -33,8 +33,7 @@ fn parse_file_with_multiple_meshes() {
         .expect("Failed to execute Blender process");
 
     let stdout = String::from_utf8(blender_output.stdout).unwrap();
-    let parsed_armatures = parse_meshes_from_blender_stdout(&stdout)
-        .unwrap();
+    let parsed_armatures = parse_meshes_from_blender_stdout(&stdout).unwrap();
 }
 
 fn abs_path(path: &str) -> String {
