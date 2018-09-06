@@ -39,7 +39,7 @@ static GL_UNSIGNED_SHORT: u16 = 5123;
 pub struct Renderer {
     gl: Rc<WebGLRenderingContext>,
     assets: Rc<RefCell<Assets>>,
-    shader_sys: ShaderSystem,
+    shader_sys: Rc<ShaderSystem>,
     state: Rc<State>,
 }
 
@@ -101,6 +101,9 @@ impl BlenderMeshRender for BlenderMesh {
         let vertex_normal_attrib = gl.get_attrib_location(&shader.program, "aVertexNormal");
         gl.enable_vertex_attrib_array(vertex_normal_attrib);
 
+        let texture_coord_attrib = gl.get_attrib_location(&shader.program, "aTextureCoord");
+        gl.enable_vertex_attrib_array(texture_coord_attrib);
+
         let fovy = cgmath::Rad(PI / 3.0);
         let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
         let mut p_matrix = vec_from_matrix4(&perspective);
@@ -132,6 +135,9 @@ impl BlenderMeshRender for BlenderMesh {
         let norms = self.vertex_normals.clone();
         self.buffer_f32_data(&gl, &shader.buffers[1], norms, vertex_normal_attrib, 3);
 
+        let uvs = self.vertex_uvs.as_ref().unwrap().clone();
+        self.buffer_f32_data(&gl, &shader.buffers[2], uvs, texture_coord_attrib, 2);
+
         let index_buffer = gl.create_buffer();
         gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
@@ -156,6 +162,9 @@ impl BlenderMeshRender for BlenderMesh {
 
         let joint_weight_attrib = gl.get_attrib_location(&shader.program, "aJointWeight");
         gl.enable_vertex_attrib_array(joint_weight_attrib);
+
+        let texture_coord_attrib = gl.get_attrib_location(&shader.program, "aTextureCoord");
+        gl.enable_vertex_attrib_array(texture_coord_attrib);
 
         let fovy = cgmath::Rad(PI / 3.0);
         let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
@@ -194,6 +203,9 @@ impl BlenderMeshRender for BlenderMesh {
         let weights = self.vertex_group_weights.as_ref().unwrap().clone();
         self.buffer_f32_data(&gl, &shader.buffers[3], weights, joint_weight_attrib, 4);
 
+        let uvs = self.vertex_uvs.as_ref().unwrap().clone();
+        self.buffer_f32_data(&gl, &shader.buffers[4], uvs, texture_coord_attrib, 2);
+
         let index_buffer = gl.create_buffer();
         gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
@@ -212,7 +224,7 @@ impl Renderer {
     pub fn new(
         gl: Rc<WebGLRenderingContext>,
         assets: Rc<RefCell<Assets>>,
-        shader_sys: ShaderSystem,
+        shader_sys: Rc<ShaderSystem>,
         state: Rc<State>,
     ) -> Renderer {
         Renderer {

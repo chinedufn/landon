@@ -122,6 +122,9 @@ extern "C" {
     #[wasm_bindgen(method, js_name = uniform4fv)]
     pub fn uniform_4fv(this: &WebGLRenderingContext, loc: WebGLUniformLocation, value: Vec<f32>);
 
+    #[wasm_bindgen(method)]
+    pub fn uniform1i(this: &WebGLRenderingContext, loc: WebGLUniformLocation, value: u16);
+
     #[wasm_bindgen(method, js_name = createBuffer)]
     pub fn create_buffer(this: &WebGLRenderingContext) -> WebGLBuffer;
 
@@ -179,6 +182,30 @@ extern "C" {
 //
 //    #[wasm_bindgen(method, getter, js_name = FRAGMENT_SHADER)]
 //    pub fn FRAGMENT_SHADER(this: &WebGLRenderingContext) -> u16;
+}
+
+#[wasm_bindgen]
+extern "C" {
+    pub type HTMLImageElement;
+    pub type WebGLTexture;
+
+    #[wasm_bindgen(method, js_name = activeTexture)]
+    pub fn active_texture(this: &WebGLRenderingContext, texture_unit: u16);
+
+    #[wasm_bindgen(method, js_name = createTexture)]
+    pub fn create_texture(this: &WebGLRenderingContext) -> WebGLTexture;
+
+    #[wasm_bindgen(method, js_name = bindTexture)]
+    pub fn bind_texture(this: &WebGLRenderingContext, texture_type: u16, texture: WebGLTexture);
+
+    #[wasm_bindgen(method, js_name = pixelStorei)]
+    pub fn pixel_store_i(this: &WebGLRenderingContext, pname: u16, param: bool);
+
+    #[wasm_bindgen(method, js_name = texParameteri)]
+    pub fn tex_parameter_i(this: &WebGLRenderingContext, target: u16, pname: u16, param: u16);
+
+    #[wasm_bindgen(method, js_name = texImage2D)]
+    pub fn tex_image_2D(this: &WebGLRenderingContext, target: u16, level: u16, internal_format: u16, format: u16, kind: u16, image: HTMLImageElement);
 }
 
 #[wasm_bindgen]

@@ -33,10 +33,10 @@ void main(void) {
   vec3 specular = shininess * spec * vec3(0.628281, 0.555802, 0.366065);
 
   vec4 base_color;
-  if (uUseTexture) {
+  if (true || uUseTexture) {
    vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
    // TODO: Lighting
-   gl_FragColor = vec4(textureColor.rgb * 1.0, textureColor.a);
+   gl_FragColor = textureColor;
   } else {
     gl_FragColor = vec4(ambient + diffuse + specular, 1.0);
   }

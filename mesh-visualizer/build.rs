@@ -10,6 +10,10 @@ use std::process::Command;
 // TODO: Make a directory for all of our temp build stuff (py scripts) so that we can delete it
 // all easily when we're done by deleting the dir
 fn main() {
+    rm_and_create_dir("./dist");
+
+    copy_texture_to_dist();
+
     let mut blender_files = vec![];
 
     let tests_dir = PathBuf::from("../tests");
@@ -68,8 +72,6 @@ fn main() {
     let meshes = blender_mesh::parse_meshes_from_blender_stdout(&blender_stdout).unwrap();
     let armatures = blender_armature::parse_armatures_from_blender_stdout(&blender_stdout).unwrap();
 
-    rm_and_create_dir("./dist");
-
     for (_filename, meshes) in meshes.iter() {
         for (mesh_name, mesh) in meshes.iter() {
             let mesh_json = serde_json::to_string(mesh).unwrap();
@@ -87,6 +89,12 @@ fn main() {
             fs::write(armature_json_filename, armature_json).unwrap();
         }
     }
+}
+
+fn copy_texture_to_dist () {
+    println!("cargo:rerun-if-changed=../tests/textured_cube-uv-layout.png");
+
+    fs::copy("../tests/textured_cube-uv-layout.png", "./dist/textured_cube-uv-layout.png").unwrap();
 }
 
 fn rm_and_create_dir(dirname: &str) {

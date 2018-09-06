@@ -4,6 +4,7 @@
 use blender_armature::BlenderArmature;
 use blender_mesh::BlenderMesh;
 use download_mesh;
+use download_texture;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -11,11 +12,12 @@ use wasm_bindgen::prelude::*;
 
 type Meshes = Rc<RefCell<HashMap<String, BlenderMesh>>>;
 type Armatures = Rc<RefCell<HashMap<String, BlenderArmature>>>;
+use web_apis::*;
 
 pub struct Assets {
     /// All of our Blender models that we have downloaded and can render
     meshes: Meshes,
-    /// Al of our Blender armatures that we have downloaded and can render
+    /// All of our Blender armatures that we have downloaded and can render
     armatures: Armatures,
 }
 

@@ -7,7 +7,7 @@ pub struct State {
     pub last_tick_time: SystemTime,
     pub app_start_time: SystemTime,
     /// The model that the user is currently viewing in their browser
-    pub current_model: String
+    pub current_model: String,
 }
 
 impl State {
@@ -15,7 +15,7 @@ impl State {
         State {
             last_tick_time: State::performance_now_to_system_time(),
             app_start_time: State::performance_now_to_system_time(),
-            current_model: "TexturedCube".to_string()
+            current_model: "TexturedCube".to_string(),
         }
     }
 

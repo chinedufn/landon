@@ -69,6 +69,7 @@ impl ShaderSystem {
             gl.create_buffer(),
             gl.create_buffer(),
             gl.create_buffer(),
+            gl.create_buffer(),
         ];
 
         shaders.insert(
@@ -80,6 +81,7 @@ impl ShaderSystem {
         );
 
         let buffers = vec![
+            gl.create_buffer(),
             gl.create_buffer(),
             gl.create_buffer(),
             gl.create_buffer(),
