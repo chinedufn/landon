@@ -71,7 +71,8 @@ class MeshToJSON(bpy.types.Operator):
                 # for smoothed models that mostly re-use the same normals. Test this by
                 # making a cube with to faces that have the same normal
                 mesh_json['vertex_normal_indices'].append(index)
-                mesh_json['vertex_uv_indices'].append(face.loop_indices[i])
+                if mesh.data.uv_textures:
+                    mesh_json['vertex_uv_indices'].append(face.loop_indices[i])
 
             # TODO: Don't append normals if we've already encountered them
             mesh_json['vertex_normals'].append(face.normal.x)
@@ -99,9 +100,10 @@ class MeshToJSON(bpy.types.Operator):
             if mesh_json['armature_name'] != None:
                 mesh_json['num_groups_for_each_vertex'].append(num_groups)
 
-        for loop in mesh.data.uv_layers.active.data:
-            mesh_json['vertex_uvs'].append(loop.uv.x)
-            mesh_json['vertex_uvs'].append(loop.uv.y)
+        if mesh.data.uv_textures:
+            for loop in mesh.data.uv_layers.active.data:
+                mesh_json['vertex_uvs'].append(loop.uv.x)
+                mesh_json['vertex_uvs'].append(loop.uv.y)
 
         if mesh_json['armature_name'] == None:
             mesh_json['vertex_group_indices'] = None

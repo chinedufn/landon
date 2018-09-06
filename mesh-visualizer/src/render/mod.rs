@@ -229,24 +229,27 @@ impl Renderer {
         let mesh = self.assets.borrow().meshes();
         let mesh = mesh.borrow();
         // let mesh = mesh.get(&state.current_model);
-        let mesh = mesh.get("LetterF");
+        let mesh = mesh.get(&self.state.current_model);
 
         let armature = self.assets.borrow().armatures();
         let armature = armature.borrow();
         let armature = armature.get("LetterFArmature");
 
-        if mesh.is_none() || armature.is_none() {
+//        if mesh.is_none() || armature.is_none() {
+//            return;
+//        }
+        if mesh.is_none() {
             return;
         }
 
         let mesh = mesh.unwrap();
-        let armature = armature.unwrap();
+//        let armature = armature.unwrap();
 
         self.shader_sys.use_program(&mesh.shader_type());
 
         let shader = self.shader_sys.get_shader(&mesh.shader_type());
 
-        armature.buffer_data(&self.gl, &shader, &state);
+//        armature.buffer_data(&self.gl, &shader, &state);
         mesh.render(&self.gl, &shader);
     }
 }

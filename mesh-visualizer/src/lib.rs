@@ -37,8 +37,6 @@ use std::cell::RefCell;
 
 #[wasm_bindgen]
 pub struct App {
-    /// The model that the user is currently viewing in their browser
-    current_model: String,
     /// A handle into the WebGL context for our canvas
     state: Rc<State>,
     assets: Rc<RefCell<Assets>>,
@@ -67,7 +65,6 @@ impl App {
         );
 
         App {
-            current_model: "TexturedCube".to_string(),
             state: Rc::clone(&state),
             assets: Rc::clone(&assets),
             renderer,
@@ -75,8 +72,8 @@ impl App {
     }
 
     pub fn start(&mut self) {
-        self.assets.borrow_mut().load_mesh(&self.current_model);
-        self.assets.borrow_mut().load_armature("LetterFArmature");
+        self.assets.borrow_mut().load_mesh(&self.state.current_model);
+//        self.assets.borrow_mut().load_armature("LetterFArmature");
     }
 
     pub fn draw(&self) {

@@ -328,7 +328,10 @@ fn find_first_armature_after_index(
         let armature_name = first_line.split(" ").last().unwrap().to_string();
 
         let armature_data: String = lines.collect();
-        let armature_data: BlenderArmature = serde_json::from_str(&armature_data).unwrap();
+        let armature_data: BlenderArmature = serde_json::from_str(&armature_data).expect(&format!(
+            "Could not deserialize Blender Armature data{}",
+            &armature_data
+        ));
 
         armature_name_to_data.insert(armature_name, armature_data);
         filenames_to_armature.insert(armature_filename, armature_name_to_data);
