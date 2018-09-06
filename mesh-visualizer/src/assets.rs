@@ -3,7 +3,6 @@
 
 use blender_armature::BlenderArmature;
 use blender_mesh::BlenderMesh;
-use download_meshes;
 use download_texture;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -14,6 +13,7 @@ use serde_json;
 type Meshes = Rc<RefCell<HashMap<String, BlenderMesh>>>;
 type Armatures = Rc<RefCell<HashMap<String, BlenderArmature>>>;
 use web_apis::*;
+use download_string;
 
 pub struct Assets {
     /// All of our Blender models that we have downloaded and can render
@@ -54,7 +54,7 @@ impl Assets {
         let on_meshes_downloaded = Closure::new(deserialize_meshes);
 
         let model_path = &format!("dist/{}.json", mesh_name);
-        download_meshes(&on_meshes_downloaded);
+        download_string("/dist/meshes.json".to_string(), &on_meshes_downloaded);
 
         // TODO: Instead of calling .forget() and leaking memory every time we load a model,
         // see if can store it our
@@ -64,30 +64,28 @@ impl Assets {
 
     // TODO: Temporarily commented out while I refactor
     pub fn load_armature(&mut self, armature_name: &str) {
-//        let armatures_clone = Rc::clone(&self.armatures);
-//
-//        let save_model_in_state = move |armature_name: String, armature_json: String| {
-//            let mut armature = BlenderArmature::from_json(&armature_json).unwrap();
-//
-//            armature.apply_inverse_bind_poses();
-//            armature.transpose_actions();
-//            armature.actions_to_dual_quats();
-//
-//            armatures_clone
-//                .borrow_mut()
-//                .insert(armature_name.to_string(), armature);
-//        };
-//
-//        let on_model_load = Closure::new(save_model_in_state);
-//
-//        let model_path = &format!("dist/{}.json", armature_name);
-        // TODO: download_armatures(cb)
-//        download_mesh(armature_name, model_path, &on_model_load);
+        let armatures_clone = Rc::clone(&self.armatures);
 
-        // TODO: Instead of calling .forget() and leaking memory every time we load a model,
-        // see if can store it our
-        // struct as an option and re-use the closure / only forget it once
-//        on_model_load.forget();
+        let deserialize_armatures = move |armatures_json: String| {
+            let mut armatures: HashMap<String, BlenderArmature> = serde_json::from_str(&armatures_json).unwrap();
+
+            for (armature_name, mut armature) in armatures {
+                armature.apply_inverse_bind_poses();
+                armature.transpose_actions();
+                armature.actions_to_dual_quats();
+
+                armatures_clone
+                    .borrow_mut()
+                    .insert(armature_name.to_string(), armature);
+            }
+        };
+
+        let on_armatures_downloaded = Closure::new(deserialize_armatures);
+
+        let model_path = &format!("dist/{}.json", armature_name);
+        download_string("/dist/armatures.json".to_string(), &on_armatures_downloaded);
+
+        on_armatures_downloaded.forget();
     }
 
     pub fn meshes(&self) -> Meshes {

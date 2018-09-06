@@ -1,3 +1,6 @@
+//! TODO: Use percy to render a UI that lets you select models to render
+//! and the animation to play
+
 #![feature(use_extern_macros)]
 
 extern crate blender_armature;
@@ -40,7 +43,7 @@ static GL_DEPTH_TEST: u16 = 2929;
 
 #[wasm_bindgen(module = "./index")]
 extern "C" {
-    fn download_meshes(cb: &Closure<FnMut(String)>);
+    fn download_string(url: String, cb: &Closure<FnMut(String)>);
     fn download_texture(cb: &Closure<FnMut(HTMLImageElement)>);
 }
 

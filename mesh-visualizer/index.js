@@ -4,8 +4,8 @@ const app = App.new()
 
 app.start()
 
-export function download_meshes (cb) {
-  const request = new window.Request("/dist/meshes.json")
+export function download_string (url, cb) {
+  const request = new window.Request(url)
   window.fetch(request).then(response => {
     response.text().then(meshesJson => {
       cb(meshesJson)

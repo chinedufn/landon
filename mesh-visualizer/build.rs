@@ -75,6 +75,8 @@ fn main() {
 
     let mut mesh_names_to_models = HashMap::new();
 
+    // TODO: A utility method exposed by blender-mesh / armature that just does this..? and maybe
+    // errors if there are duplicates..?
     for (_filename, meshes) in meshes.iter() {
         for (mesh_name, mesh) in meshes.iter() {
             mesh_names_to_models.insert(mesh_name, mesh);
@@ -85,14 +87,19 @@ fn main() {
     // TODO: bincode instead of json
     fs::write("./dist/meshes.json", meshes).unwrap();
 
+    let mut armature_names_to_data = HashMap::new();
+
+    // TODO: A utility method exposed by blender-mesh / armature that just does this..? and maybe
+    // errors if there are duplicates..?
     for (_filename, armatures) in armatures.iter() {
         for (armature_name, armature) in armatures.iter() {
-            let armature_json = serde_json::to_string(armature).unwrap();
-
-            let armature_json_filename = &format!("./dist/{}.json", armature_name);
-            fs::write(armature_json_filename, armature_json).unwrap();
+            armature_names_to_data.insert(armature_name, armature);
         }
     }
+
+    let armatures = serde_json::to_string(&armature_names_to_data).unwrap();
+    // TODO: bincode instead of json
+    fs::write("./dist/armatures.json", &armatures).unwrap();
 }
 
 fn copy_texture_to_dist () {
