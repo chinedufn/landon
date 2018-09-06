@@ -5,19 +5,11 @@ blender-exporter [![Build Status](https://travis-ci.org/chinedufn/blender-export
 
 [The Blender Exporter Book](https://chinedufn.github.io/blender-exporter/)
 
-<<<<<<< HEAD
-- [blender-exporter cargo documentation](https://docs.rs/blender-exporter/badge.svg)
-
-=======
->>>>>>> uv
 - [blender-mesh API docs](https://chinedufn.github.io/percy/api/blender_mesh)
 
 - [blender-armature API docs](https://chinedufn.github.io/percy/api/blender_armature)
 
-<<<<<<< HEAD
-=======
 - [blender-exporter API / CLI docs](https://docs.rs/blender-exporter/badge.svg)
->>>>>>> uv
 
 ## Initial Background / Motivation
 
