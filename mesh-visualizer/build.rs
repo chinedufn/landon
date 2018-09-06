@@ -6,10 +6,15 @@ use std::fs;
 use std::fs::DirBuilder;
 use std::path::PathBuf;
 use std::process::Command;
+use std::collections::HashMap;
 
 // TODO: Make a directory for all of our temp build stuff (py scripts) so that we can delete it
 // all easily when we're done by deleting the dir
 fn main() {
+    rm_and_create_dir("./dist");
+
+    copy_texture_to_dist();
+
     let mut blender_files = vec![];
 
     let tests_dir = PathBuf::from("../tests");
@@ -59,34 +64,48 @@ fn main() {
         .expect("Failed to execute Blender process");
 
     let blender_stdout = String::from_utf8(blender_output.stdout).unwrap();
-    fs::write("/tmp/foobar", blender_stdout.clone());
+    fs::write("/tmp/foobar", blender_stdout.clone()).unwrap();
     fs::write(
         "/tmp/error",
         String::from_utf8(blender_output.stderr).unwrap(),
-    );
+    ).unwrap();
 
     let meshes = blender_mesh::parse_meshes_from_blender_stdout(&blender_stdout).unwrap();
     let armatures = blender_armature::parse_armatures_from_blender_stdout(&blender_stdout).unwrap();
 
-    rm_and_create_dir("./dist");
+    let mut mesh_names_to_models = HashMap::new();
 
+    // TODO: A utility method exposed by blender-mesh / armature that just does this..? and maybe
+    // errors if there are duplicates..?
     for (_filename, meshes) in meshes.iter() {
         for (mesh_name, mesh) in meshes.iter() {
-            let mesh_json = serde_json::to_string(mesh).unwrap();
-
-            let mesh_json_filename = &format!("./dist/{}.json", mesh_name);
-            fs::write(mesh_json_filename, mesh_json).unwrap();
+            mesh_names_to_models.insert(mesh_name, mesh);
         }
     }
 
+    let meshes = serde_json::to_string(&mesh_names_to_models).unwrap();
+    // TODO: bincode instead of json
+    fs::write("./dist/meshes.json", meshes).unwrap();
+
+    let mut armature_names_to_data = HashMap::new();
+
+    // TODO: A utility method exposed by blender-mesh / armature that just does this..? and maybe
+    // errors if there are duplicates..?
     for (_filename, armatures) in armatures.iter() {
         for (armature_name, armature) in armatures.iter() {
-            let armature_json = serde_json::to_string(armature).unwrap();
-
-            let armature_json_filename = &format!("./dist/{}.json", armature_name);
-            fs::write(armature_json_filename, armature_json).unwrap();
+            armature_names_to_data.insert(armature_name, armature);
         }
     }
+
+    let armatures = serde_json::to_string(&armature_names_to_data).unwrap();
+    // TODO: bincode instead of json
+    fs::write("./dist/armatures.json", &armatures).unwrap();
+}
+
+fn copy_texture_to_dist () {
+    println!("cargo:rerun-if-changed=../tests/textured_cube-uv-layout.png");
+
+    fs::copy("../tests/textured_cube-uv-layout.png", "./dist/textured_cube-uv-layout.png").unwrap();
 }
 
 fn rm_and_create_dir(dirname: &str) {

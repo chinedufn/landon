@@ -12,14 +12,14 @@ use shader::Shader;
 use shader::ShaderSystem;
 use shader::ShaderType;
 use state::State;
+use std::cell::RefCell;
 use std::f32::consts::PI;
 use std::rc::Rc;
-use web_apis::WebGLRenderingContext;
 use web_apis::WebGLBuffer;
-use std::cell::RefCell;
+use web_apis::WebGLRenderingContext;
 
-mod mesh_render;
 mod armature_render;
+mod mesh_render;
 
 // Temporarily using u16's until I can get GLbitfield / Glenum etc working. Take a look at the
 // commented out code in mod webapis to see what I mean.
@@ -39,7 +39,7 @@ static GL_UNSIGNED_SHORT: u16 = 5123;
 pub struct Renderer {
     gl: Rc<WebGLRenderingContext>,
     assets: Rc<RefCell<Assets>>,
-    shader_sys: ShaderSystem,
+    shader_sys: Rc<ShaderSystem>,
     state: Rc<State>,
 }
 
@@ -101,6 +101,9 @@ impl BlenderMeshRender for BlenderMesh {
         let vertex_normal_attrib = gl.get_attrib_location(&shader.program, "aVertexNormal");
         gl.enable_vertex_attrib_array(vertex_normal_attrib);
 
+        let texture_coord_attrib = gl.get_attrib_location(&shader.program, "aTextureCoord");
+        gl.enable_vertex_attrib_array(texture_coord_attrib);
+
         let fovy = cgmath::Rad(PI / 3.0);
         let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
         let mut p_matrix = vec_from_matrix4(&perspective);
@@ -132,6 +135,9 @@ impl BlenderMeshRender for BlenderMesh {
         let norms = self.vertex_normals.clone();
         self.buffer_f32_data(&gl, &shader.buffers[1], norms, vertex_normal_attrib, 3);
 
+        let uvs = self.vertex_uvs.as_ref().unwrap().clone();
+        self.buffer_f32_data(&gl, &shader.buffers[2], uvs, texture_coord_attrib, 2);
+
         let index_buffer = gl.create_buffer();
         gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
@@ -156,6 +162,9 @@ impl BlenderMeshRender for BlenderMesh {
 
         let joint_weight_attrib = gl.get_attrib_location(&shader.program, "aJointWeight");
         gl.enable_vertex_attrib_array(joint_weight_attrib);
+
+        let texture_coord_attrib = gl.get_attrib_location(&shader.program, "aTextureCoord");
+        gl.enable_vertex_attrib_array(texture_coord_attrib);
 
         let fovy = cgmath::Rad(PI / 3.0);
         let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
@@ -194,6 +203,9 @@ impl BlenderMeshRender for BlenderMesh {
         let weights = self.vertex_group_weights.as_ref().unwrap().clone();
         self.buffer_f32_data(&gl, &shader.buffers[3], weights, joint_weight_attrib, 4);
 
+        let uvs = self.vertex_uvs.as_ref().unwrap().clone();
+        self.buffer_f32_data(&gl, &shader.buffers[4], uvs, texture_coord_attrib, 2);
+
         let index_buffer = gl.create_buffer();
         gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, &index_buffer);
 
@@ -212,7 +224,7 @@ impl Renderer {
     pub fn new(
         gl: Rc<WebGLRenderingContext>,
         assets: Rc<RefCell<Assets>>,
-        shader_sys: ShaderSystem,
+        shader_sys: Rc<ShaderSystem>,
         state: Rc<State>,
     ) -> Renderer {
         Renderer {
@@ -228,25 +240,30 @@ impl Renderer {
 
         let mesh = self.assets.borrow().meshes();
         let mesh = mesh.borrow();
-        // let mesh = mesh.get(&state.current_model);
-        let mesh = mesh.get("LetterF");
+        let mesh = mesh.get(&self.state.current_model);
 
-        let armature = self.assets.borrow().armatures();
-        let armature = armature.borrow();
-        let armature = armature.get("LetterFArmature");
-
-        if mesh.is_none() || armature.is_none() {
+        if mesh.is_none() {
             return;
         }
 
         let mesh = mesh.unwrap();
-        let armature = armature.unwrap();
 
         self.shader_sys.use_program(&mesh.shader_type());
 
         let shader = self.shader_sys.get_shader(&mesh.shader_type());
 
-        armature.buffer_data(&self.gl, &shader, &state);
+        if mesh.armature_name.is_some() {
+            let armature = self.assets.borrow().armatures();
+            let armature = armature.borrow();
+            let armature = armature.get(mesh.armature_name.as_ref().unwrap());
+
+            if armature.is_none() {
+                return;
+            }
+
+            armature.unwrap().buffer_data(&self.gl, &shader, &state);
+        }
+
         mesh.render(&self.gl, &shader);
     }
 }

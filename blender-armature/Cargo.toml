@@ -9,7 +9,7 @@ repository = "https://github.com/chinedufn/blender-exporter"
 documentation = "https://docs.rs/blender-exporter"
 
 [dependencies]
-failure = "0.1"
+failure = "0.1.2"
 serde = "1"
 serde_derive = "1"
 serde_json = "1"
