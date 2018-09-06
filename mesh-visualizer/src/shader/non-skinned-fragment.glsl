@@ -32,13 +32,13 @@ void main(void) {
   float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
   vec3 specular = shininess * spec * vec3(0.628281, 0.555802, 0.366065);
 
-  vec4 base_color;
+  vec4 lighting = vec4(ambient + diffuse + specular, 1.0);
+
   if (true || uUseTexture) {
    vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
-   // TODO: Lighting
-   gl_FragColor = textureColor;
+   gl_FragColor = textureColor * lighting;
   } else {
-    gl_FragColor = vec4(ambient + diffuse + specular, 1.0);
+    gl_FragColor = lighting;
   }
 }
 
