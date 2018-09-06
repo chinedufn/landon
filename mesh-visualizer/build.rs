@@ -6,6 +6,7 @@ use std::fs;
 use std::fs::DirBuilder;
 use std::path::PathBuf;
 use std::process::Command;
+use std::collections::HashMap;
 
 // TODO: Make a directory for all of our temp build stuff (py scripts) so that we can delete it
 // all easily when we're done by deleting the dir
@@ -63,23 +64,26 @@ fn main() {
         .expect("Failed to execute Blender process");
 
     let blender_stdout = String::from_utf8(blender_output.stdout).unwrap();
-    fs::write("/tmp/foobar", blender_stdout.clone());
+    fs::write("/tmp/foobar", blender_stdout.clone()).unwrap();
     fs::write(
         "/tmp/error",
         String::from_utf8(blender_output.stderr).unwrap(),
-    );
+    ).unwrap();
 
     let meshes = blender_mesh::parse_meshes_from_blender_stdout(&blender_stdout).unwrap();
     let armatures = blender_armature::parse_armatures_from_blender_stdout(&blender_stdout).unwrap();
 
+    let mut mesh_names_to_models = HashMap::new();
+
     for (_filename, meshes) in meshes.iter() {
         for (mesh_name, mesh) in meshes.iter() {
-            let mesh_json = serde_json::to_string(mesh).unwrap();
-
-            let mesh_json_filename = &format!("./dist/{}.json", mesh_name);
-            fs::write(mesh_json_filename, mesh_json).unwrap();
+            mesh_names_to_models.insert(mesh_name, mesh);
         }
     }
+
+    let meshes = serde_json::to_string(&mesh_names_to_models).unwrap();
+    // TODO: bincode instead of json
+    fs::write("./dist/meshes.json", meshes).unwrap();
 
     for (_filename, armatures) in armatures.iter() {
         for (armature_name, armature) in armatures.iter() {

@@ -4,6 +4,8 @@ extern crate blender_armature;
 extern crate blender_mesh;
 extern crate cgmath;
 extern crate wasm_bindgen;
+extern crate serde;
+extern crate serde_json;
 
 use wasm_bindgen::prelude::*;
 
@@ -38,7 +40,7 @@ static GL_DEPTH_TEST: u16 = 2929;
 
 #[wasm_bindgen(module = "./index")]
 extern "C" {
-    fn download_mesh(mesh_name: &str, mesh_url: &str, cb: &Closure<FnMut(String, String)>);
+    fn download_meshes(cb: &Closure<FnMut(String)>);
     fn download_texture(cb: &Closure<FnMut(HTMLImageElement)>);
 }
 
