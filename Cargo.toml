@@ -10,7 +10,7 @@ repository = "https://github.com/chinedufn/blender-exporter"
 documentation = "https://docs.rs/blender-exporter"
 
 [dependencies]
-blender-armature = { version = "0.0.1", path = "./blender-armature" }
+blender-armature = { version = "0.1.0", path = "./blender-armature" }
 blender-mesh = { version = "0.0.2", path = "./blender-mesh" }
 
 [dev-dependencies]
