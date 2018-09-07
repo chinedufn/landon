@@ -1,7 +1,7 @@
 Landon [![Build Status](https://travis-ci.org/chinedufn/landon.svg?branch=master)](https://travis-ci.org/chinedufn/landon) [![docs](https://docs.rs/landon/badge.svg)](https://docs.rs/landon)
 ===============
 
-> A collection of heavily unit and integration tested tooling, data structures and methods for exporting data (such as meshes and armatures) from 3d modeling software and preparing it for your rendering pipeline.
+> A collection of tools, data structures and methods for exporting Blender data (such as meshes and armatures) and preparing it for your rendering pipeline.
 
 [The Landon Book](https://chinedufn.github.io/landon/)
 
