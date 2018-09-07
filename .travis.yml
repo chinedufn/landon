@@ -12,7 +12,7 @@ matrix:
       before_script:
         # Blender
         # https://stackoverflow.com/a/26028597/3701114
-        - ln /dev/null /dev/raw1394
+        # - ln /dev/null /dev/raw1394
         # TODO: landon Dockerfile with this (and anything else that we need) pre-installed
         - apt-get install -y blender
       script:
