@@ -1,15 +1,15 @@
-blender-exporter [![Build Status](https://travis-ci.org/chinedufn/blender-exporter.svg?branch=master)](https://travis-ci.org/chinedufn/blender-exporter) [![docs](https://docs.rs/blender-exporter/badge.svg)](https://docs.rs/blender-exporter)
+Landon [![Build Status](https://travis-ci.org/chinedufn/landon.svg?branch=master)](https://travis-ci.org/chinedufn/landon) [![docs](https://docs.rs/landon/badge.svg)](https://docs.rs/landon)
 ===============
 
-> Blender python scripts/addons and Rust powered tooling for exporting data such as meshes and armatures from Blender
+> A collection of heavily unit and integration tested tooling, data structures and methods for exporting data (such as meshes and armatures) from 3d modeling software and preparing it for your rendering pipeline.
 
-[The Blender Exporter Book](https://chinedufn.github.io/blender-exporter/)
+[The Landon Book](https://chinedufn.github.io/landon/)
 
-- [blender-mesh API docs](https://chinedufn.github.io/percy/api/blender_mesh)
+- [blender-mesh API docs](https://chinedufn.github.io/landon/api/blender_mesh)
 
-- [blender-armature API docs](https://chinedufn.github.io/percy/api/blender_armature)
+- [blender-armature API docs](https://chinedufn.github.io/landon/api/blender_armature)
 
-- [blender-exporter API / CLI docs](https://docs.rs/blender-exporter/badge.svg)
+- [landon API / CLI docs](https://docs.rs/landon/badge.svg)
 
 ## Initial Background / Motivation
 
@@ -22,18 +22,18 @@ around to figure out why.
 After a year or two of this occasionally happening.. I finally decided to invest some time in writing something myself,
 knowing that I'd still run into issues here and there, but they'd be issues that I'd know how to address.
 
-The goal of `blender-exporter` is to be a minimal suite of heavily tested, well documented tooling
+The goal of `landon` is to be a minimal suite of heavily tested, well documented tooling
 for getting data out of Blender and a set of functions for pre-processing that data so that you can
 make use of it in your rendering pipeline.
 
-From the beginning `blender-exporter` will be targeted towards my needs for my game [Akigi](https://akigi.com), but please
-feel very free to open issues / PRs with questions / thoughts / functionality that you think might fit into `blender-exporter`.
+From the beginning `landon` will be targeted towards my needs for my game [Akigi](https://akigi.com), but please
+feel very free to open issues / PRs with questions / thoughts / functionality that you think might fit into `landon`.
 
 The goal is that getting data out of Blender and into your rendering pipeline becomes easy as pie.
 
 ## Getting Started
 
-`blender-exporter` is in need of more documentation and hand holding around how to integrate it into your pipeline.
+`landon` is in need of more documentation and hand holding around how to integrate it into your pipeline.
 
 For example, all of the tooling uses `Rust` right now, so if you want to run any of the existing pre-processing functions such
 as `triangulating` your mesh you need `Rust` installed.
@@ -42,12 +42,12 @@ So we need a binary with a CLI that you can use to interface with the API withou
 the tooling into your non-Rust application via foreign function interface... WebAssembly... etc.
 
 But for now.. Take a look at the [mesh-visualizer](/mesh-visualizer) directory to see a full working example of implementing skeletal
-animation with models that were exported using `blender-exporter`.
+animation with models that were exported using `landon`.
 
 ## Running the mesh visualizer locally
 
 ```
-git clone https://github.com/chinedufn/blender-exporter
+git clone https://github.com/chinedufn/landon
 npm start
 ```
 
@@ -57,7 +57,7 @@ Your web browser should open up with an application that allows you to visualize
 
 ## Contributing
 
-Please open issues explaining your intended use case and let's see if we should or shouldn't make `blender-exporter` support it.
+Please open issues explaining your intended use case and let's see if we should or shouldn't make `landon` support it.
 
 Also feel free to open issues with any questions / thoughts that you have!
 

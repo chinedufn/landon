@@ -5,7 +5,7 @@
 //!
 //! The initial implementation and tests are based off of [skeletal-animation-system](https://github.com/chinedufn/skeletal-animation-system/blob/master/test/skeletal-animation-system.js)
 //!
-//! A real usage example can be found in the [mesh-visualizer](https://github.com/chinedufn/blender-exporter/tree/master/mesh-visualizer)
+//! A real usage example can be found in the [mesh-visualizer](https://github.com/chinedufn/landon/tree/master/mesh-visualizer)
 //!
 //! # Examples
 //!

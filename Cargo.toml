@@ -1,13 +1,13 @@
 [package]
-name = "blender-exporter"
+name = "landon"
 version = "0.0.1"
 authors = ["Chinedu Francis Nwafili <frankie.nwafili@gmail.com>"]
 publish = true
-description = "Tooling for exporting data such as meshes and armatures from Blender"
+description = "A collection of heavily unit and integration tested tooling, data structures and methods for exporting data (such as meshes and armatures) from 3d modeling software and preparing it for your rendering pipeline."
 keywords = ["blender", "export", "exporter", "mesh", "armature"]
 license = "MIT"
-repository = "https://github.com/chinedufn/blender-exporter"
-documentation = "https://docs.rs/blender-exporter"
+repository = "https://github.com/chinedufn/landon"
+documentation = "https://docs.rs/landon"
 
 [dependencies]
 blender-armature = { version = "0.0.1", path = "./blender-armature" }
@@ -20,6 +20,7 @@ serde_json = "1"
 
 [workspace]
 members = [
+  # TODO: Rename to `Mesh` and `Armature`
   "blender-armature",
   "blender-mesh",
   "mesh-visualizer"
