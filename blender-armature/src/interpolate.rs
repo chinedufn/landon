@@ -130,6 +130,11 @@ impl BlenderArmature {
     ///
     /// Panics if you pass in previous actions that do not have the exact same joint indices
     /// as your current action.
+    ///
+    /// # TODO
+    ///
+    /// - [ ] Return Result<HashMap<u8, Bone>, InterpolationError>
+    /// - [ ] error if clock time is negative
     pub fn interpolate_bones(&self, opts: &InterpolationSettings) -> HashMap<u8, Bone> {
         let mut interpolated_bones = self.interpolate_action(&opts, &opts.current_action);
 
@@ -301,6 +306,7 @@ mod tests {
     // TODO: Breadcrumb - make out first case create a test case then run it through some generic
     // test function that we can re-use
     struct DualQuatTestCase<'a> {
+        description: String,
         keyframes: Vec<TestKeyframe>,
         expected_bone: Vec<f32>,
         interp_settings: InterpolationSettings<'a>,
@@ -313,7 +319,8 @@ mod tests {
 
     #[test]
     fn no_previous_animation() {
-        run_test_case(DualQuatTestCase {
+        DualQuatTestCase {
+            description: "".to_string(),
             keyframes: vec![
                 TestKeyframe {
                     frame: 0.0,
@@ -333,12 +340,13 @@ mod tests {
                 current_action: ActionSettings::new("test", 0.0, true),
                 previous_action: None,
             },
-        });
+        };
     }
 
     #[test]
     fn looping_action() {
-        run_test_case(DualQuatTestCase {
+        DualQuatTestCase {
+            description: "Verify that the action gets looped by choosing a current_time > duration".to_string(),
             keyframes: vec![
                 TestKeyframe {
                     frame: 1.0,
@@ -357,12 +365,13 @@ mod tests {
                 current_action: ActionSettings::new("test", 0.0, true),
                 previous_action: None,
             },
-        });
+        };
     }
 
     #[test]
     fn non_looping_animation() {
-        run_test_case(DualQuatTestCase {
+        DualQuatTestCase {
+            description: "If you are not looping we should sample from the final frame if exceeded".to_string(),
             keyframes: vec![
                 TestKeyframe {
                     frame: 3.0,
@@ -381,12 +390,13 @@ mod tests {
                 current_action: ActionSettings::new("test", 0.0, false),
                 previous_action: None,
             },
-        });
+        };
     }
 
     #[test]
     fn previous_animation_does_not_loop() {
-        run_test_case(DualQuatTestCase {
+        DualQuatTestCase {
+            description: "Make sure should_loop: false works for previous animation".to_string(),
             keyframes: vec![
                 TestKeyframe {
                     frame: 1.0,
@@ -413,12 +423,13 @@ mod tests {
                 current_action: ActionSettings::new("test", 10.0, true),
                 previous_action: Some(ActionSettings::new("test", 0.0, false)),
             },
-        });
+        };
     }
 
     #[test]
     fn blend_out_previous_action() {
-        run_test_case(DualQuatTestCase {
+        DualQuatTestCase {
+            description: "Previous action gets blended into the new current action".to_string(),
             keyframes: vec![
                 TestKeyframe {
                     frame: 0.0,
@@ -445,7 +456,7 @@ mod tests {
                 current_action: ActionSettings::new("test", 9.0, true),
                 previous_action: Some(ActionSettings::new("test", 5.0, false)),
             },
-        });
+        };
     }
 
     #[test]
@@ -479,28 +490,58 @@ mod tests {
         armature.interpolate_bones(&interp_opts);
     }
 
-    fn run_test_case(test_case: DualQuatTestCase) {
-        let mut actions = HashMap::new();
-        let mut keyframes = vec![];
-
-        for keyframe in test_case.keyframes {
-            keyframes.push(Keyframe {
-                frame_time_secs: keyframe.frame,
-                bones: vec![Bone::DualQuat(keyframe.bone)],
-            });
-        }
-
-        actions.insert("test".to_string(), keyframes);
-
-        let armature = BlenderArmature {
-            actions,
-            ..BlenderArmature::default()
+    #[test]
+    fn current_time_equals_start_time () {
+        DualQuatTestCase {
+            description: "Ensure that current_time == start_time works".to_string(),
+            keyframes: vec![
+                TestKeyframe {
+                    frame: 0.0,
+                    // This will be the expected bone since we're 0 seconds into our animation
+                    bone: vec![0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
+                },
+                TestKeyframe {
+                    frame: 2.0,
+                    bone: vec![1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+                },
+            ],
+            // Same as the first bone in the animation
+            expected_bone: vec![0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
+            interp_settings: InterpolationSettings {
+                current_time: 0.0,
+                // TODO: armature.get_group_indices(BlenderArmature::BONE_GROUPS_ALL)
+                joint_indices: vec![0],
+                blend_fn: None,
+                current_action: ActionSettings::new("test", 0.0, true),
+                previous_action: None,
+            },
         };
+    }
 
-        let interpolated_bones = armature.interpolate_bones(&test_case.interp_settings);
-        let interpolated_bone = interpolated_bones.get(&0).unwrap();
+    impl<'a> Drop for DualQuatTestCase<'a> {
+        fn drop(&mut self) {
+            let mut actions = HashMap::new();
+            let mut keyframes = vec![];
 
-        assert_eq!(interpolated_bone.vec(), test_case.expected_bone);
+            for keyframe in self.keyframes.iter() {
+                keyframes.push(Keyframe {
+                    frame_time_secs: keyframe.frame,
+                    bones: vec![Bone::DualQuat(keyframe.bone.clone())],
+                });
+            }
+
+            actions.insert("test".to_string(), keyframes);
+
+            let armature = BlenderArmature {
+                actions,
+                ..BlenderArmature::default()
+            };
+
+            let interpolated_bones = armature.interpolate_bones(&self.interp_settings);
+            let interpolated_bone = interpolated_bones.get(&0).unwrap();
+
+            assert_eq!(interpolated_bone.vec(), self.expected_bone, "{}", self.description);
+        }
     }
 
     fn two_second_blend_func(dt_seconds: f32) -> f32 {
