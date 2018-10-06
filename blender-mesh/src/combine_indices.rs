@@ -57,7 +57,7 @@ impl BlenderMesh {
                 None => None,
             };
 
-            let mut vert_id_to_reuse = encountered_vert_data
+            let vert_id_to_reuse = encountered_vert_data
                 .get(&(vert_id, normal_index, uv_index))
                 .cloned();
 

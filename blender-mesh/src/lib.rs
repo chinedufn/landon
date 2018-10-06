@@ -16,17 +16,21 @@
 //! @see https://docs.blender.org/manual/en/dev/modeling/meshes/introduction.html - Mesh Introduction
 //! @see https://github.com/chinedufn/blender-actions-to-json - Exporting blender armatures / actions
 
+#[deny(missing_docs)]
+
 #[macro_use]
 extern crate failure;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
+
+use serde_json;
 
 use serde_json::Error;
-use std::cmp::max;
 use std::collections::HashMap;
-use std::collections::HashSet;
+use crate::bounding_box::BoundingBox;
+
+mod combine_indices;
+mod bounding_box;
 
 /// Something went wrong in the Blender child process that was trying to parse your mesh data.
 #[derive(Debug, Fail)]
@@ -43,6 +47,7 @@ pub enum BlenderError {
 /// All of the data about a Blender mesh
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(test, derive(Default))]
+#[serde(deny_unknown_fields)]
 pub struct BlenderMesh {
     /// All of the mesh's vertices. Three items in the vector make one vertex.
     /// So indices 0, 1 and 2 are a vertex, 3, 4 and 5 are a vertex.. etc.
@@ -71,16 +76,16 @@ pub struct BlenderMesh {
     pub vertex_group_indices: Option<Vec<u8>>,
     pub vertex_group_weights: Option<Vec<f32>>,
     /// TODO: enum..? if they're all equal we replace the MyEnum::PerVertex(Vec<u8>) with MyEnum::Equal(4)
-    pub num_groups_for_each_vertex: Option<Vec<u8>>, // TODO: textures: HashMap<TextureNameString, {uvs, uv_indices}>
+    pub num_groups_for_each_vertex: Option<Vec<u8>>, // TODO: textures: HashMap<TextureNameString, {uvs, uv_indices}>,
+    pub bounding_box: BoundingBox
 }
 
 impl BlenderMesh {
+    // TODO: Delete this.. let the consumer worry about serializing / deserializing
     pub fn from_json(json_str: &str) -> Result<BlenderMesh, Error> {
         serde_json::from_str(json_str)
     }
 }
-
-mod combine_indices;
 
 impl BlenderMesh {
     /// When exporting a mesh from Blender, faces will usually have 4 vertices (quad) but some
@@ -185,7 +190,7 @@ impl BlenderMesh {
         let mut current_index: u32 = 0;
 
         {
-            let mut indices = self.vertex_group_indices.as_mut().unwrap();
+            let indices = self.vertex_group_indices.as_mut().unwrap();
             let weights = self.vertex_group_weights.as_mut().unwrap();
 
             self.num_groups_for_each_vertex = Some(
