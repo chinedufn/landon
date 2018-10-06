@@ -31,6 +31,7 @@ use crate::bounding_box::BoundingBox;
 
 mod combine_indices;
 mod bounding_box;
+mod y_up;
 
 /// Something went wrong in the Blender child process that was trying to parse your mesh data.
 #[derive(Debug, Fail)]
@@ -144,31 +145,6 @@ impl BlenderMesh {
 
         self.vertex_position_indices = triangulated_position_indices;
         self.num_vertices_in_each_face = triangulated_face_vertex_counts;
-    }
-}
-
-impl BlenderMesh {
-    /// Blender meshes get exported with a Z up coordinate system.
-    /// Here we flip our coordinate system to be y up
-    ///
-    /// @see https://gamedev.stackexchange.com/a/7932
-    ///
-    /// TODO: When we have bone data we'll need to change them to port change-mat4-coordinate-system
-    /// into here.
-    /// https://github.com/chinedufn/change-mat4-coordinate-system/blob/master/change-mat4-coordinate-system.js
-    pub fn y_up(&mut self) {
-        for vert_num in 0..(self.vertex_positions.len() / 3) {
-            let y_index = vert_num * 3 + 1;
-            let z_index = y_index + 1;
-
-            let new_z = -self.vertex_positions[y_index];
-            self.vertex_positions[y_index] = self.vertex_positions[z_index];
-            self.vertex_positions[z_index] = new_z;
-
-            let new_z = -self.vertex_normals[y_index];
-            self.vertex_normals[y_index] = self.vertex_normals[z_index];
-            self.vertex_normals[z_index] = new_z;
-        }
     }
 }
 
@@ -466,26 +442,6 @@ mod tests {
         };
 
         assert_eq!(triangulated_mesh, expected_mesh);
-    }
-
-    #[test]
-    fn z_up_to_y_up() {
-        let mut start_mesh = BlenderMesh {
-            vertex_positions: vec![0.0, 1.0, 2.0, 0.0, 1.0, 2.0],
-            vertex_normals: vec![0.0, 1.0, 2.0, 0.0, 1.0, 2.0],
-            ..BlenderMesh::default()
-        };
-
-        start_mesh.y_up();
-        let y_up_mesh = start_mesh;
-
-        let expected_mesh = BlenderMesh {
-            vertex_positions: vec![0.0, 2.0, -1.0, 0.0, 2.0, -1.0],
-            vertex_normals: vec![0.0, 2.0, -1.0, 0.0, 2.0, -1.0],
-            ..BlenderMesh::default()
-        };
-
-        assert_eq!(y_up_mesh, expected_mesh);
     }
 
     #[test]
