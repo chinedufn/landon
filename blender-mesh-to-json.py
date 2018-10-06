@@ -128,9 +128,16 @@ class MeshToJSON(bpy.types.Operator):
         # We construct our bounding box by iterating over all of the corners of the
         # mesh and finding the smallest and largest x, y and z values. Remember that we
         # are in a z up coordinate system in Blender.
+
         index = 0
         lower_left_front = [float('inf'), float('inf'), float('inf')];
         upper_right_back = [-float('inf'), -float('inf'), -float('inf')];
+
+        # By switching to EDIT mode we'll ensure that our mesh is in its bind position.
+        # Otherwise we might get the bounding box of the mesh while it was in the middle of some keyframe
+        # which could be different from its bounding box in bind position.
+        bpy.ops.object.mode_set(mode = 'EDIT')
+
         for corner in mesh.bound_box:
             # Get the Blender world space (within Blender) coordinates for the corner of this mesh.
             # This gives us the actual (x, y, z) coordinates of the corner in Blender's coordinate space,
@@ -146,6 +153,7 @@ class MeshToJSON(bpy.types.Operator):
             upper_right_back[1] = max(upper_right_back[1], corner.y)
             upper_right_back[2] = max(upper_right_back[2], corner.z)
 
+        bpy.ops.object.mode_set(mode = 'OBJECT')
         mesh_json['bounding_box']['lower_left_front'] = lower_left_front
         mesh_json['bounding_box']['upper_right_back'] = upper_right_back
 
