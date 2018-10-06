@@ -1,4 +1,4 @@
-use assets::Assets;
+use crate::assets::Assets;
 use blender_armature::ActionSettings;
 use blender_armature::BlenderArmature;
 use blender_armature::Bone;
@@ -8,15 +8,15 @@ use cgmath;
 use cgmath::Matrix4;
 use cgmath::Point3;
 use cgmath::Vector3;
-use shader::Shader;
-use shader::ShaderSystem;
-use shader::ShaderType;
-use state::State;
+use crate::shader::Shader;
+use crate::shader::ShaderSystem;
+use crate::shader::ShaderType;
+use crate::state::State;
 use std::cell::RefCell;
 use std::f32::consts::PI;
 use std::rc::Rc;
-use web_apis::WebGLBuffer;
-use web_apis::WebGLRenderingContext;
+use crate::web_apis::WebGLBuffer;
+use crate::web_apis::WebGLRenderingContext;
 
 mod armature_render;
 mod mesh_render;
@@ -106,7 +106,7 @@ impl BlenderMeshRender for BlenderMesh {
 
         let fovy = cgmath::Rad(PI / 3.0);
         let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
-        let mut p_matrix = vec_from_matrix4(&perspective);
+        let p_matrix = vec_from_matrix4(&perspective);
 
         let model_matrix = Matrix4::from_translation(Vector3::new(0.0, 0.0, 0.0));
 
@@ -168,7 +168,7 @@ impl BlenderMeshRender for BlenderMesh {
 
         let fovy = cgmath::Rad(PI / 3.0);
         let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
-        let mut p_matrix = vec_from_matrix4(&perspective);
+        let p_matrix = vec_from_matrix4(&perspective);
 
         let model_matrix = Matrix4::from_translation(Vector3::new(0.0, 0.0, 0.0));
 

@@ -11,13 +11,13 @@ use std::process::Command;
 #[test]
 fn parse_data() {
     let textured_cube_blend = &abs_path("tests/textured_cube.blend");
-    let install_addon = &abs_path("install-addon.py");
+    let _install_addon = &abs_path("install-addon.py");
     let run_addon = &abs_path("run-addon.py");
 
     // TODO: Move the CLI spawning and parsing into `lib.rs`? In our test just verify
     // the returned mesh data?
 
-    let mut blender_output = Command::new("blender")
+    let blender_output = Command::new("blender")
         .args(&["--background", textured_cube_blend])
         .args(&["--python", run_addon])
         .arg("--")
@@ -34,7 +34,7 @@ fn parse_data() {
 
     let parsed_meshes = parse_meshes_from_blender_stdout(&stdout).unwrap();
 
-    let (filename, mesh) = parsed_meshes.iter().next().unwrap();
+    let (_filename, mesh) = parsed_meshes.iter().next().unwrap();
 
     let mesh = mesh.get("TexturedCube").unwrap();
 

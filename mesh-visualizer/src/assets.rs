@@ -3,7 +3,7 @@
 
 use blender_armature::BlenderArmature;
 use blender_mesh::BlenderMesh;
-use download_texture;
+use crate::download_texture;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -12,8 +12,8 @@ use serde_json;
 
 type Meshes = Rc<RefCell<HashMap<String, BlenderMesh>>>;
 type Armatures = Rc<RefCell<HashMap<String, BlenderArmature>>>;
-use web_apis::*;
-use download_string;
+use crate::web_apis::*;
+use crate::download_string;
 
 pub struct Assets {
     /// All of our Blender models that we have downloaded and can render
@@ -34,7 +34,7 @@ impl Assets {
         let meshes_clone = Rc::clone(&self.meshes);
 
         let deserialize_meshes = move |meshes_json: String| {
-            let mut meshes: HashMap<String, BlenderMesh> = serde_json::from_str(&meshes_json).unwrap();
+            let meshes: HashMap<String, BlenderMesh> = serde_json::from_str(&meshes_json).unwrap();
 
             for (mesh_name, mut mesh) in meshes {
                 mesh.combine_vertex_indices();
@@ -53,7 +53,7 @@ impl Assets {
 
         let on_meshes_downloaded = Closure::new(deserialize_meshes);
 
-        let model_path = &format!("dist/{}.json", mesh_name);
+        let _model_path = &format!("dist/{}.json", mesh_name);
         download_string("/dist/meshes.json".to_string(), &on_meshes_downloaded);
 
         // TODO: Instead of calling .forget() and leaking memory every time we load a model,
@@ -67,7 +67,7 @@ impl Assets {
         let armatures_clone = Rc::clone(&self.armatures);
 
         let deserialize_armatures = move |armatures_json: String| {
-            let mut armatures: HashMap<String, BlenderArmature> = serde_json::from_str(&armatures_json).unwrap();
+            let armatures: HashMap<String, BlenderArmature> = serde_json::from_str(&armatures_json).unwrap();
 
             for (armature_name, mut armature) in armatures {
                 armature.apply_inverse_bind_poses();
@@ -82,7 +82,7 @@ impl Assets {
 
         let on_armatures_downloaded = Closure::new(deserialize_armatures);
 
-        let model_path = &format!("dist/{}.json", armature_name);
+        let _model_path = &format!("dist/{}.json", armature_name);
         download_string("/dist/armatures.json".to_string(), &on_armatures_downloaded);
 
         on_armatures_downloaded.forget();

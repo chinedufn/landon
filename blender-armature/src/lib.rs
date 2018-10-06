@@ -32,8 +32,8 @@ use serde_json::Error;
 use std::collections::HashMap;
 
 mod interpolate;
-pub use interpolate::ActionSettings;
-pub use interpolate::InterpolationSettings;
+pub use crate::interpolate::ActionSettings;
+pub use crate::interpolate::InterpolationSettings;
 
 /// Something went wrong in the Blender child process that was trying to parse your armature data.
 #[derive(Debug, Fail)]

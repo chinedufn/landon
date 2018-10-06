@@ -1,7 +1,7 @@
 use std::time::Duration;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
-use web_apis::performance;
+use crate::web_apis::performance;
 
 pub struct State {
     pub last_tick_time: SystemTime,

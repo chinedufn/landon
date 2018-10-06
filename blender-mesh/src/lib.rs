@@ -186,7 +186,7 @@ impl BlenderMesh {
 
         {
             let mut indices = self.vertex_group_indices.as_mut().unwrap();
-            let mut weights = self.vertex_group_weights.as_mut().unwrap();
+            let weights = self.vertex_group_weights.as_mut().unwrap();
 
             self.num_groups_for_each_vertex = Some(
                 self.num_groups_for_each_vertex

@@ -1,7 +1,7 @@
 use std::cmp::max;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use BlenderMesh;
+use crate::BlenderMesh;
 
 impl BlenderMesh {
     /// We export our models with indices for positions, normals and uvs because
@@ -30,7 +30,7 @@ impl BlenderMesh {
         let mut encountered_vert_data: EncounteredIndices = HashMap::new();
         let mut encountered_vert_ids = HashSet::new();
 
-        let mut start_size = max(self.vertex_positions.len(), self.vertex_normals.len());
+        let start_size = max(self.vertex_positions.len(), self.vertex_normals.len());
 
         let mut expanded_normals = vec![];
         expanded_normals.resize(start_size, 12345.0);

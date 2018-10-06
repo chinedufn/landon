@@ -8,7 +8,6 @@ use blender_armature::BlenderArmature;
 use blender_mesh::parse_meshes_from_blender_stdout;
 use blender_mesh::BlenderMesh;
 use std::env::current_dir;
-use std::fs::File;
 use std::path::Path;
 use std::process::Command;
 
@@ -20,7 +19,7 @@ fn parse_skinned_letter_f_mesh_data() {
     // TODO: Move the CLI spawning and parsing into `lib.rs`. In our test just verify
     // the returned mesh data
 
-    let mut blender_output = Command::new("blender")
+    let blender_output = Command::new("blender")
         .args(&["--background", skinned_letter_f_blend])
         .args(&["--python-expr", &set_active_object_by_name("LetterF")])
         .args(&["--python", run_addon])
@@ -38,7 +37,7 @@ fn parse_skinned_letter_f_mesh_data() {
 
     let parsed_meshes = parse_meshes_from_blender_stdout(&stdout).unwrap();
 
-    let (filename, mesh) = parsed_meshes.iter().next().unwrap();
+    let (_filename, mesh) = parsed_meshes.iter().next().unwrap();
 
     let mesh = mesh.get("LetterF").unwrap();
 
@@ -51,13 +50,13 @@ fn parse_skinned_letter_f_mesh_data() {
 #[test]
 fn parse_skinned_letter_f_armature_data() {
     let skinned_letter_f_blend = &abs_path("tests/skinned_letter_f.blend");
-    let install_addon = &abs_path("./blender-armature/install-armature-to-json.py");
+    let _install_addon = &abs_path("./blender-armature/install-armature-to-json.py");
     let run_addon = &abs_path("./blender-armature/run-armature-to-json.py");
 
     // TODO: Move the CLI spawning and parsing into `lib.rs`. In our test just verify
     // the returned mesh data
 
-    let mut blender_output = Command::new("blender")
+    let blender_output = Command::new("blender")
         .args(&["--background", skinned_letter_f_blend])
         .args(&[
             "--python-expr",
@@ -78,7 +77,7 @@ fn parse_skinned_letter_f_armature_data() {
 
     let parsed_armatures = parse_armatures_from_blender_stdout(&stdout).unwrap();
 
-    let (filename, armature) = parsed_armatures.iter().next().unwrap();
+    let (_filename, armature) = parsed_armatures.iter().next().unwrap();
 
     let armature = armature.get("LetterFArmature").unwrap();
 

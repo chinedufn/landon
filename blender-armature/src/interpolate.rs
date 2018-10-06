@@ -26,9 +26,9 @@
 //! ```
 
 use std::collections::HashMap;
-use BlenderArmature;
-use Bone;
-use Keyframe;
+use crate::BlenderArmature;
+use crate::Bone;
+use crate::Keyframe;
 
 /// Settings for how to interpolate your BlenderArmature's bone data. These can be used to do
 /// things such as:
@@ -301,7 +301,7 @@ fn dot_product(a: &Vec<f32>, b: &Vec<f32>) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use Keyframe;
+    use crate::Keyframe;
 
     // TODO: Breadcrumb - make out first case create a test case then run it through some generic
     // test function that we can re-use

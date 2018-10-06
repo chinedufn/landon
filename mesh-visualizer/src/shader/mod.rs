@@ -1,12 +1,12 @@
 //! The shaders that power our WebGL rendering
 
-use shader::ShaderType::*;
+use crate::shader::ShaderType::*;
 use std::collections::HashMap;
 use std::rc::Rc;
-use web_apis::log;
-use web_apis::WebGLBuffer;
-use web_apis::WebGLProgram;
-use web_apis::WebGLRenderingContext;
+use crate::web_apis::log;
+use crate::web_apis::WebGLBuffer;
+use crate::web_apis::WebGLProgram;
+use crate::web_apis::WebGLRenderingContext;
 
 pub struct ShaderSystem {
     gl: Rc<WebGLRenderingContext>,
@@ -37,7 +37,7 @@ pub struct Shader {
 // TODO: Breadcrumb - get our F rendering using our shader system
 impl ShaderSystem {
     pub fn new(gl: Rc<WebGLRenderingContext>) -> ShaderSystem {
-        let mut shaders = ShaderSystem::init_shaders(&gl);
+        let shaders = ShaderSystem::init_shaders(&gl);
 
         ShaderSystem { shaders, gl }
     }

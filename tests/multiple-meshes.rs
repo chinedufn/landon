@@ -5,13 +5,8 @@
 extern crate blender_mesh;
 
 use blender_mesh::parse_meshes_from_blender_stdout;
-use blender_mesh::BlenderMesh;
-use std::collections::HashMap;
 use std::env::current_dir;
-use std::fs;
-use std::fs::DirBuilder;
 use std::path::Path;
-use std::path::PathBuf;
 use std::process::Command;
 
 #[test]
@@ -22,7 +17,7 @@ fn parse_file_with_multiple_meshes() {
     // TODO: Move the CLI spawning and parsing into `lib.rs`. In our test just verify
     // the returned mesh data
 
-    let mut blender_output = Command::new("blender")
+    let blender_output = Command::new("blender")
         .args(&["--background", multiple_meshes_blend])
         .args(&["--python-expr", &set_active_object_by_name("Mesh1")])
         .args(&["--python", run_addon])
@@ -33,7 +28,7 @@ fn parse_file_with_multiple_meshes() {
         .expect("Failed to execute Blender process");
 
     let stdout = String::from_utf8(blender_output.stdout).unwrap();
-    let parsed_armatures = parse_meshes_from_blender_stdout(&stdout).unwrap();
+    let _parsed_armatures = parse_meshes_from_blender_stdout(&stdout).unwrap();
 }
 
 fn abs_path(path: &str) -> String {

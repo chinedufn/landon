@@ -42,7 +42,7 @@ fn main() {
     fs::write(temp_addon, addon).unwrap();
 
     let mut blender_process = Command::new("blender");
-    let mut blender_process = blender_process
+    let blender_process = blender_process
         .arg("--background")
         .args(&["--python", install_mesh2json_path])
         // TODO: An API in our root crate for writing the script to a tmp file and giving you

@@ -14,14 +14,14 @@ use wasm_bindgen::prelude::*;
 
 #[macro_use]
 pub mod web_apis;
-use web_apis::*;
+use crate::web_apis::*;
 
 use std::rc::Rc;
 
 mod assets;
-use assets::Assets;
-use render::Renderer;
-use shader::ShaderSystem;
+use crate::assets::Assets;
+use crate::render::Renderer;
+use crate::shader::ShaderSystem;
 
 static GL_TEXTURE_2D: u16 = 3553;
 static TEXTURE_UNIT_0: u16 = 33984;
@@ -48,8 +48,8 @@ extern "C" {
 }
 
 mod state;
-use shader::ShaderType;
-use state::State;
+use crate::shader::ShaderType;
+use crate::state::State;
 use std::cell::RefCell;
 
 #[wasm_bindgen]
@@ -74,7 +74,7 @@ impl App {
 
         let state = Rc::new(State::new());
 
-        let mut assets = Rc::new(RefCell::new(Assets::new()));
+        let assets = Rc::new(RefCell::new(Assets::new()));
 
         let renderer = Renderer::new(
             Rc::clone(&gl),
