@@ -8,6 +8,7 @@ keywords = ["blender", "skeleton", "armature", "bone", "vertex"]
 license = "MIT"
 repository = "https://github.com/chinedufn/landon"
 documentation = "https://docs.rs/landon"
+edition = "2018"
 
 [dependencies]
 failure = "0.1.2"
