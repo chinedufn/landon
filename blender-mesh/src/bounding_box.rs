@@ -9,10 +9,10 @@ use nalgebra::Vector3;
 pub struct BoundingBox {
     /// If you're staring into the scene, this is the bottom left corner of the face that is
     /// closest to you.
-    lower_left_front: Vector3<f32>,
+    pub lower_left_front: Vector3<f32>,
     /// If you're staring into the scene, this is the top right corner of the face that is
     /// farthest from you.
-    upper_right_back: Vector3<f32>,
+    pub upper_right_back: Vector3<f32>,
 }
 
 #[cfg(test)]
