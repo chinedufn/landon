@@ -5,6 +5,9 @@ use nalgebra::Vector3;
 ///
 /// If your mesh is parented to an armature then this is the bounding box of your mesh in its
 /// bind pose.
+///
+/// TODO: Rename to `smallest_corner` and `largest_corner`. Representing lowest x/y/z and largest
+/// x/y/z
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct BoundingBox {
     /// If you're staring into the scene, this is the bottom left corner of the face that is
