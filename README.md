@@ -61,6 +61,15 @@ Please open issues explaining your intended use case and let's see if we should 
 
 Also feel free to open issues with any questions / thoughts that you have!
 
+## To Install
+
+// TODO ...
+
+```
+# Install blender mesh addon
+blender -P install-addon.py --background
+```
+
 ## Usage
 
 // TODO ...

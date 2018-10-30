@@ -26,13 +26,13 @@ impl BlenderMesh {
             self.vertex_normals[z_index] = new_z;
         }
 
-        let new_z = -self.bounding_box.lower_left_front[Y];
-        self.bounding_box.lower_left_front[Y] = self.bounding_box.lower_left_front[Z];
-        self.bounding_box.lower_left_front[Z] = new_z;
+        let new_z = -self.bounding_box.min_corner[Y];
+        self.bounding_box.min_corner[Y] = self.bounding_box.min_corner[Z];
+        self.bounding_box.min_corner[Z] = new_z;
 
-        let new_z = -self.bounding_box.upper_right_back[Y];
-        self.bounding_box.upper_right_back[Y] = self.bounding_box.upper_right_back[Z];
-        self.bounding_box.upper_right_back[Z] = new_z;
+        let new_z = -self.bounding_box.max_corner[Y];
+        self.bounding_box.max_corner[Y] = self.bounding_box.max_corner[Z];
+        self.bounding_box.max_corner[Z] = new_z;
     }
 }
 
@@ -40,7 +40,7 @@ impl BlenderMesh {
 mod tests {
     use super::*;
     use crate::bounding_box::BoundingBox;
-    use nalgebra::Vector3;
+    use nalgebra::Point3;
 
     #[test]
     fn z_up_to_y_up() {
@@ -48,8 +48,8 @@ mod tests {
             vertex_positions: vec![0.0, 1.0, 2.0, 0.0, 1.0, 2.0],
             vertex_normals: vec![0.0, 1.0, 2.0, 0.0, 1.0, 2.0],
             bounding_box: BoundingBox {
-                lower_left_front: Vector3::new(1.0, 2.0, 3.0),
-                upper_right_back: Vector3::new(5.0, 6.0, 7.0),
+                min_corner: Point3::new(1.0, 2.0, 3.0),
+                max_corner: Point3::new(5.0, 6.0, 7.0),
             },
             ..BlenderMesh::default()
         };
@@ -61,8 +61,8 @@ mod tests {
             vertex_positions: vec![0.0, 2.0, -1.0, 0.0, 2.0, -1.0],
             vertex_normals: vec![0.0, 2.0, -1.0, 0.0, 2.0, -1.0],
             bounding_box: BoundingBox {
-                lower_left_front: Vector3::new(1.0, 3.0, -2.0),
-                upper_right_back: Vector3::new(5.0, 7.0, -6.0),
+                min_corner: Point3::new(1.0, 3.0, -2.0),
+                max_corner: Point3::new(5.0, 7.0, -6.0),
             },
             ..BlenderMesh::default()
         };

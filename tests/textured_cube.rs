@@ -58,8 +58,8 @@ fn expected_mesh_data() -> String {
             "armature_name": null,
             "texture_name": "textured_cube-uv-layout",
             "bounding_box": {
-                "lower_left_front": [-1.0000004, -1.0000006, -1.0],
-                "upper_right_back": [1.0000005, 1.0000004, 1.0]
+                "min_corner": [-1.0000004, -1.0000006, -1.0],
+                "max_corner": [1.0000005, 1.0000004, 1.0]
             }
         }
     "#.to_string()

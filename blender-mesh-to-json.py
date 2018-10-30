@@ -49,8 +49,8 @@ class MeshToJSON(bpy.types.Operator):
             'num_groups_for_each_vertex': [],
             'bounding_box': {
                 # [x, y, z]
-                'lower_left_front': [],
-                'upper_right_back': []
+                'min_corner': [],
+                'max_corner': []
             }
         }
 
@@ -130,8 +130,8 @@ class MeshToJSON(bpy.types.Operator):
         # are in a z up coordinate system in Blender.
 
         index = 0
-        lower_left_front = [float('inf'), float('inf'), float('inf')];
-        upper_right_back = [-float('inf'), -float('inf'), -float('inf')];
+        min_corner = [float('inf'), float('inf'), float('inf')];
+        max_corner = [-float('inf'), -float('inf'), -float('inf')];
 
         # By switching to EDIT mode we'll ensure that our mesh is in its bind position.
         # Otherwise we might get the bounding box of the mesh while it was in the middle of some keyframe
@@ -146,16 +146,18 @@ class MeshToJSON(bpy.types.Operator):
             corner = Vector(corner)
             corner = mesh.matrix_world * corner
 
-            lower_left_front[0] = min(lower_left_front[0], corner.x)
-            lower_left_front[1] = min(lower_left_front[1], corner.y)
-            lower_left_front[2] = min(lower_left_front[2], corner.z)
-            upper_right_back[0] = max(upper_right_back[0], corner.x)
-            upper_right_back[1] = max(upper_right_back[1], corner.y)
-            upper_right_back[2] = max(upper_right_back[2], corner.z)
+            # Min Corner
+            min_corner[0] = min(min_corner[0], corner.x)
+            min_corner[1] = min(min_corner[1], corner.y)
+            min_corner[2] = min(min_corner[2], corner.z)
+            # Max corner
+            max_corner[0] = max(max_corner[0], corner.x)
+            max_corner[1] = max(max_corner[1], corner.y)
+            max_corner[2] = max(max_corner[2], corner.z)
 
         bpy.ops.object.mode_set(mode = 'OBJECT')
-        mesh_json['bounding_box']['lower_left_front'] = lower_left_front
-        mesh_json['bounding_box']['upper_right_back'] = upper_right_back
+        mesh_json['bounding_box']['min_corner'] = min_corner
+        mesh_json['bounding_box']['max_corner'] = max_corner
 
         # START_EXPORT_MESH $BLENDER_FILEPATH $MESH_NAME
         # ... mesh json ...
