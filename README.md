@@ -63,11 +63,15 @@ Also feel free to open issues with any questions / thoughts that you have!
 
 ## To Install
 
-// TODO ...
 
 ```
-# Install blender mesh addon
-blender -P install-addon.py --background
+cargo install -f landon
+
+# Install blender mesh json exporter
+landon blender install mesh-to-json
+
+# Install blender armature json addon
+landon blender install armature-to-json
 ```
 
 ## Usage
@@ -77,7 +81,7 @@ blender -P install-addon.py --background
 ## CLI Usage
 
 ```sh
-# TODO ...
+landon --help
 ```
 
 ## To test

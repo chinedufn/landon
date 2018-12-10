@@ -8,15 +8,10 @@ keywords = ["blender", "export", "exporter", "mesh", "armature"]
 license = "MIT"
 repository = "https://github.com/chinedufn/landon"
 documentation = "https://docs.rs/landon"
+edition = "2018"
 
 [dependencies]
-blender-armature = { version = "0.0.1", path = "./blender-armature" }
-blender-mesh = { version = "0.3.0", path = "./blender-mesh" }
-
-[dev-dependencies]
-serde = "1"
-serde_derive = "1"
-serde_json = "1"
+clap = {version = "2.32.0", features = ["yaml"]}
 
 [workspace]
 members = [

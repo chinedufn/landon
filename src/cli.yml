@@ -1,0 +1,19 @@
+name: landon
+version: "0.0.1"
+author: Chinedu Francis Nwafili <frankie.nwafili@gmail.com>
+about: The Landon CLI
+subcommands:
+- blender:
+    version: "0.0.1"
+    about: Commands for pre-processing and exporting data from Blender.
+    subcommands:
+    - install:
+        version: "0.0.1"
+        about: Install different Blender tooling
+        subcommands:
+            - mesh-to-json:
+                version: "0.0.1"
+                about: Install the Blender Mesh Exporter
+            - armature-to-json:
+                version: "0.0.1"
+                about: Install the Blender Armature Exporter
