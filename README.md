@@ -74,14 +74,20 @@ landon blender install mesh-to-json
 landon blender install armature-to-json
 ```
 
-## Usage
+## API
 
-// TODO ...
+[landon](https://docs.rs/landon)
 
 ## CLI Usage
 
 ```sh
-landon --help
+# Help on all of the subcommands
+landon -h
+```
+
+```sh
+# Exporting data
+landon blender export -h
 ```
 
 ## To test

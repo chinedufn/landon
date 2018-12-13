@@ -16,6 +16,8 @@ use clap::App;
 mod blender;
 use self::blender::process_blender_subcommand;
 
+pub use self::blender::*;
+
 /// Run the landon CLI
 pub fn run() {
     let yaml = load_yaml!("cli.yml");
