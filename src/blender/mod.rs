@@ -19,6 +19,6 @@ pub fn process_blender_subcommand(matches: &ArgMatches) {
     } else if let Some(matches) = matches.subcommand_matches("export") {
         let files: Vec<String> = matches.values_of_lossy("file").unwrap();
 
-        export_blender_data(&files);
+        println!("{}", export_blender_data(&files).unwrap());
     }
 }

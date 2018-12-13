@@ -8,7 +8,7 @@ use std::process::Command;
 ///     `blender_armature::parse_meshes_from_blender_stdout`
 ///
 /// to parse the exported data into the data structures that you need.
-pub fn export_blender_data(blender_files: &Vec<String>) {
+pub fn export_blender_data(blender_files: &Vec<String>) -> Result<String, String> {
     let mut blender_process = Command::new("blender");
     let blender_process = blender_process.arg("--background");
 
@@ -18,7 +18,13 @@ pub fn export_blender_data(blender_files: &Vec<String>) {
             .args(&["--python-expr", &EXPORT_BLENDER_DATA]);
     }
 
-    blender_process.spawn().unwrap().wait().unwrap();
+    let output = blender_process.output().unwrap();
+
+    if output.stderr.len() > 0 {
+        return Err(String::from_utf8(output.stderr).expect("Blender stderr"));
+    }
+
+    Ok(String::from_utf8(output.stdout).expect("Blender stdout"))
 }
 
 fn open_blender_file(file: &str) -> String {
