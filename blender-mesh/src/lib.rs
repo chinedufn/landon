@@ -26,7 +26,6 @@ use serde_json;
 
 use crate::bounding_box::BoundingBox;
 use serde_json::Error;
-use std::collections::HashMap;
 
 mod bounding_box;
 mod combine_indices;

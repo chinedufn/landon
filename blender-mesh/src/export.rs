@@ -1,6 +1,6 @@
 use crate::BlenderMesh;
 use failure::Fail;
-use serde_json::map::Entry;
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
 pub type MeshesByFilename = HashMap<String, MeshesByMeshName>;
@@ -38,30 +38,30 @@ pub fn parse_meshes_from_blender_stdout(
 ///
 /// This will error if there are two meshes with the same name across two or more files.
 pub fn flatten_exported_meshes(
-    meshes_by_filename: MeshesByFilename,
+    meshes_by_filename: &MeshesByFilename,
 ) -> Result<HashMap<&str, &BlenderMesh>, FlattenMeshError> {
     let mut flattened_meshes = HashMap::new();
 
-    let mut duplicate_meshes: HashMap<&str, Vec<&str>> = HashMap::new();
+    let mut duplicate_meshes: HashMap<String, Vec<String>> = HashMap::new();
 
     for (source_filename, meshes) in meshes_by_filename.iter() {
         for (mesh_name, mesh) in meshes.iter() {
             flattened_meshes.insert(mesh_name.as_str(), mesh);
 
-            match duplicate_meshes.entry(mesh_name.as_str()) {
+            match duplicate_meshes.entry(mesh_name.to_string()) {
                 Entry::Occupied(mut duplicates) => {
-                    duplicates.get_mut().push(source_filename.as_str());
+                    duplicates.get_mut().push(source_filename.to_string());
                 }
                 Entry::Vacant(filenames) => {
-                    duplicates.push(source_filename.as_str());
+                    filenames.insert(vec![source_filename.to_string()]);
                 }
             };
         }
     }
 
-    let duplicate_meshes = duplicate_meshes
-        .iter()
-        .filter(|(mesh_name, filenames)| filenames.len() > 1)
+    let duplicate_meshes: HashMap<String, Vec<String>> = duplicate_meshes
+        .into_iter()
+        .filter(|(_mesh_name, filenames)| filenames.len() > 1)
         .collect();
 
     if duplicate_meshes.len() > 0 {
@@ -76,10 +76,11 @@ pub fn flatten_exported_meshes(
 /// An error when trying to flatten your exported data across multiple files into one HashMap of
 /// mesh name to mesh data.
 #[derive(Debug, Fail)]
-pub enum FlattenMeshError<'a> {
+pub enum FlattenMeshError {
+    #[fail(display = "Duplicate meshes found: {:#?}", duplicates)]
     DuplicateMeshNamesAcrossFiles {
         // HashMap<MeshName, Vec<FilesThatItAppearsIn>>
-        duplicates: HashMap<&'a str, Vec<&'a str>>,
+        duplicates: HashMap<String, Vec<String>>,
     },
 }
 
