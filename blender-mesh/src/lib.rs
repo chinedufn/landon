@@ -17,7 +17,6 @@
 //! @see https://github.com/chinedufn/blender-actions-to-json - Exporting blender armatures / actions
 
 #[deny(missing_docs)]
-
 #[macro_use]
 extern crate failure;
 #[macro_use]
@@ -25,12 +24,12 @@ extern crate serde_derive;
 
 use serde_json;
 
+use crate::bounding_box::BoundingBox;
 use serde_json::Error;
 use std::collections::HashMap;
-use crate::bounding_box::BoundingBox;
 
-mod combine_indices;
 mod bounding_box;
+mod combine_indices;
 mod y_up;
 
 /// Something went wrong in the Blender child process that was trying to parse your mesh data.
@@ -78,7 +77,7 @@ pub struct BlenderMesh {
     pub vertex_group_weights: Option<Vec<f32>>,
     /// TODO: enum..? if they're all equal we replace the MyEnum::PerVertex(Vec<u8>) with MyEnum::Equal(4)
     pub num_groups_for_each_vertex: Option<Vec<u8>>, // TODO: textures: HashMap<TextureNameString, {uvs, uv_indices}>,
-    pub bounding_box: BoundingBox
+    pub bounding_box: BoundingBox,
 }
 
 impl BlenderMesh {
@@ -203,7 +202,8 @@ impl BlenderMesh {
 
                         current_index += *group_count as u32;
                         count
-                    }).collect(),
+                    })
+                    .collect(),
             );
         }
 
@@ -212,70 +212,8 @@ impl BlenderMesh {
     }
 }
 
-pub type MeshNamesToData = HashMap<String, BlenderMesh>;
-pub type FilenamesToMeshes = HashMap<String, MeshNamesToData>;
-
-/// Given a buffer of standard output from Blender we parse all of the mesh JSON that was
-/// written to stdout by `blender-mesh-to-json.py`.
-///
-/// Meshes data in stdout will look like:
-///
-/// START_MESH_JSON /path/to/file.blend my_mesh_name
-/// {...}
-/// END_MESH_JSON /path/to/file.blend my_mesh_name
-///
-/// @see blender-mesh-to-json.py - This is where we write to stdout
-pub fn parse_meshes_from_blender_stdout(
-    blender_stdout: &str,
-) -> Result<FilenamesToMeshes, failure::Error> {
-    let mut filenames_to_meshes = HashMap::new();
-
-    let mut index = 0;
-
-    while let Some((filename_to_mesh, next_start_index)) =
-        find_first_mesh_after_index(blender_stdout, index)
-    {
-        filenames_to_meshes.extend(filename_to_mesh);
-        index = next_start_index;
-    }
-
-    Ok(filenames_to_meshes)
-}
-
-fn find_first_mesh_after_index(
-    blender_stdout: &str,
-    index: usize,
-) -> Option<(FilenamesToMeshes, usize)> {
-    let blender_stdout = &blender_stdout[index as usize..];
-
-    if let Some(mesh_start_index) = blender_stdout.find("START_MESH_JSON") {
-        let mut filenames_to_meshes = HashMap::new();
-        let mut mesh_name_to_data = HashMap::new();
-
-        let mesh_end_index = blender_stdout.find("END_MESH_JSON").unwrap();
-
-        let mesh_data = &blender_stdout[mesh_start_index..mesh_end_index];
-
-        let mut lines = mesh_data.lines();
-
-        let first_line = lines.next().unwrap();
-
-        let mesh_filename: Vec<&str> = first_line.split(" ").collect();
-        let mesh_filename = mesh_filename[1].to_string();
-
-        let mesh_name = first_line.split(" ").last().unwrap().to_string();
-
-        let mesh_data: String = lines.collect();
-        let mesh_data: BlenderMesh = serde_json::from_str(&mesh_data).unwrap();
-
-        mesh_name_to_data.insert(mesh_name, mesh_data);
-        filenames_to_meshes.insert(mesh_filename, mesh_name_to_data);
-
-        return Some((filenames_to_meshes, index + mesh_end_index + 1));
-    }
-
-    return None;
-}
+mod export;
+pub use self::export::*;
 
 #[cfg(test)]
 mod tests {
