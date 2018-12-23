@@ -3,13 +3,11 @@
 use crate::shader::ShaderType::*;
 use std::collections::HashMap;
 use std::rc::Rc;
-use crate::web_apis::log;
-use crate::web_apis::WebGLBuffer;
-use crate::web_apis::WebGLProgram;
-use crate::web_apis::WebGLRenderingContext;
+use wasm_bindgen::JsValue;
+use web_sys::*;
 
 pub struct ShaderSystem {
-    gl: Rc<WebGLRenderingContext>,
+    gl: Rc<WebGlRenderingContext>,
     shaders: HashMap<ShaderType, Shader>,
 }
 
@@ -27,16 +25,16 @@ pub enum ShaderType {
 }
 
 pub struct Shader {
-    pub program: WebGLProgram,
+    pub program: Option<WebGlProgram>,
     // TODO: We don't need buffers for each shader.. shaders can share one set of
     // buffers. This should be a &Vec<WebGLBuffer> but need to figure out the lifetimes
     // w/ wasm-bindgen
-    pub buffers: Vec<WebGLBuffer>,
+    pub buffers: Vec<Option<WebGlBuffer>>,
 }
 
 // TODO: Breadcrumb - get our F rendering using our shader system
 impl ShaderSystem {
-    pub fn new(gl: Rc<WebGLRenderingContext>) -> ShaderSystem {
+    pub fn new(gl: Rc<WebGlRenderingContext>) -> ShaderSystem {
         let shaders = ShaderSystem::init_shaders(&gl);
 
         ShaderSystem { shaders, gl }
@@ -44,14 +42,14 @@ impl ShaderSystem {
 
     pub fn use_program(&self, shader_type: &ShaderType) {
         self.gl
-            .use_program(&self.shaders.get(shader_type).unwrap().program)
+            .use_program(self.shaders.get(shader_type).unwrap().program.as_ref())
     }
 
-    pub fn get_shader<'a>(&'a self, shader_type: &ShaderType) -> &'a Shader {
-        &self.shaders.get(shader_type).unwrap()
+    pub fn get_shader(&self, shader_type: &ShaderType) -> Option<&Shader> {
+        self.shaders.get(shader_type)
     }
 
-    fn init_shaders(gl: &WebGLRenderingContext) -> HashMap<ShaderType, Shader> {
+    fn init_shaders(gl: &WebGlRenderingContext) -> HashMap<ShaderType, Shader> {
         let mut shaders = HashMap::new();
 
         let dual_quat_vertex = include_str!("./dual-quat-vertex.glsl");
@@ -75,7 +73,7 @@ impl ShaderSystem {
         shaders.insert(
             DualQuatSkin,
             Shader {
-                program: dual_quat_program,
+                program: Some(dual_quat_program.unwrap()),
                 buffers,
             },
         );
@@ -91,7 +89,7 @@ impl ShaderSystem {
         shaders.insert(
             NonSkinned,
             Shader {
-                program: non_skinned_program,
+                program: Some(non_skinned_program.unwrap()),
                 buffers,
             },
         );
@@ -101,39 +99,68 @@ impl ShaderSystem {
 
     // TODO: breadcrumb -> based on shader type use the right vert / frag shader
     fn create_shader_program(
-        gl: &WebGLRenderingContext,
+        gl: &WebGlRenderingContext,
         vertex_shader: &str,
         fragment_shader: &str,
-    ) -> WebGLProgram {
-        // gl.FRAGMENT_SHADER
-        let gl_fragment_shader = 35632;
-        // gl.VERTEX_SHADER
-        let gl_vertex_shader = 35633;
+    ) -> Result<WebGlProgram, JsValue> {
+        let vert_shader = compile_shader(&gl, WebGlRenderingContext::VERTEX_SHADER, vertex_shader)?;
+        let frag_shader =
+            compile_shader(&gl, WebGlRenderingContext::FRAGMENT_SHADER, fragment_shader)?;
+        let program = link_program(&gl, &vert_shader, &frag_shader)?;
 
-        let frag_shader = gl.create_shader(gl_fragment_shader);
-        let vert_shader = gl.create_shader(gl_vertex_shader);
+        Ok(program)
+    }
+}
 
-        gl.shader_source(&vert_shader, vertex_shader);
-        gl.shader_source(&frag_shader, fragment_shader);
+/// Create a shader program using the WebGL APIs
+fn compile_shader(
+    gl: &WebGlRenderingContext,
+    shader_type: u32,
+    source: &str,
+) -> Result<WebGlShader, String> {
+    let shader = gl
+        .create_shader(shader_type)
+        .ok_or_else(|| "Could not create shader".to_string())?;
+    gl.shader_source(&shader, source);
+    gl.compile_shader(&shader);
 
-        gl.compile_shader(&vert_shader);
-        gl.compile_shader(&frag_shader);
+    if gl
+        .get_shader_parameter(&shader, WebGlRenderingContext::COMPILE_STATUS)
+        .as_bool()
+        .unwrap_or(false)
+    {
+        Ok(shader)
+    } else {
+        Err(gl
+            .get_shader_info_log(&shader)
+            .unwrap_or_else(|| "Unknown error creating shader".to_string()))
+    }
+}
 
-        let vert_log = gl.get_shader_info_log(&vert_shader);
-        if vert_log.len() > 0 {
-            clog!("Vertex shader compilation errors: {}", vert_log);
-        }
+/// Link a shader program using the WebGL APIs
+fn link_program(
+    gl: &WebGlRenderingContext,
+    vert_shader: &WebGlShader,
+    frag_shader: &WebGlShader,
+) -> Result<WebGlProgram, String> {
+    let program = gl
+        .create_program()
+        .ok_or_else(|| "Unable to create shader program".to_string())?;
 
-        let frag_log = gl.get_shader_info_log(&frag_shader);
-        if frag_log.len() > 0 {
-            clog!("Fragment shader compilation errors: {}", frag_log);
-        }
+    gl.attach_shader(&program, &vert_shader);
+    gl.attach_shader(&program, &frag_shader);
 
-        let shader_program = gl.create_program();
-        gl.attach_shader(&shader_program, &frag_shader);
-        gl.attach_shader(&shader_program, &vert_shader);
-        gl.link_program(&shader_program);
+    gl.link_program(&program);
 
-        shader_program
+    if gl
+        .get_program_parameter(&program, WebGlRenderingContext::LINK_STATUS)
+        .as_bool()
+        .unwrap_or(false)
+    {
+        Ok(program)
+    } else {
+        Err(gl
+            .get_program_info_log(&program)
+            .unwrap_or_else(|| "Unknown error creating program".to_string()))
     }
 }

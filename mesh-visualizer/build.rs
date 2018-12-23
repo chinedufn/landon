@@ -1,12 +1,9 @@
-extern crate blender_armature;
-extern crate blender_mesh;
-extern crate serde_json;
-
 use std::fs;
 use std::fs::DirBuilder;
 use std::path::PathBuf;
 use std::process::Command;
 use std::collections::HashMap;
+use serde_json;
 
 // TODO: Make a directory for all of our temp build stuff (py scripts) so that we can delete it
 // all easily when we're done by deleting the dir
@@ -37,7 +34,7 @@ fn main() {
     let temp_addon = "/tmp/blender-mesh-to-json.py";
     fs::write(temp_addon, addon).unwrap();
 
-    let addon = include_str!("../blender-armature/src/blender-armature-to-json.py");
+    let addon = include_str!("../blender-armature-to-json.py");
     let temp_addon = "/tmp/blender-export/blender-armature-to-json.py";
     fs::write(temp_addon, addon).unwrap();
 

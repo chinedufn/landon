@@ -1,43 +1,25 @@
 use crate::assets::Assets;
+use crate::shader::Shader;
+use crate::shader::ShaderSystem;
+use crate::shader::ShaderType;
+use crate::state::State;
 use blender_armature::ActionSettings;
 use blender_armature::BlenderArmature;
 use blender_armature::Bone;
 use blender_armature::InterpolationSettings;
 use blender_mesh::BlenderMesh;
-use cgmath;
-use cgmath::Matrix4;
-use cgmath::Point3;
-use cgmath::Vector3;
-use crate::shader::Shader;
-use crate::shader::ShaderSystem;
-use crate::shader::ShaderType;
-use crate::state::State;
+use nalgebra::{Matrix4, Point3, Vector3};
 use std::cell::RefCell;
 use std::f32::consts::PI;
 use std::rc::Rc;
-use crate::web_apis::WebGLBuffer;
-use crate::web_apis::WebGLRenderingContext;
+use web_sys::WebGlRenderingContext as GL;
+use web_sys::*;
 
 mod armature_render;
 mod mesh_render;
 
-// Temporarily using u16's until I can get GLbitfield / Glenum etc working. Take a look at the
-// commented out code in mod webapis to see what I mean.
-static GL_COLOR_BUFFER_BIT: u16 = 16384;
-static GL_DEPTH_BUFFER_BIT: u16 = 256;
-// color_buffer_bit | depth_buffer_bit
-static BITFIELD: u16 = 16640;
-
-static GL_ARRAY_BUFFER: u16 = 34962;
-static GL_ELEMENT_ARRAY_BUFFER: u16 = 34963;
-static GL_FLOAT: u16 = 5126;
-static GL_STATIC_DRAW: u16 = 35044;
-
-static GL_TRIANGLES: u8 = 4;
-static GL_UNSIGNED_SHORT: u16 = 5123;
-
 pub struct Renderer {
-    gl: Rc<WebGLRenderingContext>,
+    gl: Rc<WebGlRenderingContext>,
     assets: Rc<RefCell<Assets>>,
     shader_sys: Rc<ShaderSystem>,
     state: Rc<State>,
@@ -45,25 +27,25 @@ pub struct Renderer {
 
 trait Render {
     fn shader_type(&self) -> ShaderType;
-    fn render(&self, gl: &WebGLRenderingContext, shader_program: &Shader);
+    fn render(&self, gl: &WebGlRenderingContext, shader_program: &Shader);
     fn buffer_f32_data(
         &self,
-        gl: &WebGLRenderingContext,
-        buf: &WebGLBuffer,
+        gl: &WebGlRenderingContext,
+        buf: &WebGlBuffer,
         // TODO: &Vec<f32>
         data: Vec<f32>,
         attrib_loc: u16,
         size: u8,
     ) {
-        gl.bind_buffer(GL_ARRAY_BUFFER, &buf);
-        gl.buffer_f32_data(GL_ARRAY_BUFFER, data, GL_STATIC_DRAW);
-        // TODO: buffer_u8_data and use gl_byte for joint indices
-        gl.vertex_attrib_pointer(attrib_loc, size, GL_FLOAT, false, 0, 0);
+        //        gl.bind_buffer(GL::ARRAY_BUFFER, &buf);
+        //        gl.buffer_f32_data(GL::ARRAY_BUFFER, data, GL::STATIC_DRAW);
+        //        // TODO: buffer_u8_data and use gl_byte for joint indices
+        //        gl.vertex_attrib_pointer(attrib_loc, size, GL::FLOAT, false, 0, 0);
     }
 }
 trait BlenderMeshRender {
-    fn render_non_skinned(&self, gl: &WebGLRenderingContext, shader_program: &Shader);
-    fn render_dual_quat_skinned(&self, gl: &WebGLRenderingContext, shader_program: &Shader);
+    fn render_non_skinned(&self, gl: &WebGlRenderingContext, shader_program: &Shader);
+    fn render_dual_quat_skinned(&self, gl: &WebGlRenderingContext, shader_program: &Shader);
 }
 
 struct attribute<T>(T);
@@ -84,7 +66,7 @@ impl Render for BlenderMesh {
             ShaderType::NonSkinned
         }
     }
-    fn render(&self, gl: &WebGLRenderingContext, shader: &Shader) {
+    fn render(&self, gl: &WebGlRenderingContext, shader: &Shader) {
         if let Some(_) = self.armature_name {
             self.render_dual_quat_skinned(&gl, &shader);
         } else {
@@ -94,135 +76,135 @@ impl Render for BlenderMesh {
 }
 
 impl BlenderMeshRender for BlenderMesh {
-    fn render_non_skinned(&self, gl: &WebGLRenderingContext, shader: &Shader) {
-        let vertex_pos_attrib = gl.get_attrib_location(&shader.program, "aVertexPosition");
-        gl.enable_vertex_attrib_array(vertex_pos_attrib);
-
-        let vertex_normal_attrib = gl.get_attrib_location(&shader.program, "aVertexNormal");
-        gl.enable_vertex_attrib_array(vertex_normal_attrib);
-
-        let texture_coord_attrib = gl.get_attrib_location(&shader.program, "aTextureCoord");
-        gl.enable_vertex_attrib_array(texture_coord_attrib);
-
-        let fovy = cgmath::Rad(PI / 3.0);
-        let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
-        let p_matrix = vec_from_matrix4(&perspective);
-
-        let model_matrix = Matrix4::from_translation(Vector3::new(0.0, 0.0, 0.0));
-
-        let mut mv_matrix = Matrix4::look_at(
-            Point3::new(1.0, 2.0, 2.0),
-            Point3::new(0.0, 0.0, 0.0),
-            Vector3::new(0.0, 1.0, 0.0),
-        );
-
-        // TODO: Breadcrumb - add normal and point lighting to shader..
-
-        // TODO: Multiply without new allocation
-        mv_matrix = mv_matrix * model_matrix;
-
-        let mv_matrix = vec_from_matrix4(&mv_matrix);
-
-        let p_matrix_uni = gl.get_uniform_location(&shader.program, "uPMatrix");
-        let mv_matrix_uni = gl.get_uniform_location(&shader.program, "uMVMatrix");
-
-        gl.uniform_matrix_4fv(p_matrix_uni, false, p_matrix);
-        gl.uniform_matrix_4fv(mv_matrix_uni, false, mv_matrix);
-
-        let pos = self.vertex_positions.clone();
-        self.buffer_f32_data(&gl, &shader.buffers[0], pos, vertex_pos_attrib, 3);
-
-        let norms = self.vertex_normals.clone();
-        self.buffer_f32_data(&gl, &shader.buffers[1], norms, vertex_normal_attrib, 3);
-
-        let uvs = self.vertex_uvs.as_ref().unwrap().clone();
-        self.buffer_f32_data(&gl, &shader.buffers[2], uvs, texture_coord_attrib, 2);
-
-        let index_buffer = gl.create_buffer();
-        gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, &index_buffer);
-
-        let pos_idx = self.vertex_position_indices.clone();
-        gl.buffer_u16_data(GL_ELEMENT_ARRAY_BUFFER, pos_idx, GL_STATIC_DRAW);
-
-        gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, &index_buffer);
-
-        let pos_idx_len = self.vertex_position_indices.len();
-        gl.draw_elements(GL_TRIANGLES, pos_idx_len as u16, GL_UNSIGNED_SHORT, 0);
+    fn render_non_skinned(&self, gl: &WebGlRenderingContext, shader: &Shader) {
+        //        let vertex_pos_attrib = gl.get_attrib_location(&shader.program, "aVertexPosition");
+        //        gl.enable_vertex_attrib_array(vertex_pos_attrib);
+        //
+        //        let vertex_normal_attrib = gl.get_attrib_location(&shader.program, "aVertexNormal");
+        //        gl.enable_vertex_attrib_array(vertex_normal_attrib);
+        //
+        //        let texture_coord_attrib = gl.get_attrib_location(&shader.program, "aTextureCoord");
+        //        gl.enable_vertex_attrib_array(texture_coord_attrib);
+        //
+        //        let fovy = PI / 3.0;
+        //        let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
+        //        let p_matrix = vec_from_matrix4(&perspective);
+        //
+        //        let model_matrix = Matrix4::from_translation(Vector3::new(0.0, 0.0, 0.0));
+        //
+        //        let mut mv_matrix = Matrix4::look_at(
+        //            Point3::new(1.0, 2.0, 2.0),
+        //            Point3::new(0.0, 0.0, 0.0),
+        //            Vector3::new(0.0, 1.0, 0.0),
+        //        );
+        //
+        //        // TODO: Breadcrumb - add normal and point lighting to shader..
+        //
+        //        // TODO: Multiply without new allocation
+        //        mv_matrix = mv_matrix * model_matrix;
+        //
+        //        let mv_matrix = vec_from_matrix4(&mv_matrix);
+        //
+        //        let p_matrix_uni = gl.get_uniform_location(&shader.program, "uPMatrix");
+        //        let mv_matrix_uni = gl.get_uniform_location(&shader.program, "uMVMatrix");
+        //
+        //        gl.uniform_matrix_4fv(p_matrix_uni, false, p_matrix);
+        //        gl.uniform_matrix_4fv(mv_matrix_uni, false, mv_matrix);
+        //
+        //        let pos = self.vertex_positions.clone();
+        //        self.buffer_f32_data(&gl, &shader.buffers[0], pos, vertex_pos_attrib, 3);
+        //
+        //        let norms = self.vertex_normals.clone();
+        //        self.buffer_f32_data(&gl, &shader.buffers[1], norms, vertex_normal_attrib, 3);
+        //
+        //        let uvs = self.vertex_uvs.as_ref().unwrap().clone();
+        //        self.buffer_f32_data(&gl, &shader.buffers[2], uvs, texture_coord_attrib, 2);
+        //
+        //        let index_buffer = gl.create_buffer();
+        //        gl.bind_buffer(GL::ELEMENT_ARRAY_BUFFER, &index_buffer);
+        //
+        //        let pos_idx = self.vertex_position_indices.clone();
+        //        gl.buffer_u16_data(GL::ELEMENT_ARRAY_BUFFER, pos_idx, GL::STATIC_DRAW);
+        //
+        //        gl.bind_buffer(GL::ELEMENT_ARRAY_BUFFER, &index_buffer);
+        //
+        //        let pos_idx_len = self.vertex_position_indices.len();
+        //        gl.draw_elements(GL::TRIANGLES, pos_idx_len as u16, GL::UNSIGNED_SHORT, 0);
     }
 
-    fn render_dual_quat_skinned(&self, gl: &WebGLRenderingContext, shader: &Shader) {
-        let vertex_pos_attrib = gl.get_attrib_location(&shader.program, "aVertexPosition");
-        gl.enable_vertex_attrib_array(vertex_pos_attrib);
-
-        let vertex_normal_attrib = gl.get_attrib_location(&shader.program, "aVertexNormal");
-        gl.enable_vertex_attrib_array(vertex_normal_attrib);
-
-        let joint_index_attrib = gl.get_attrib_location(&shader.program, "aJointIndex");
-        gl.enable_vertex_attrib_array(joint_index_attrib);
-
-        let joint_weight_attrib = gl.get_attrib_location(&shader.program, "aJointWeight");
-        gl.enable_vertex_attrib_array(joint_weight_attrib);
-
-        let texture_coord_attrib = gl.get_attrib_location(&shader.program, "aTextureCoord");
-        gl.enable_vertex_attrib_array(texture_coord_attrib);
-
-        let fovy = cgmath::Rad(PI / 3.0);
-        let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
-        let p_matrix = vec_from_matrix4(&perspective);
-
-        let model_matrix = Matrix4::from_translation(Vector3::new(0.0, 0.0, 0.0));
-
-        let mut mv_matrix = Matrix4::look_at(
-            Point3::new(1.0, 2.0, 2.0),
-            Point3::new(0.0, 0.0, 0.0),
-            Vector3::new(0.0, 1.0, 0.0),
-        );
-
-        // TODO: Breadcrumb - add normal and point lighting to shader..
-
-        // TODO: Multiply without new allocation
-        mv_matrix = mv_matrix * model_matrix;
-
-        let mv_matrix = vec_from_matrix4(&mv_matrix);
-
-        let p_matrix_uni = gl.get_uniform_location(&shader.program, "uPMatrix");
-        gl.uniform_matrix_4fv(p_matrix_uni, false, p_matrix);
-
-        let mv_matrix_uni = gl.get_uniform_location(&shader.program, "uMVMatrix");
-        gl.uniform_matrix_4fv(mv_matrix_uni, false, mv_matrix);
-
-        let pos = self.vertex_positions.clone();
-        self.buffer_f32_data(&gl, &shader.buffers[0], pos, vertex_pos_attrib, 3);
-
-        let norms = self.vertex_normals.clone();
-        self.buffer_f32_data(&gl, &shader.buffers[1], norms, vertex_normal_attrib, 3);
-
-        let joints = vec_u8_to_f32(self.vertex_group_indices.as_ref().unwrap().clone());
-        self.buffer_f32_data(&gl, &shader.buffers[2], joints, joint_index_attrib, 4);
-
-        let weights = self.vertex_group_weights.as_ref().unwrap().clone();
-        self.buffer_f32_data(&gl, &shader.buffers[3], weights, joint_weight_attrib, 4);
-
-        let uvs = self.vertex_uvs.as_ref().unwrap().clone();
-        self.buffer_f32_data(&gl, &shader.buffers[4], uvs, texture_coord_attrib, 2);
-
-        let index_buffer = gl.create_buffer();
-        gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, &index_buffer);
-
-        // TODO: Remove clone
-        let pos_idx = self.vertex_position_indices.clone();
-        gl.buffer_u16_data(GL_ELEMENT_ARRAY_BUFFER, pos_idx, GL_STATIC_DRAW);
-
-        gl.bind_buffer(GL_ELEMENT_ARRAY_BUFFER, &index_buffer);
-
-        let pos_idx_len = self.vertex_position_indices.len();
-        gl.draw_elements(GL_TRIANGLES, pos_idx_len as u16, GL_UNSIGNED_SHORT, 0);
+    fn render_dual_quat_skinned(&self, gl: &WebGlRenderingContext, shader: &Shader) {
+        //        let vertex_pos_attrib = gl.get_attrib_location(&shader.program, "aVertexPosition");
+        //        gl.enable_vertex_attrib_array(vertex_pos_attrib);
+        //
+        //        let vertex_normal_attrib = gl.get_attrib_location(&shader.program, "aVertexNormal");
+        //        gl.enable_vertex_attrib_array(vertex_normal_attrib);
+        //
+        //        let joint_index_attrib = gl.get_attrib_location(&shader.program, "aJointIndex");
+        //        gl.enable_vertex_attrib_array(joint_index_attrib);
+        //
+        //        let joint_weight_attrib = gl.get_attrib_location(&shader.program, "aJointWeight");
+        //        gl.enable_vertex_attrib_array(joint_weight_attrib);
+        //
+        //        let texture_coord_attrib = gl.get_attrib_location(&shader.program, "aTextureCoord");
+        //        gl.enable_vertex_attrib_array(texture_coord_attrib);
+        //
+        //        let fovy = cgmath::Rad(PI / 3.0);
+        //        let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
+        //        let p_matrix = vec_from_matrix4(&perspective);
+        //
+        //        let model_matrix = Matrix4::from_translation(Vector3::new(0.0, 0.0, 0.0));
+        //
+        //        let mut mv_matrix = Matrix4::look_at(
+        //            Point3::new(1.0, 2.0, 2.0),
+        //            Point3::new(0.0, 0.0, 0.0),
+        //            Vector3::new(0.0, 1.0, 0.0),
+        //        );
+        //
+        //        // TODO: Breadcrumb - add normal and point lighting to shader..
+        //
+        //        // TODO: Multiply without new allocation
+        //        mv_matrix = mv_matrix * model_matrix;
+        //
+        //        let mv_matrix = vec_from_matrix4(&mv_matrix);
+        //
+        //        let p_matrix_uni = gl.get_uniform_location(&shader.program, "uPMatrix");
+        //        gl.uniform_matrix_4fv(p_matrix_uni, false, p_matrix);
+        //
+        //        let mv_matrix_uni = gl.get_uniform_location(&shader.program, "uMVMatrix");
+        //        gl.uniform_matrix_4fv(mv_matrix_uni, false, mv_matrix);
+        //
+        //        let pos = self.vertex_positions.clone();
+        //        self.buffer_f32_data(&gl, &shader.buffers[0], pos, vertex_pos_attrib, 3);
+        //
+        //        let norms = self.vertex_normals.clone();
+        //        self.buffer_f32_data(&gl, &shader.buffers[1], norms, vertex_normal_attrib, 3);
+        //
+        //        let joints = vec_u8_to_f32(self.vertex_group_indices.as_ref().unwrap().clone());
+        //        self.buffer_f32_data(&gl, &shader.buffers[2], joints, joint_index_attrib, 4);
+        //
+        //        let weights = self.vertex_group_weights.as_ref().unwrap().clone();
+        //        self.buffer_f32_data(&gl, &shader.buffers[3], weights, joint_weight_attrib, 4);
+        //
+        //        let uvs = self.vertex_uvs.as_ref().unwrap().clone();
+        //        self.buffer_f32_data(&gl, &shader.buffers[4], uvs, texture_coord_attrib, 2);
+        //
+        //        let index_buffer = gl.create_buffer();
+        //        gl.bind_buffer(GL::ELEMENT_ARRAY_BUFFER, &index_buffer);
+        //
+        //        // TODO: Remove clone
+        //        let pos_idx = self.vertex_position_indices.clone();
+        //        gl.buffer_u16_data(GL::ELEMENT_ARRAY_BUFFER, pos_idx, GL::STATIC_DRAW);
+        //
+        //        gl.bind_buffer(GL::ELEMENT_ARRAY_BUFFER, &index_buffer);
+        //
+        //        let pos_idx_len = self.vertex_position_indices.len();
+        //        gl.draw_elements(GL::TRIANGLES, pos_idx_len as u16, GL::UNSIGNED_SHORT, 0);
     }
 }
 
 impl Renderer {
     pub fn new(
-        gl: Rc<WebGLRenderingContext>,
+        gl: Rc<WebGlRenderingContext>,
         assets: Rc<RefCell<Assets>>,
         shader_sys: Rc<ShaderSystem>,
         state: Rc<State>,
@@ -236,7 +218,7 @@ impl Renderer {
     }
 
     pub fn render(&self, state: &State) {
-        self.gl.clear(BITFIELD);
+        self.gl.clear(GL::COLOR_BUFFER_BIT | GL::DEPTH_BUFFER_BIT);
 
         let mesh = self.assets.borrow().meshes();
         let mesh = mesh.borrow();
@@ -261,67 +243,58 @@ impl Renderer {
                 return;
             }
 
-            armature.unwrap().buffer_data(&self.gl, &shader, &state);
+            armature
+                .unwrap()
+                .buffer_data(&self.gl, shader.unwrap(), &state);
         }
 
-        mesh.render(&self.gl, &shader);
+        mesh.render(&self.gl, shader.unwrap());
     }
 }
 
 trait ArmatureDataBuffer {
-    fn buffer_data(&self, gl: &WebGLRenderingContext, shader: &Shader, state: &State);
+    fn buffer_data(&self, gl: &WebGlRenderingContext, shader: &Shader, state: &State);
 }
 
 impl ArmatureDataBuffer for BlenderArmature {
-    fn buffer_data(&self, gl: &WebGLRenderingContext, shader: &Shader, state: &State) {
-        let now = State::performance_now_to_system_time();
-
-        let current_time = now.duration_since(state.app_start_time).unwrap();
-        let seconds = current_time.as_secs();
-        let millis = current_time.subsec_millis();
-        let current_time_secs = seconds as f32 + (millis as f32 / 1000.0);
-
-        let interp_opts = InterpolationSettings {
-            current_time: current_time_secs,
-            // TODO: self.get_bone_group(BlenderArmature::ALL_BONES)
-            joint_indices: vec![0, 1, 2, 3],
-            blend_fn: None,
-
-            current_action: ActionSettings::new("Twist", 0.0, true),
-            previous_action: None,
-        };
-        let bones = self.interpolate_bones(&interp_opts);
-
-        let mut bones: Vec<(&u8, &Bone)> = bones.iter().to_owned().collect();
-        bones.sort_by(|a, b| a.0.partial_cmp(b.0).unwrap());
-        let bones: Vec<&Bone> = bones.iter().map(|(_, bone)| *bone).collect();
-
-        for (index, bone) in bones.iter().enumerate() {
-            let bone = bone.vec();
-            let (rot_quat, trans_quat) = bone.split_at(4);
-
-            let rot_quat = rot_quat.to_vec();
-            let rot_quat_uni = &format!("boneRotQuaternions[{}]", index);
-            let rot_quat_uni = gl.get_uniform_location(&shader.program, rot_quat_uni);
-            gl.uniform_4fv(rot_quat_uni, rot_quat);
-
-            let trans_quat = trans_quat.to_vec();
-            let trans_quat_uni = &format!("boneTransQuaternions[{}]", index);
-            let trans_quat_uni = gl.get_uniform_location(&shader.program, trans_quat_uni);
-            gl.uniform_4fv(trans_quat_uni, trans_quat);
-        }
+    fn buffer_data(&self, gl: &WebGlRenderingContext, shader: &Shader, state: &State) {
+        //        let now = State::performance_now_to_system_time();
+        //
+        //        let current_time = now.duration_since(state.app_start_time).unwrap();
+        //        let seconds = current_time.as_secs();
+        //        let millis = current_time.subsec_millis();
+        //        let current_time_secs = seconds as f32 + (millis as f32 / 1000.0);
+        //
+        //        let interp_opts = InterpolationSettings {
+        //            current_time: current_time_secs,
+        //            // TODO: self.get_bone_group(BlenderArmature::ALL_BONES)
+        //            joint_indices: vec![0, 1, 2, 3],
+        //            blend_fn: None,
+        //
+        //            current_action: ActionSettings::new("Twist", 0.0, true),
+        //            previous_action: None,
+        //        };
+        //        let bones = self.interpolate_bones(&interp_opts);
+        //
+        //        let mut bones: Vec<(&u8, &Bone)> = bones.iter().to_owned().collect();
+        //        bones.sort_by(|a, b| a.0.partial_cmp(b.0).unwrap());
+        //        let bones: Vec<&Bone> = bones.iter().map(|(_, bone)| *bone).collect();
+        //
+        //        for (index, bone) in bones.iter().enumerate() {
+        //            let bone = bone.vec();
+        //            let (rot_quat, trans_quat) = bone.split_at(4);
+        //
+        //            let rot_quat = rot_quat.to_vec();
+        //            let rot_quat_uni = &format!("boneRotQuaternions[{}]", index);
+        //            let rot_quat_uni = gl.get_uniform_location(&shader.program, rot_quat_uni);
+        //            gl.uniform_4fv(rot_quat_uni, rot_quat);
+        //
+        //            let trans_quat = trans_quat.to_vec();
+        //            let trans_quat_uni = &format!("boneTransQuaternions[{}]", index);
+        //            let trans_quat_uni = gl.get_uniform_location(&shader.program, trans_quat_uni);
+        //            gl.uniform_4fv(trans_quat_uni, trans_quat);
+        //        }
     }
-}
-
-fn vec_from_matrix4(mat4: &Matrix4<f32>) -> Vec<f32> {
-    // TODO: Accept output vec instead of re-allocating
-    let mut vec = vec![];
-
-    for index in 0..16 {
-        vec.push(mat4[index / 4][index % 4]);
-    }
-
-    vec
 }
 
 fn vec_u8_to_f32(vec: Vec<u8>) -> Vec<f32> {

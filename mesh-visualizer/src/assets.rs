@@ -1,18 +1,17 @@
 //! Managers the loading and storage of our assets.
 //! Namely, meshes and armatures that came from Blender and textures png's.
 
+use crate::download_texture;
 use blender_armature::BlenderArmature;
 use blender_mesh::BlenderMesh;
-use crate::download_texture;
+use serde_json;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
-use serde_json;
 
 type Meshes = Rc<RefCell<HashMap<String, BlenderMesh>>>;
 type Armatures = Rc<RefCell<HashMap<String, BlenderArmature>>>;
-use crate::web_apis::*;
 use crate::download_string;
 
 pub struct Assets {
@@ -67,7 +66,8 @@ impl Assets {
         let armatures_clone = Rc::clone(&self.armatures);
 
         let deserialize_armatures = move |armatures_json: String| {
-            let armatures: HashMap<String, BlenderArmature> = serde_json::from_str(&armatures_json).unwrap();
+            let armatures: HashMap<String, BlenderArmature> =
+                serde_json::from_str(&armatures_json).unwrap();
 
             for (armature_name, mut armature) in armatures {
                 armature.apply_inverse_bind_poses();
