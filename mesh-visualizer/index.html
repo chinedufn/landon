@@ -5,11 +5,44 @@
     <body>
         <script src='/mesh_visualizer.js'></script>
         <script>
+          // Bridge the gap for things that are currently unsupported or difficult to accomplish with
+          // wasm-bindgen
+          window.WasmHelpers = {
+            fetch_u8_array: (url, callback) => {
+              console.log('i')
+              fetch(url)
+                .then(response => response.arrayBuffer())
+                .then(arraybuffer => {
+                  const bytes = new Uint8Array(arraybuffer)
+                  console.log(bytes)
+                  callback(bytes)
+                })
+            }
+          }
+        </script>
+        <script>
           window.addEventListener('load', function () {
             window.wasm_bindgen('/mesh_visualizer_bg.wasm')
               .then(function () {
                 var app = new window.wasm_bindgen.App()
                 app.start()
+
+                const image = new window.Image()
+                image.onload = function () {
+                  app.set_texture(image)
+                }
+                image.src = 'dist/textured_cube-uv-layout.png'
+
+                const draw = () => {
+                  app.draw()
+
+                  window.requestAnimationFrame(() => {
+                    draw()
+                  })
+                }
+
+                draw()
+              })
           })
         </script>
     </body>

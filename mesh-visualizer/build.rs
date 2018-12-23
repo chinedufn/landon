@@ -80,9 +80,8 @@ fn main() {
         }
     }
 
-    let meshes = serde_json::to_string(&mesh_names_to_models).unwrap();
-    // TODO: bincode instead of json
-    fs::write("./dist/meshes.json", meshes).unwrap();
+    let meshes = bincode::serialize(&mesh_names_to_models).unwrap();
+    fs::write("./dist/meshes.bytes", meshes).unwrap();
 
     let mut armature_names_to_data = HashMap::new();
 
@@ -94,9 +93,8 @@ fn main() {
         }
     }
 
-    let armatures = serde_json::to_string(&armature_names_to_data).unwrap();
-    // TODO: bincode instead of json
-    fs::write("./dist/armatures.json", &armatures).unwrap();
+    let armatures = bincode::serialize(&armature_names_to_data).unwrap();
+    fs::write("./dist/armatures.bytes", &armatures).unwrap();
 }
 
 fn copy_texture_to_dist () {

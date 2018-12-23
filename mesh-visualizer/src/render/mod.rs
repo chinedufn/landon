@@ -8,10 +8,13 @@ use blender_armature::BlenderArmature;
 use blender_armature::Bone;
 use blender_armature::InterpolationSettings;
 use blender_mesh::BlenderMesh;
-use nalgebra::{Matrix4, Point3, Vector3};
+use js_sys::WebAssembly;
+use nalgebra::Perspective3;
+use nalgebra::{Matrix4, Point3, Vector3, Isometry3};
 use std::cell::RefCell;
 use std::f32::consts::PI;
 use std::rc::Rc;
+use wasm_bindgen::JsCast;
 use web_sys::WebGlRenderingContext as GL;
 use web_sys::*;
 
@@ -28,19 +31,32 @@ pub struct Renderer {
 trait Render {
     fn shader_type(&self) -> ShaderType;
     fn render(&self, gl: &WebGlRenderingContext, shader_program: &Shader);
+    // FIXME: Better paradigm.. Only buffer once and use VAO..
     fn buffer_f32_data(
         &self,
         gl: &WebGlRenderingContext,
-        buf: &WebGlBuffer,
+        buf: Option<&WebGlBuffer>,
         // TODO: &Vec<f32>
-        data: Vec<f32>,
-        attrib_loc: u16,
+        data: &Vec<f32>,
+        attrib_loc: i32,
         size: u8,
     ) {
-        //        gl.bind_buffer(GL::ARRAY_BUFFER, &buf);
-        //        gl.buffer_f32_data(GL::ARRAY_BUFFER, data, GL::STATIC_DRAW);
-        //        // TODO: buffer_u8_data and use gl_byte for joint indices
-        //        gl.vertex_attrib_pointer(attrib_loc, size, GL::FLOAT, false, 0, 0);
+        gl.bind_buffer(GL::ARRAY_BUFFER, buf);
+
+        let memory_buffer = wasm_bindgen::memory()
+            .dyn_into::<WebAssembly::Memory>()
+            .unwrap()
+            .buffer();
+
+        let data_location = data.as_ptr() as u32 / 4;
+
+        let data_array = js_sys::Float32Array::new(&memory_buffer)
+            .subarray(data_location, data_location + data.len() as u32);
+
+        gl.buffer_data_with_array_buffer_view(GL::ARRAY_BUFFER, &data_array, GL::STATIC_DRAW);
+
+        // TODO: buffer_u8_data and use gl_byte for joint indices
+        gl.vertex_attrib_pointer_with_i32(attrib_loc as u32, size as i32, GL::FLOAT, false, 0, 0);
     }
 }
 trait BlenderMeshRender {
@@ -77,59 +93,96 @@ impl Render for BlenderMesh {
 
 impl BlenderMeshRender for BlenderMesh {
     fn render_non_skinned(&self, gl: &WebGlRenderingContext, shader: &Shader) {
-        //        let vertex_pos_attrib = gl.get_attrib_location(&shader.program, "aVertexPosition");
-        //        gl.enable_vertex_attrib_array(vertex_pos_attrib);
-        //
-        //        let vertex_normal_attrib = gl.get_attrib_location(&shader.program, "aVertexNormal");
-        //        gl.enable_vertex_attrib_array(vertex_normal_attrib);
-        //
-        //        let texture_coord_attrib = gl.get_attrib_location(&shader.program, "aTextureCoord");
-        //        gl.enable_vertex_attrib_array(texture_coord_attrib);
-        //
-        //        let fovy = PI / 3.0;
-        //        let perspective = cgmath::perspective(fovy, 1.0, 0.1, 100.0);
-        //        let p_matrix = vec_from_matrix4(&perspective);
-        //
-        //        let model_matrix = Matrix4::from_translation(Vector3::new(0.0, 0.0, 0.0));
-        //
-        //        let mut mv_matrix = Matrix4::look_at(
-        //            Point3::new(1.0, 2.0, 2.0),
-        //            Point3::new(0.0, 0.0, 0.0),
-        //            Vector3::new(0.0, 1.0, 0.0),
-        //        );
-        //
-        //        // TODO: Breadcrumb - add normal and point lighting to shader..
-        //
-        //        // TODO: Multiply without new allocation
-        //        mv_matrix = mv_matrix * model_matrix;
-        //
-        //        let mv_matrix = vec_from_matrix4(&mv_matrix);
-        //
-        //        let p_matrix_uni = gl.get_uniform_location(&shader.program, "uPMatrix");
-        //        let mv_matrix_uni = gl.get_uniform_location(&shader.program, "uMVMatrix");
-        //
-        //        gl.uniform_matrix_4fv(p_matrix_uni, false, p_matrix);
-        //        gl.uniform_matrix_4fv(mv_matrix_uni, false, mv_matrix);
-        //
-        //        let pos = self.vertex_positions.clone();
-        //        self.buffer_f32_data(&gl, &shader.buffers[0], pos, vertex_pos_attrib, 3);
-        //
-        //        let norms = self.vertex_normals.clone();
-        //        self.buffer_f32_data(&gl, &shader.buffers[1], norms, vertex_normal_attrib, 3);
-        //
-        //        let uvs = self.vertex_uvs.as_ref().unwrap().clone();
-        //        self.buffer_f32_data(&gl, &shader.buffers[2], uvs, texture_coord_attrib, 2);
-        //
-        //        let index_buffer = gl.create_buffer();
-        //        gl.bind_buffer(GL::ELEMENT_ARRAY_BUFFER, &index_buffer);
-        //
-        //        let pos_idx = self.vertex_position_indices.clone();
-        //        gl.buffer_u16_data(GL::ELEMENT_ARRAY_BUFFER, pos_idx, GL::STATIC_DRAW);
-        //
-        //        gl.bind_buffer(GL::ELEMENT_ARRAY_BUFFER, &index_buffer);
-        //
-        //        let pos_idx_len = self.vertex_position_indices.len();
-        //        gl.draw_elements(GL::TRIANGLES, pos_idx_len as u16, GL::UNSIGNED_SHORT, 0);
+        let memory_buffer = wasm_bindgen::memory()
+            .dyn_into::<WebAssembly::Memory>()
+            .unwrap()
+            .buffer();
+
+        let vertex_pos_attrib = gl.get_attrib_location(shader.program.as_ref().unwrap(), "aVertexPosition");
+        gl.enable_vertex_attrib_array(vertex_pos_attrib as u32);
+
+        let vertex_normal_attrib = gl.get_attrib_location(shader.program.as_ref().unwrap(), "aVertexNormal");
+        gl.enable_vertex_attrib_array(vertex_normal_attrib as u32);
+
+        let texture_coord_attrib = gl.get_attrib_location(shader.program.as_ref().unwrap(), "aTextureCoord");
+        gl.enable_vertex_attrib_array(texture_coord_attrib as u32);
+
+        let fovy = PI / 3.0;
+        let perspective = Perspective3::new(fovy, 1.0, 0.1, 50.0);
+
+        let mut perspective_array = [0.; 16];
+        perspective_array.copy_from_slice(perspective.as_matrix().as_slice());
+
+        let perspective_uni = gl.get_uniform_location(shader.program.as_ref().unwrap(), "perspective");
+        let perspective_uni = perspective_uni.as_ref();
+        gl.uniform_matrix4fv_with_f32_array(perspective_uni, false, &mut perspective_array);
+
+        // TODO: state.camera
+        let eye = Point3::new(1.0, 8.0, 10.0);
+        let target = Point3::new(0.0, 0.0, 0.0);
+        let view = Isometry3::look_at_rh(&eye, &target, &Vector3::y());
+
+        let view = view.to_homogeneous();
+
+        let pos = (0.0, 0.0, 0.0);
+        let model = Isometry3::new(Vector3::new(pos.0, pos.1, pos.2), nalgebra::zero());
+        let model = model.to_homogeneous();
+
+        let mut model_array = [0.; 16];
+        let mut view_array = [0.; 16];
+
+        model_array.copy_from_slice(model.as_slice());
+        view_array.copy_from_slice(view.as_slice());
+
+        let model_uni = gl.get_uniform_location(shader.program.as_ref().unwrap(), "model");
+        let model_uni = model_uni.as_ref();
+
+        let view_uni = gl.get_uniform_location(shader.program.as_ref().unwrap(), "view");
+        let view_uni = view_uni.as_ref();
+
+        gl.uniform_matrix4fv_with_f32_array(model_uni, false, &mut model_array);
+        gl.uniform_matrix4fv_with_f32_array(view_uni, false, &mut view_array);
+
+        // TODO: Breadcrumb - add normal and point lighting to shader..
+
+        // TODO: Multiply without new allocation
+
+        let pos = &self.vertex_positions;
+        self.buffer_f32_data(&gl, shader.buffers[0].as_ref(), pos, vertex_pos_attrib, 3);
+
+        let norms = &self.vertex_normals;
+        self.buffer_f32_data(
+            &gl,
+            shader.buffers[1].as_ref(),
+            norms,
+            vertex_normal_attrib,
+            3,
+        );
+
+        let uvs = self.vertex_uvs.as_ref().unwrap();
+        self.buffer_f32_data(
+            &gl,
+            shader.buffers[2].as_ref(),
+            uvs,
+            texture_coord_attrib,
+            2,
+        );
+
+        let indices = &self.vertex_position_indices;
+
+        let indices_location = indices.as_ptr() as u32 / 2;
+        let indices_array = js_sys::Uint16Array::new(&memory_buffer)
+            .subarray(indices_location, indices_location + indices.len() as u32);
+
+        let index_buffer = gl.create_buffer().unwrap();
+        gl.bind_buffer(GL::ELEMENT_ARRAY_BUFFER, Some(&index_buffer));
+        gl.buffer_data_with_array_buffer_view(
+            GL::ELEMENT_ARRAY_BUFFER,
+            &indices_array,
+            GL::STATIC_DRAW,
+        );
+
+        gl.draw_elements_with_i32(GL::TRIANGLES, indices.len() as i32, GL::UNSIGNED_SHORT, 0);
     }
 
     fn render_dual_quat_skinned(&self, gl: &WebGlRenderingContext, shader: &Shader) {
@@ -297,6 +350,10 @@ impl ArmatureDataBuffer for BlenderArmature {
     }
 }
 
-fn vec_u8_to_f32(vec: Vec<u8>) -> Vec<f32> {
-    vec.iter().map(|j| *j as f32).collect()
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hi() {}
 }

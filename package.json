@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build-visualizer": "./bin/build-visualizer.sh",
-    "serve": "http-server",
+    "serve": "http-server ./mesh-visualizer -o",
     "start": "lil-pids bin/visualizer-services",
     "watch:wasm": "chokidar --initial 'mesh-visualizer/src' -c 'npm run build-visualizer'",
     "release:site": "./bin/build-site.sh && webpack --config webpack.prod.js",

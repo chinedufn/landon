@@ -2,8 +2,9 @@ attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
 attribute vec2 aTextureCoord;
 
-uniform mat4 uMVMatrix;
-uniform mat4 uPMatrix;
+uniform mat4 perspective;
+uniform mat4 view;
+uniform mat4 model;
 
 varying vec3 vNormal;
 varying vec3 vWorldSpacePos;
@@ -11,7 +12,7 @@ varying vec3 vWorldSpacePos;
 varying vec2 vTextureCoord;
 
 void main (void) {
-  gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+  gl_Position = perspective * view * model * vec4(aVertexPosition, 1.0);
 
   vNormal = aVertexNormal;
 

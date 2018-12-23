@@ -30,7 +30,10 @@ pub struct App {
 
 #[wasm_bindgen]
 impl App {
+    #[wasm_bindgen(constructor)]
     pub fn new() -> App {
+        console_error_panic_hook::set_once();
+
         let canvas = App::create_canvas().unwrap();
         let document = window().unwrap().document().unwrap();
         document.body().unwrap().append_child(&canvas);
@@ -62,7 +65,7 @@ impl App {
     pub fn start(&mut self) {
         self.assets
             .borrow_mut()
-            .load_mesh(&self.state.current_model);
+            .load_meshes();
         //        self.assets.borrow_mut().load_armature("LetterFArmature");
     }
 
@@ -92,11 +95,13 @@ impl App {
         self.gl.uniform1i(
             self.gl
                 .get_uniform_location(
-                    &self
+                    self
                         .shader_sys
                         .get_shader(&ShaderType::NonSkinned)
+                        .as_ref()
                         .unwrap()
                         .program
+                        .as_ref()
                         .unwrap(),
                     "uSampler",
                 )
@@ -110,7 +115,6 @@ impl App {
         //            ),
         //            1
         //        );
-        self.gl.bind_texture(GL::TEXTURE_2D, None);
     }
 
     pub fn draw(&self) {

@@ -1,18 +1,31 @@
 //! Managers the loading and storage of our assets.
 //! Namely, meshes and armatures that came from Blender and textures png's.
 
-use crate::download_texture;
+use bincode;
 use blender_armature::BlenderArmature;
 use blender_mesh::BlenderMesh;
-use serde_json;
+use js_sys::Promise;
+use js_sys::Uint8Array;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
+use wasm_bindgen::convert::*;
+use web_sys::*;
 
 type Meshes = Rc<RefCell<HashMap<String, BlenderMesh>>>;
 type Armatures = Rc<RefCell<HashMap<String, BlenderArmature>>>;
-use crate::download_string;
+
+#[wasm_bindgen]
+extern "C" {
+    /// Bridge the gap for things that are currently unsupported or difficult to accomplish with
+    /// wasm-bindgen
+    pub type WasmHelpers;
+
+    #[wasm_bindgen(static_method_of = WasmHelpers)]
+    pub fn fetch_u8_array(url: &str, callback: &js_sys::Function);
+}
 
 pub struct Assets {
     /// All of our Blender models that we have downloaded and can render
@@ -29,11 +42,13 @@ impl Assets {
         }
     }
 
-    pub fn load_mesh(&mut self, mesh_name: &str) {
+    pub fn load_meshes(&mut self) {
+        let request_url = "/dist/meshes.bytes";
+
         let meshes_clone = Rc::clone(&self.meshes);
 
-        let deserialize_meshes = move |meshes_json: String| {
-            let meshes: HashMap<String, BlenderMesh> = serde_json::from_str(&meshes_json).unwrap();
+        let deserialize_meshes = move |mesh_bytes: Box<[u8]>| {
+            let meshes: HashMap<String, BlenderMesh> = bincode::deserialize(&mesh_bytes).unwrap();
 
             for (mesh_name, mut mesh) in meshes {
                 mesh.combine_vertex_indices();
@@ -50,42 +65,39 @@ impl Assets {
             }
         };
 
-        let on_meshes_downloaded = Closure::new(deserialize_meshes);
+        let closure = Closure::wrap(Box::new(deserialize_meshes) as Box<FnMut(_)>);
 
-        let _model_path = &format!("dist/{}.json", mesh_name);
-        download_string("/dist/meshes.json".to_string(), &on_meshes_downloaded);
+        let callback = closure.as_ref().unchecked_ref();
+        WasmHelpers::fetch_u8_array("/dist/meshes.bytes", callback);
 
-        // TODO: Instead of calling .forget() and leaking memory every time we load a model,
-        // see if can store it our
-        // struct as an option and re-use the closure / only forget it once
-        on_meshes_downloaded.forget();
+        closure.forget();
     }
 
     // TODO: Temporarily commented out while I refactor
     pub fn load_armature(&mut self, armature_name: &str) {
-        let armatures_clone = Rc::clone(&self.armatures);
-
-        let deserialize_armatures = move |armatures_json: String| {
-            let armatures: HashMap<String, BlenderArmature> =
-                serde_json::from_str(&armatures_json).unwrap();
-
-            for (armature_name, mut armature) in armatures {
-                armature.apply_inverse_bind_poses();
-                armature.transpose_actions();
-                armature.actions_to_dual_quats();
-
-                armatures_clone
-                    .borrow_mut()
-                    .insert(armature_name.to_string(), armature);
-            }
-        };
-
-        let on_armatures_downloaded = Closure::new(deserialize_armatures);
-
-        let _model_path = &format!("dist/{}.json", armature_name);
-        download_string("/dist/armatures.json".to_string(), &on_armatures_downloaded);
-
-        on_armatures_downloaded.forget();
+        //        let armatures_clone = Rc::clone(&self.armatures);
+        //
+        //        let deserialize_armatures = move |armatures_json: &[u8]| {
+        //            let armatures: HashMap<String, BlenderArmature> =
+        //                bincode::deserialize(&armatures_json).unwrap();
+        //
+        //            for (armature_name, mut armature) in armatures {
+        //                armature.apply_inverse_bind_poses();
+        //                armature.transpose_actions();
+        //                armature.actions_to_dual_quats();
+        //
+        //                armatures_clone
+        //                    .borrow_mut()
+        //                    .insert(armature_name.to_string(), armature);
+        //            }
+        //        };
+        //
+        //        let on_armatures_downloaded = Closure::new(deserialize_armatures);
+        //
+        //        let _model_path = &format!("dist/{}.json", armature_name);
+        //        download_string("/dist/armatures.json".to_string(), &on_armatures_downloaded);
+        //
+        //        on_armatures_downloaded.forget();
     }
 
     pub fn meshes(&self) -> Meshes {
@@ -95,4 +107,12 @@ impl Assets {
     pub fn armatures(&self) -> Armatures {
         Rc::clone(&self.armatures)
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn foo() {}
 }
