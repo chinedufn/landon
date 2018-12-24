@@ -30,13 +30,9 @@ impl BlenderMesh {
         let mut encountered_vert_data: EncounteredIndices = HashMap::new();
         let mut encountered_vert_ids = HashSet::new();
 
-        let start_size = max(self.vertex_positions.len(), self.vertex_normals.len());
-
-        let mut expanded_normals = vec![];
-        expanded_normals.resize(start_size, 12345.0);
-
-        let mut expanded_uvs = vec![];
-        expanded_uvs.resize(start_size * 2 / 3 as usize, 12345.0);
+        let mut expanded_positions = HashMap::new();
+        let mut expanded_normals = HashMap::new();
+        let mut expanded_uvs = HashMap::new();
 
         let mut expanded_pos_indices = vec![];
 
@@ -49,8 +45,8 @@ impl BlenderMesh {
 
         let vert_group_map = self.vertex_group_as_hashmap();
 
-        for (elem_array_index, vert_id) in self.vertex_position_indices.iter().enumerate() {
-            let vert_id = *vert_id;
+        for (elem_array_index, start_vert_id) in self.vertex_position_indices.iter().enumerate() {
+            let start_vert_id = *start_vert_id;
             let normal_index = self.vertex_normal_indices.as_ref().unwrap()[elem_array_index];
             let uv_index = match self.vertex_uv_indices.as_ref() {
                 Some(uvs) => Some(uvs[elem_array_index]),
@@ -58,38 +54,48 @@ impl BlenderMesh {
             };
 
             let vert_id_to_reuse = encountered_vert_data
-                .get(&(vert_id, normal_index, uv_index))
+                .get(&(start_vert_id, normal_index, uv_index))
                 .cloned();
 
             // If we have a vertex that is already using the same indices that this current vertex is using
             // OR we have never seen this vertex index we will either:
             //  1. Re-use it
             //  OR 2. Use this newly encountered index and add it to our encountered indices / data
-            let can_use_vert_id =
-                vert_id_to_reuse.is_some() || !encountered_vert_ids.contains(&vert_id);
 
-            if can_use_vert_id {
-                let vert_id = match vert_id_to_reuse {
-                    Some(i) => i,
-                    None => vert_id,
-                };
+            // If we've already seen this combination of vertex indices we'll re-use the index
+            if vert_id_to_reuse.is_some() {
+                expanded_pos_indices[elem_array_index] = vert_id_to_reuse.unwrap();
+                continue;
+            }
 
-                expanded_pos_indices[elem_array_index] = vert_id;
+            // If this is our first time seeing this combination of vertex indices we'll insert
+            // the expanded data
+            if !encountered_vert_ids.contains(&start_vert_id) {
+                expanded_pos_indices[elem_array_index] = start_vert_id;
+
+                let start_vert_id = start_vert_id as usize;
 
                 // TODO: Six methods to get and set the normal, pos, and uv for a vertex_num
+                let (x, y, z) = self.vertex_pos_at_idx(start_vert_id as u16);
+                expanded_positions.insert(start_vert_id * 3, x);
+                expanded_positions.insert(start_vert_id * 3 + 1, y);
+                expanded_positions.insert(start_vert_id * 3 + 2, z);
 
-                expanded_normals[vert_id as usize * 3] = self.vertex_x_normal(normal_index);
-                expanded_normals[vert_id as usize * 3 + 1] = self.vertex_y_normal(normal_index);
-                expanded_normals[vert_id as usize * 3 + 2] = self.vertex_z_normal(normal_index);
+                expanded_normals.insert(start_vert_id * 3, self.vertex_x_normal(normal_index));
+                expanded_normals.insert(start_vert_id * 3 + 1, self.vertex_y_normal(normal_index));
+                expanded_normals.insert(start_vert_id * 3 + 2, self.vertex_z_normal(normal_index));
 
                 if has_uvs {
                     let uv_index = uv_index.unwrap();
-                    expanded_uvs[vert_id as usize * 2] = self.vertex_x_uv(uv_index);
-                    expanded_uvs[vert_id as usize * 2 + 1] = self.vertex_y_uv(uv_index);
+                    expanded_uvs.insert(start_vert_id * 2, self.vertex_x_uv(uv_index));
+                    expanded_uvs.insert(start_vert_id * 2 + 1, self.vertex_y_uv(uv_index));
                 }
 
-                encountered_vert_ids.insert(vert_id);
-                encountered_vert_data.insert((vert_id, normal_index, uv_index), vert_id);
+                let start_vert_id = start_vert_id as u16;
+
+                encountered_vert_ids.insert(start_vert_id);
+                encountered_vert_data
+                    .insert((start_vert_id, normal_index, uv_index), start_vert_id);
 
                 continue;
             }
@@ -102,25 +108,27 @@ impl BlenderMesh {
 
             expanded_pos_indices[elem_array_index] = largest_vert_id as u16;
 
-            let (x, y, z) = self.vertex_pos_at_idx(vert_id);
-            self.vertex_positions.push(x);
-            self.vertex_positions.push(y);
-            self.vertex_positions.push(z);
+            let (x, y, z) = self.vertex_pos_at_idx(start_vert_id);
+            expanded_positions.insert(largest_vert_id * 3, x);
+            expanded_positions.insert(largest_vert_id * 3 + 1, y);
+            expanded_positions.insert(largest_vert_id * 3 + 2, z);
 
-            expanded_normals.push(self.vertex_x_normal(normal_index));
-            expanded_normals.push(self.vertex_y_normal(normal_index));
-            expanded_normals.push(self.vertex_z_normal(normal_index));
+            let (x, y, z) = self.vertex_normal_at_idx(normal_index);
+            expanded_normals.insert(largest_vert_id * 3, x);
+            expanded_normals.insert(largest_vert_id * 3 + 1, y);
+            expanded_normals.insert(largest_vert_id * 3 + 2, z);
 
             if has_uvs {
                 let uv_index = uv_index.unwrap();
-                expanded_uvs.push(self.vertex_x_uv(uv_index));
-                expanded_uvs.push(self.vertex_y_uv(uv_index));
+                let (x, y) = self.vertex_uv_at_idx(uv_index);
+                expanded_uvs.insert(largest_vert_id * 2, x);
+                expanded_uvs.insert(largest_vert_id * 2 + 1, y);
             }
 
             // TODO: Move this into its own function out of our way..
             match self.num_groups_for_each_vertex.as_ref() {
                 Some(num_groups_for_each_vertex) => {
-                    let pos_index = vert_id as usize;
+                    let pos_index = start_vert_id as usize;
                     // Where in our vector of group indices / weights does this vertex start?
                     let group_data_start_idx =
                         *vert_group_map.as_ref().unwrap().get(&pos_index).unwrap() as usize;
@@ -145,27 +153,40 @@ impl BlenderMesh {
             };
 
             encountered_vert_data.insert(
-                (vert_id as u16, normal_index, uv_index),
+                (start_vert_id as u16, normal_index, uv_index),
                 largest_vert_id as u16,
             );
         }
 
         self.vertex_position_indices = expanded_pos_indices;
-        self.vertex_normals = expanded_normals;
 
-        self.vertex_positions.resize(largest_vert_id * 3 + 3, 0.0);
-        self.vertex_normals.resize(largest_vert_id * 3 + 3, 0.0);
+        // We use `12345.0` so that if something goes wrong it's easier to notice that the values
+        // are incorrect.
+        // This helps when debugging issues in our export / pre-process pipeline.
+        self.vertex_normals.resize(largest_vert_id * 3 + 3, 12345.0);
+        self.vertex_positions
+            .resize(largest_vert_id * 3 + 3, 12345.0);
+
+        expanded_normals.iter().for_each(|(idx, value)| {
+            self.vertex_normals[*idx] = *value;
+        });
+        expanded_positions.iter().for_each(|(idx, value)| {
+            self.vertex_positions[*idx] = *value;
+        });
 
         self.vertex_group_indices = new_group_indices;
         self.num_groups_for_each_vertex = new_groups_for_each_vert;
         self.vertex_group_weights = new_group_weights;
 
         if has_uvs {
-            self.vertex_uvs = Some(expanded_uvs);
-            self.vertex_uvs
-                .as_mut()
-                .unwrap()
-                .resize(largest_vert_id * 2 + 2, 0.0);
+            let mut uvs = vec![];
+            uvs.resize(largest_vert_id * 2 + 2, 12345.0);
+
+            expanded_uvs.iter().for_each(|(idx, value)| {
+                uvs[*idx] = *value;
+            });
+
+            self.vertex_uvs = Some(uvs);
         }
 
         self.vertex_normal_indices = None;
@@ -201,6 +222,16 @@ impl BlenderMesh {
             self.vertex_z_pos(vertex_id),
         )
     }
+    fn vertex_normal_at_idx(&self, vertex_id: u16) -> (f32, f32, f32) {
+        (
+            self.vertex_x_normal(vertex_id),
+            self.vertex_y_normal(vertex_id),
+            self.vertex_z_normal(vertex_id),
+        )
+    }
+    fn vertex_uv_at_idx(&self, vertex_id: u16) -> (f32, f32) {
+        (self.vertex_x_uv(vertex_id), self.vertex_y_uv(vertex_id))
+    }
     fn vertex_x_pos(&self, vertex_id: u16) -> f32 {
         self.vertex_positions[vertex_id as usize * 3 + 0]
     }
@@ -224,5 +255,201 @@ impl BlenderMesh {
     }
     fn vertex_y_uv(&self, vertex_id: u16) -> f32 {
         self.vertex_uvs.as_ref().unwrap()[vertex_id as usize * 2 + 1]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Concatenate a series of vectors into one vector
+    macro_rules! concat_vecs {
+        ( $( $vec:expr),* ) => {
+            {
+                let mut concatenated_vec = Vec::new();
+                $(
+                    concatenated_vec.append(&mut $vec.clone());
+                )*
+                concatenated_vec
+            }
+        }
+    }
+
+    struct CombineIndicesTest {
+        mesh_to_combine: BlenderMesh,
+        expected_combined_mesh: BlenderMesh,
+    }
+
+    fn test_combine_indices(mut combine_indices_test: CombineIndicesTest) {
+        combine_indices_test
+            .mesh_to_combine
+            .combine_vertex_indices();
+        let combined_mesh = combine_indices_test.mesh_to_combine;
+        assert_eq!(combined_mesh, combine_indices_test.expected_combined_mesh);
+    }
+
+    #[test]
+    fn combine_pos_norm_indices() {
+        let mesh_to_combine = make_mesh_to_combine_without_uvs();
+        let expected_combined_mesh = make_expected_combined_mesh();
+
+        test_combine_indices(CombineIndicesTest {
+            mesh_to_combine,
+            expected_combined_mesh,
+        });
+    }
+
+    // We create a mesh that might have been triangulated before it was exported from Blender.
+    // Before this test we weren't combining our normals properly after using the `triangulate`
+    // modifier in Blender.
+    #[test]
+    fn combine_already_triangulated_mesh() {
+        let mesh_to_combine = BlenderMesh {
+            vertex_positions: concat_vecs!(v(5), v(6), v(7), v(8)),
+            vertex_normals: concat_vecs!(v(10), v(11), v(12), v(13), v(14), v(15), v(16), v(17)),
+            num_vertices_in_each_face: vec![3, 3, 3],
+            vertex_position_indices: concat_vecs!(vec![0, 1, 2], vec![0, 2, 3], vec![0, 2, 3]),
+            vertex_normal_indices: Some(concat_vecs!(vec![0, 1, 2], vec![0, 2, 3], vec![4, 5, 6])),
+            ..BlenderMesh::default()
+        };
+
+        let expected_combined_mesh = BlenderMesh {
+            vertex_positions: concat_vecs!(v3_x3(5, 6, 7), v(8), v3_x3(5, 7, 8)),
+            vertex_position_indices: concat_vecs![vec![0, 1, 2], vec![0, 2, 3], vec![4, 5, 6]],
+            num_vertices_in_each_face: vec![3, 3, 3],
+            vertex_normals: concat_vecs!(v3_x3(10, 11, 12), v(13), v3_x3(14, 15, 16)),
+            ..BlenderMesh::default()
+        };
+
+        test_combine_indices(CombineIndicesTest {
+            mesh_to_combine,
+            expected_combined_mesh,
+        });
+    }
+
+    #[test]
+    fn combine_pos_norm_uv_indices() {
+        // We create a mesh where our first three triangles have no repeating vertices
+        // (across norms, uvs and positions) then our fourth triangle has all repeating vertices
+        let mesh_to_combine = BlenderMesh {
+            vertex_positions: concat_vecs!(v(0), v(1), v(2), v(3)),
+            vertex_normals: concat_vecs!(v(4), v(5), v(6)),
+            num_vertices_in_each_face: vec![4, 4, 4, 4],
+            vertex_position_indices: concat_vecs!(
+                vec![0, 1, 2, 3],
+                vec![0, 1, 2, 3],
+                vec![0, 1, 2, 3],
+                vec![0, 1, 2, 3]
+            ),
+            vertex_normal_indices: Some(concat_vecs!(
+                vec![0, 1, 0, 1],
+                vec![2, 2, 2, 2],
+                vec![2, 2, 2, 2],
+                vec![2, 2, 2, 2]
+            )),
+            vertex_uvs: Some(concat_vecs!(v2(7), v2(8), v2(9), v2(10))),
+            vertex_uv_indices: Some(concat_vecs!(
+                vec![0, 1, 0, 1],
+                vec![2, 2, 2, 2],
+                vec![3, 3, 3, 3],
+                vec![3, 3, 3, 3]
+            )),
+            // We already tested vertex group indices / weights about so not bothering setting up
+            // more test data
+            ..BlenderMesh::default()
+        };
+
+        let expected_combined_mesh = BlenderMesh {
+            vertex_positions: concat_vecs!(v3_x4(0, 1, 2, 3), v3_x4(0, 1, 2, 3), v3_x4(0, 1, 2, 3)),
+            vertex_position_indices: concat_vecs![
+                // First Triangle
+                vec![0, 1, 2, 3,],
+                // Second Triangle
+                vec![4, 5, 6, 7],
+                // Third Triangle
+                vec![8, 9, 10, 11],
+                // Fourth Triangle
+                vec![8, 9, 10, 11]
+            ],
+            num_vertices_in_each_face: vec![4, 4, 4, 4],
+            vertex_normals: concat_vecs!(v3_x4(4, 5, 4, 5), v3_x4(6, 6, 6, 6), v3_x4(6, 6, 6, 6)),
+            vertex_uvs: Some(concat_vecs!(
+                v2_x4(7, 8, 7, 8),
+                v2_x4(9, 9, 9, 9),
+                v2_x4(10, 10, 10, 10)
+            )),
+            ..BlenderMesh::default()
+        };
+
+        test_combine_indices(CombineIndicesTest {
+            mesh_to_combine,
+            expected_combined_mesh,
+        });
+    }
+
+    fn make_mesh_to_combine_without_uvs() -> BlenderMesh {
+        let start_positions = concat_vecs!(v(0), v(1), v(2), v(3));
+        let start_normals = concat_vecs!(v(4), v(5), v(6));
+
+        BlenderMesh {
+            vertex_positions: start_positions,
+            vertex_position_indices: vec![0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3],
+            num_vertices_in_each_face: vec![4, 4, 4],
+            vertex_normals: start_normals,
+            // Our last 4 vertices already exist so our expected mesh will generate
+            // position indices 4, 5, 6 and 7 and use those for the second to last 4 and
+            // then last 4 indices
+            vertex_normal_indices: Some(vec![0, 1, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2]),
+            num_groups_for_each_vertex: Some(vec![3, 2, 5, 1]),
+            vertex_group_indices: Some(vec![0, 1, 2, 0, 3, 4, 5, 6, 7, 8, 11]),
+            vertex_group_weights: Some(vec![
+                0.05, 0.8, 0.15, 0.5, 0.5, 0.1, 0.2, 0.2, 0.2, 0.3, 0.999,
+            ]),
+            ..BlenderMesh::default()
+        }
+    }
+
+    fn make_expected_combined_mesh() -> BlenderMesh {
+        let end_positions = concat_vecs!(v(0), v(1), v(2), v(3), v(0), v(1), v(2), v(3));
+        let end_normals = concat_vecs!(v(4), v(5), v(4), v(5), v(6), v(6), v(6), v(6));
+
+        BlenderMesh {
+            vertex_positions: end_positions,
+            vertex_position_indices: vec![0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7],
+            num_vertices_in_each_face: vec![4, 4, 4],
+            vertex_normals: end_normals,
+            num_groups_for_each_vertex: Some(vec![3, 2, 5, 1, 3, 2, 5, 1]),
+            vertex_group_indices: Some(vec![
+                0, 1, 2, 0, 3, 4, 5, 6, 7, 8, 11, 0, 1, 2, 0, 3, 4, 5, 6, 7, 8, 11,
+            ]),
+            vertex_group_weights: Some(vec![
+                0.05, 0.8, 0.15, 0.5, 0.5, 0.1, 0.2, 0.2, 0.2, 0.3, 0.999, 0.05, 0.8, 0.15, 0.5,
+                0.5, 0.1, 0.2, 0.2, 0.2, 0.3, 0.999,
+            ]),
+            ..BlenderMesh::default()
+        }
+    }
+
+    // Create a 3 dimensional vector with all three values the same.
+    // Useful for quickly generating some fake vertex data.
+    // v(0.0) -> vec![0.0, 0.0, 0.0]
+    fn v(val: u8) -> Vec<f32> {
+        vec![val as f32, val as f32, val as f32]
+    }
+
+    fn v2_x4(vert1: u8, vert2: u8, vert3: u8, vert4: u8) -> Vec<f32> {
+        concat_vecs!(v2(vert1), v2(vert2), v2(vert3), v2(vert4))
+    }
+
+    fn v3_x4(v1: u8, v2: u8, v3: u8, v4: u8) -> Vec<f32> {
+        concat_vecs!(v(v1), v(v2), v(v3), v(v4))
+    }
+
+    fn v3_x3(v1: u8, v2: u8, v3: u8) -> Vec<f32> {
+        concat_vecs!(v(v1), v(v2), v(v3))
+    }
+
+    fn v2(val: u8) -> Vec<f32> {
+        vec![val as f32, val as f32]
     }
 }

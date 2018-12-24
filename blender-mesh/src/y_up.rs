@@ -20,6 +20,11 @@ impl BlenderMesh {
             let new_z = -self.vertex_positions[y_index];
             self.vertex_positions[y_index] = self.vertex_positions[z_index];
             self.vertex_positions[z_index] = new_z;
+        }
+
+        for vert_num in 0..(self.vertex_normals.len() / 3) {
+            let y_index = vert_num * 3 + 1;
+            let z_index = y_index + 1;
 
             let new_z = -self.vertex_normals[y_index];
             self.vertex_normals[y_index] = self.vertex_normals[z_index];
@@ -46,7 +51,7 @@ mod tests {
     fn z_up_to_y_up() {
         let mut start_mesh = BlenderMesh {
             vertex_positions: vec![0.0, 1.0, 2.0, 0.0, 1.0, 2.0],
-            vertex_normals: vec![0.0, 1.0, 2.0, 0.0, 1.0, 2.0],
+            vertex_normals: vec![0.0, 1.0, 2.0],
             bounding_box: BoundingBox {
                 min_corner: Point3::new(1.0, 2.0, 3.0),
                 max_corner: Point3::new(5.0, 6.0, 7.0),
@@ -59,7 +64,7 @@ mod tests {
 
         let expected_mesh = BlenderMesh {
             vertex_positions: vec![0.0, 2.0, -1.0, 0.0, 2.0, -1.0],
-            vertex_normals: vec![0.0, 2.0, -1.0, 0.0, 2.0, -1.0],
+            vertex_normals: vec![0.0, 2.0, -1.0],
             bounding_box: BoundingBox {
                 min_corner: Point3::new(1.0, 3.0, -2.0),
                 max_corner: Point3::new(5.0, 7.0, -6.0),

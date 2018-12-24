@@ -63,9 +63,7 @@ impl App {
     }
 
     pub fn start(&mut self) {
-        self.assets
-            .borrow_mut()
-            .load_meshes();
+        self.assets.borrow_mut().load_meshes();
         //        self.assets.borrow_mut().load_armature("LetterFArmature");
     }
 
@@ -83,38 +81,16 @@ impl App {
         self.gl
             .tex_parameteri(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR as i32);
 
-        self.gl.tex_image_2d_with_u32_and_u32_and_image(
-            GL::TEXTURE_2D,
-            0,
-            GL::RGBA as i32,
-            GL::RGBA,
-            GL::UNSIGNED_BYTE,
-            &image,
-        );
-
-        self.gl.uniform1i(
-            self.gl
-                .get_uniform_location(
-                    self
-                        .shader_sys
-                        .get_shader(&ShaderType::NonSkinned)
-                        .as_ref()
-                        .unwrap()
-                        .program
-                        .as_ref()
-                        .unwrap(),
-                    "uSampler",
-                )
-                .as_ref(),
-            0,
-        );
-        //        self.gl.uniform1i(
-        //            self.gl.get_uniform_location(
-        //                &self.shader_sys.get_shader(&ShaderType::NonSkinned).program,
-        //                "uUseTexture",
-        //            ),
-        //            1
-        //        );
+        self.gl
+            .tex_image_2d_with_u32_and_u32_and_image(
+                GL::TEXTURE_2D,
+                0,
+                GL::RGBA as i32,
+                GL::RGBA,
+                GL::UNSIGNED_BYTE,
+                &image,
+            )
+            .unwrap();
     }
 
     pub fn draw(&self) {

@@ -1,9 +1,9 @@
+use serde_json;
+use std::collections::HashMap;
 use std::fs;
 use std::fs::DirBuilder;
 use std::path::PathBuf;
 use std::process::Command;
-use std::collections::HashMap;
-use serde_json;
 
 // TODO: Make a directory for all of our temp build stuff (py scripts) so that we can delete it
 // all easily when we're done by deleting the dir
@@ -65,7 +65,8 @@ fn main() {
     fs::write(
         "/tmp/error",
         String::from_utf8(blender_output.stderr).unwrap(),
-    ).unwrap();
+    )
+    .unwrap();
 
     let meshes = blender_mesh::parse_meshes_from_blender_stdout(&blender_stdout).unwrap();
     let armatures = blender_armature::parse_armatures_from_blender_stdout(&blender_stdout).unwrap();
@@ -97,10 +98,14 @@ fn main() {
     fs::write("./dist/armatures.bytes", &armatures).unwrap();
 }
 
-fn copy_texture_to_dist () {
+fn copy_texture_to_dist() {
     println!("cargo:rerun-if-changed=../tests/textured_cube-uv-layout.png");
 
-    fs::copy("../tests/textured_cube-uv-layout.png", "./dist/textured_cube-uv-layout.png").unwrap();
+    fs::copy(
+        "../tests/textured_cube-uv-layout.png",
+        "./dist/textured_cube-uv-layout.png",
+    )
+    .unwrap();
 }
 
 fn rm_and_create_dir(dirname: &str) {
@@ -131,5 +136,6 @@ for obj in bpy.context.scene.objects:
       bpy.ops.import_export.mesh2json()
     if obj.type == 'ARMATURE':
       bpy.ops.import_export.armature2json()
-    "#.to_string()
+    "#
+    .to_string()
 }

@@ -10,7 +10,7 @@ use blender_armature::InterpolationSettings;
 use blender_mesh::BlenderMesh;
 use js_sys::WebAssembly;
 use nalgebra::Perspective3;
-use nalgebra::{Matrix4, Point3, Vector3, Isometry3};
+use nalgebra::{Isometry3, Matrix4, Point3, Vector3};
 use std::cell::RefCell;
 use std::f32::consts::PI;
 use std::rc::Rc;
@@ -98,14 +98,13 @@ impl BlenderMeshRender for BlenderMesh {
             .unwrap()
             .buffer();
 
-        let vertex_pos_attrib = gl.get_attrib_location(shader.program.as_ref().unwrap(), "aVertexPosition");
+        let vertex_pos_attrib =
+            gl.get_attrib_location(shader.program.as_ref().unwrap(), "aVertexPosition");
         gl.enable_vertex_attrib_array(vertex_pos_attrib as u32);
 
-        let vertex_normal_attrib = gl.get_attrib_location(shader.program.as_ref().unwrap(), "aVertexNormal");
+        let vertex_normal_attrib =
+            gl.get_attrib_location(shader.program.as_ref().unwrap(), "aVertexNormal");
         gl.enable_vertex_attrib_array(vertex_normal_attrib as u32);
-
-        let texture_coord_attrib = gl.get_attrib_location(shader.program.as_ref().unwrap(), "aTextureCoord");
-        gl.enable_vertex_attrib_array(texture_coord_attrib as u32);
 
         let fovy = PI / 3.0;
         let perspective = Perspective3::new(fovy, 1.0, 0.1, 50.0);
@@ -113,7 +112,8 @@ impl BlenderMeshRender for BlenderMesh {
         let mut perspective_array = [0.; 16];
         perspective_array.copy_from_slice(perspective.as_matrix().as_slice());
 
-        let perspective_uni = gl.get_uniform_location(shader.program.as_ref().unwrap(), "perspective");
+        let perspective_uni =
+            gl.get_uniform_location(shader.program.as_ref().unwrap(), "perspective");
         let perspective_uni = perspective_uni.as_ref();
         gl.uniform_matrix4fv_with_f32_array(perspective_uni, false, &mut perspective_array);
 
@@ -159,14 +159,19 @@ impl BlenderMeshRender for BlenderMesh {
             3,
         );
 
-        let uvs = self.vertex_uvs.as_ref().unwrap();
-        self.buffer_f32_data(
-            &gl,
-            shader.buffers[2].as_ref(),
-            uvs,
-            texture_coord_attrib,
-            2,
-        );
+        if let Some(ref uvs) = self.vertex_uvs.as_ref() {
+            let texture_coord_attrib =
+                gl.get_attrib_location(shader.program.as_ref().unwrap(), "aTextureCoord");
+            gl.enable_vertex_attrib_array(texture_coord_attrib as u32);
+
+            self.buffer_f32_data(
+                &gl,
+                shader.buffers[2].as_ref(),
+                uvs,
+                texture_coord_attrib,
+                2,
+            );
+        }
 
         let indices = &self.vertex_position_indices;
 

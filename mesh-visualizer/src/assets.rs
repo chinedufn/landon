@@ -9,9 +9,9 @@ use js_sys::Uint8Array;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use wasm_bindgen::convert::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use wasm_bindgen::convert::*;
 use web_sys::*;
 
 type Meshes = Rc<RefCell<HashMap<String, BlenderMesh>>>;
@@ -51,6 +51,7 @@ impl Assets {
             let meshes: HashMap<String, BlenderMesh> = bincode::deserialize(&mesh_bytes).unwrap();
 
             for (mesh_name, mut mesh) in meshes {
+                web_sys::console::log_1(&format!("{}", mesh_name).into());
                 mesh.combine_vertex_indices();
                 mesh.triangulate();
                 mesh.y_up();

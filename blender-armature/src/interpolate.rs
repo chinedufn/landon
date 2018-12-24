@@ -25,10 +25,10 @@
 //! // ...
 //! ```
 
-use std::collections::HashMap;
 use crate::BlenderArmature;
 use crate::Bone;
 use crate::Keyframe;
+use std::collections::HashMap;
 
 /// Settings for how to interpolate your BlenderArmature's bone data. These can be used to do
 /// things such as:
@@ -346,7 +346,8 @@ mod tests {
     #[test]
     fn looping_action() {
         DualQuatTestCase {
-            description: "Verify that the action gets looped by choosing a current_time > duration".to_string(),
+            description: "Verify that the action gets looped by choosing a current_time > duration"
+                .to_string(),
             keyframes: vec![
                 TestKeyframe {
                     frame: 1.0,
@@ -371,7 +372,8 @@ mod tests {
     #[test]
     fn non_looping_animation() {
         DualQuatTestCase {
-            description: "If you are not looping we should sample from the final frame if exceeded".to_string(),
+            description: "If you are not looping we should sample from the final frame if exceeded"
+                .to_string(),
             keyframes: vec![
                 TestKeyframe {
                     frame: 3.0,
@@ -491,7 +493,7 @@ mod tests {
     }
 
     #[test]
-    fn current_time_equals_start_time () {
+    fn current_time_equals_start_time() {
         DualQuatTestCase {
             description: "Ensure that current_time == start_time works".to_string(),
             keyframes: vec![
@@ -540,7 +542,12 @@ mod tests {
             let interpolated_bones = armature.interpolate_bones(&self.interp_settings);
             let interpolated_bone = interpolated_bones.get(&0).unwrap();
 
-            assert_eq!(interpolated_bone.vec(), self.expected_bone, "{}", self.description);
+            assert_eq!(
+                interpolated_bone.vec(),
+                self.expected_bone,
+                "{}",
+                self.description
+            );
         }
     }
 

@@ -13,6 +13,12 @@ edition = "2018"
 [dependencies]
 clap = {version = "2.32.0", features = ["yaml"]}
 
+[dev-dependencies]
+blender-mesh = {path = "./blender-mesh"}
+blender-armature = {path = "./blender-armature"}
+serde = "1.0.82"
+serde_json = "1.0.33"
+
 [workspace]
 members = [
   # TODO: Rename to `Mesh` and `Armature`

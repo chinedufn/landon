@@ -61,7 +61,8 @@ fn parse_skinned_letter_f_armature_data() {
         .args(&[
             "--python-expr",
             &set_active_object_by_name("LetterFArmature"),
-        ]).args(&["--python", run_addon])
+        ])
+        .args(&["--python", run_addon])
         .arg("--")
         .output()
         .expect("Failed to execute Blender process");
