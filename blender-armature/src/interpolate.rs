@@ -198,14 +198,25 @@ impl BlenderArmature {
 
         let keyframes = self.actions.get(action.action_name).unwrap();
 
-        let first_keyframe = &keyframes[0];
+        let lowest_keyframe = {
+            let mut lowest_keyframe = std::f32::INFINITY;
+            let mut lowest_keyframe_idx = 0;
+
+            for (index, keyframe) in keyframes.iter().enumerate() {
+                if keyframe.frame_time_secs < lowest_keyframe {
+                    lowest_keyframe_idx = index;
+                }
+            }
+
+            &keyframes[lowest_keyframe_idx]
+        };
 
         let mut time_elapsed_since_first_keyframe = opts.current_time - action.start_time;
         let mut key_time_to_sample =
-            first_keyframe.frame_time_secs + time_elapsed_since_first_keyframe;
+            lowest_keyframe.frame_time_secs + time_elapsed_since_first_keyframe;
 
         let action_duration =
-            keyframes.last().unwrap().frame_time_secs - first_keyframe.frame_time_secs;
+            keyframes.last().unwrap().frame_time_secs - lowest_keyframe.frame_time_secs;
 
         if time_elapsed_since_first_keyframe > action_duration {
             if action.should_loop {
@@ -215,7 +226,7 @@ impl BlenderArmature {
                 time_elapsed_since_first_keyframe = action_duration;
             }
 
-            key_time_to_sample = first_keyframe.frame_time_secs + time_elapsed_since_first_keyframe;
+            key_time_to_sample = lowest_keyframe.frame_time_secs + time_elapsed_since_first_keyframe;
         }
 
         let (action_lower_keyframe, action_upper_keyframe) =
