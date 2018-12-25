@@ -24,6 +24,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
+// TODO: Port to nalgebra
 use cgmath::Matrix;
 use cgmath::Matrix3;
 use cgmath::Matrix4;
@@ -31,9 +32,12 @@ use cgmath::Quaternion;
 use serde_json::Error;
 use std::collections::HashMap;
 
-mod interpolate;
 pub use crate::interpolate::ActionSettings;
 pub use crate::interpolate::InterpolationSettings;
+pub use self::export::*;
+
+mod interpolate;
+mod export;
 
 /// Something went wrong in the Blender child process that was trying to parse your armature data.
 #[derive(Debug, Fail)]
@@ -107,7 +111,7 @@ impl BlenderArmature {
         match bone {
             Bone::DualQuat(dual_quat) => Bone::DualQuat(dual_quat.to_vec()),
             Bone::Matrix(matrix) => {
-                let mut cg_matrix_4 = BlenderArmature::matrix_array_to_slices(&matrix);
+                let cg_matrix_4 = BlenderArmature::matrix_array_to_slices(&matrix);
                 let matrix4 = Matrix4::from(cg_matrix_4);
 
                 // https://github.com/stackgl/gl-mat3/blob/master/from-mat4.js
@@ -275,75 +279,6 @@ impl Bone {
         }
     }
 }
-
-pub type ArmatureNamesToData = HashMap<String, BlenderArmature>;
-pub type FilenamesToArmaturees = HashMap<String, ArmatureNamesToData>;
-
-/// Given a buffer of standard output from Blender we parse all of the armature JSON that was
-/// written to stdout by `blender-armature-to-json.py`.
-///
-/// Armaturees data in stdout will look like:
-///
-/// START_ARMATURE_JSON /path/to/file.blend my_armature_name
-/// {...}
-/// END_ARMATURE_JSON /path/to/file.blend my_armature_name
-///
-/// @see blender-armature-to-json.py - This is where we write to stdout
-pub fn parse_armatures_from_blender_stdout(
-    blender_stdout: &str,
-) -> Result<FilenamesToArmaturees, failure::Error> {
-    let mut filenames_to_armature = HashMap::new();
-
-    let mut index = 0;
-
-    while let Some((filename_to_armature, next_start_index)) =
-        find_first_armature_after_index(blender_stdout, index)
-    {
-        filenames_to_armature.extend(filename_to_armature);
-        index = next_start_index;
-    }
-
-    Ok(filenames_to_armature)
-}
-
-fn find_first_armature_after_index(
-    blender_stdout: &str,
-    index: usize,
-) -> Option<(FilenamesToArmaturees, usize)> {
-    let blender_stdout = &blender_stdout[index as usize..];
-
-    if let Some(armature_start_index) = blender_stdout.find("START_ARMATURE_JSON") {
-        let mut filenames_to_armature = HashMap::new();
-        let mut armature_name_to_data = HashMap::new();
-
-        let armature_end_index = blender_stdout.find("END_ARMATURE_JSON").unwrap();
-
-        let armature_data = &blender_stdout[armature_start_index..armature_end_index];
-
-        let mut lines = armature_data.lines();
-
-        let first_line = lines.next().unwrap();
-
-        let armature_filename: Vec<&str> = first_line.split(" ").collect();
-        let armature_filename = armature_filename[1].to_string();
-
-        let armature_name = first_line.split(" ").last().unwrap().to_string();
-
-        let armature_data: String = lines.collect();
-        let armature_data: BlenderArmature = serde_json::from_str(&armature_data).expect(&format!(
-            "Could not deserialize Blender Armature data{}",
-            &armature_data
-        ));
-
-        armature_name_to_data.insert(armature_name, armature_data);
-        filenames_to_armature.insert(armature_filename, armature_name_to_data);
-
-        return Some((filenames_to_armature, armature_end_index + 1));
-    }
-
-    return None;
-}
-
 fn vec_from_matrix4(mat4: &Matrix4<f32>) -> Vec<f32> {
     // TODO: Accept output vec instead of re-allocating
     let mut vec = vec![];

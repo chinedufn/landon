@@ -22,13 +22,14 @@ extern crate failure;
 #[macro_use]
 extern crate serde_derive;
 
-use serde_json;
-
+pub use self::export::*;
 use crate::bounding_box::BoundingBox;
+use serde_json;
 use serde_json::Error;
 
 mod bounding_box;
 mod combine_indices;
+mod export;
 mod y_up;
 
 /// Something went wrong in the Blender child process that was trying to parse your mesh data.
@@ -210,9 +211,6 @@ impl BlenderMesh {
         self.vertex_group_weights = Some(normalized_group_weights);
     }
 }
-
-mod export;
-pub use self::export::*;
 
 #[cfg(test)]
 mod tests {
