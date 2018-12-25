@@ -159,12 +159,19 @@ class MeshToJSON(bpy.types.Operator):
         mesh_json['bounding_box']['min_corner'] = min_corner
         mesh_json['bounding_box']['max_corner'] = max_corner
 
-        # START_EXPORT_MESH $BLENDER_FILEPATH $MESH_NAME
+        # START_MESH_JSON $BLENDER_FILEPATH $MESH_NAME
         # ... mesh json ...
-        # FINISH_EXPORT_MESH $BLENDER_FILEPATH $MESH_NAME
-        print("START_MESH_JSON " + bpy.data.filepath + " " + mesh.name)
-        print(json.dumps(mesh_json))
-        print("END_MESH_JSON " + bpy.data.filepath + " " + mesh.name)
+        # END_MESH_JSON $BLENDER_FILEPATH $MESH_NAME
+        #
+        # NOTE: Intentionally done in one print statement to get around
+        # a bug where other Blender output (in this case from bpy.ops.anim.keyframe_delete(override, type='LocRotScale')
+        # calls in blender-iks-to-fks) was getting mixed in with our JSON output
+        output = "START_MESH_JSON " + bpy.data.filepath + " " + mesh.name
+        output += "\n"
+        output += json.dumps(mesh_json)
+        output += "\n"
+        output += "END_MESH_JSON " + bpy.data.filepath + " " + mesh.name
+        print(output)
 
         return {'FINISHED'}
 

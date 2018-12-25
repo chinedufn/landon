@@ -1,4 +1,4 @@
-# Print all of the actions for the active armature to stdout as JSON
+    # Print all of the actions for the active armature to stdout as JSON
 
 bl_info = {
     "name": "Export Armature to JSON",
@@ -114,9 +114,19 @@ class ExportArmatureToJSON(bpy.types.Operator):
             for index, boneName in enumerate(allBoneNames):
                 armatureJSON['joint_index'][boneName] = index
 
-            print("START_ARMATURE_JSON " + bpy.data.filepath + " " + activeArmature.name)
-            print(json.dumps(armatureJSON))
-            print("END_ARMATURE_JSON " + bpy.data.filepath + " " + activeArmature.name)
+            # START_ARMATURE_JSON $BLENDER_FILEPATH $ARMATURE_NAME
+            # ... mesh json ...
+            # END_ARMATURE_JSON $BLENDER_FILEPATH $ARMATURE_NAME
+            #
+            # NOTE: Intentionally done in one print statement to get around
+            # a bug where other Blender output (in this case from bpy.ops.anim.keyframe_delete(override, type='LocRotScale')
+            # calls in blender-iks-to-fks) was getting mixed in with our JSON output
+            output = "START_ARMATURE_JSON " + bpy.data.filepath + " " + activeArmature.name
+            output += "\n"
+            output += json.dumps(armatureJSON)
+            output += "\n"
+            output += "END_ARMATURE_JSON " + bpy.data.filepath + " " + activeArmature.name
+            print(output)
 
             return {'FINISHED'}
 
