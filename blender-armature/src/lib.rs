@@ -115,7 +115,7 @@ impl BlenderArmature {
                 let matrix4 = Matrix4::from(cg_matrix_4);
 
                 // https://github.com/stackgl/gl-mat3/blob/master/from-mat4.js
-                let mut mat3 = BlenderArmature::matrix4_to_mat3_array(matrix4);
+                let mat3 = BlenderArmature::matrix4_to_mat3_array(matrix4);
 
                 let rotation3 = Matrix3::from(mat3);
                 let rotation_quat = Quaternion::from(rotation3);
@@ -263,7 +263,7 @@ impl Bone {
         match self {
             Bone::Matrix(ref mut matrix) => {
                 let slices = BlenderArmature::matrix_array_to_slices(matrix);
-                let mut mat4 = Matrix4::from(slices);
+                let mat4 = Matrix4::from(slices);
                 *matrix = vec_from_matrix4(&mat4.transpose());
             }
             Bone::DualQuat(_) => {}

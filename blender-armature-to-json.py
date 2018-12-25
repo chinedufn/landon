@@ -131,6 +131,8 @@ class ExportArmatureToJSON(bpy.types.Operator):
             return {'FINISHED'}
 
         def getKeyframesInAction(action):
+            # TODO: Right now we aren't sorting these keyframes.
+            # We should sort them from lowest to highest (that's a more expected order).
             keyframes = []
             for fcurve in action.fcurves:
                 for keyframe in fcurve.keyframe_points:

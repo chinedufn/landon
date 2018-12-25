@@ -270,25 +270,40 @@ fn get_surrounding_keyframes(
     keyframes: &Vec<Keyframe>,
     key_time_to_sample: f32,
 ) -> (&Keyframe, &Keyframe) {
-    let mut action_lower_keyframe = None;
-    let mut action_upper_keyframe = None;
+    let mut action_lower_keyframe = 0;
+    let mut action_upper_keyframe = 0;
 
-    'lower_upper: for keyframe in keyframes {
-        if key_time_to_sample >= keyframe.frame_time_secs {
-            action_lower_keyframe = Some(keyframe);
-        }
-        if key_time_to_sample <= keyframe.frame_time_secs {
-            action_upper_keyframe = Some(keyframe);
+    let mut lowest_time_seen = -std::f32::INFINITY;
+    let mut highest_time_seen = std::f32::INFINITY;
+
+    for (index, keyframe) in keyframes.iter().enumerate() {
+        let current_frame_time = keyframe.frame_time_secs;
+
+        if current_frame_time <= key_time_to_sample
+            && current_frame_time >= lowest_time_seen
+        {
+            action_lower_keyframe = index;
+            lowest_time_seen = keyframes[action_lower_keyframe].frame_time_secs;
         }
 
-        if action_lower_keyframe.is_some() && action_upper_keyframe.is_some() {
-            break 'lower_upper;
+        if current_frame_time >= key_time_to_sample
+            && current_frame_time <= highest_time_seen
+        {
+            action_upper_keyframe = index;
+            highest_time_seen = keyframes[action_upper_keyframe].frame_time_secs;
         }
+
+        eprintln!("current_frame_time = {:#?}", current_frame_time);
+        eprintln!("lowest_time_seen = {:#?}", lowest_time_seen);
+        eprintln!("highest_time_seen = {:#?}", highest_time_seen);
+        eprintln!("action_lower_keyframe = {:#?}", action_lower_keyframe);
+        println!("action_upper_keyframe = {:#?}", action_upper_keyframe);
+        println!("");
     }
 
     (
-        action_lower_keyframe.unwrap(),
-        action_upper_keyframe.unwrap(),
+        &keyframes[action_lower_keyframe],
+        &keyframes[action_upper_keyframe],
     )
 }
 
@@ -553,5 +568,31 @@ mod tests {
 
     fn two_second_blend_func(dt_seconds: f32) -> f32 {
         (0.5 as f32 * dt_seconds).min(1.0)
+    }
+
+    #[test]
+    fn surrounding_keyframes() {
+        let keyframes = vec![
+            Keyframe {
+                frame_time_secs: 0.0,
+                bones: vec![],
+            },
+            Keyframe {
+                frame_time_secs: 1.25,
+                bones: vec![],
+            },
+            Keyframe {
+                frame_time_secs: 0.416667,
+                bones: vec![],
+            },
+        ];
+
+        let (lower, upper) = get_surrounding_keyframes(&keyframes, 0.3);
+        assert_eq!(lower, &keyframes[0]);
+        assert_eq!(upper, &keyframes[2]);
+
+        let (lower, upper) = get_surrounding_keyframes(&keyframes, 1.0);
+        assert_eq!(lower, &keyframes[2]);
+        assert_eq!(upper, &keyframes[1]);
     }
 }
