@@ -107,7 +107,7 @@ fn find_first_armature_after_index(
         armature_name_to_data.insert(armature_name, armature_data);
         filenames_to_armature.insert(armature_filename, armature_name_to_data);
 
-        return Some((filenames_to_armature, armature_end_index + 1));
+        return Some((filenames_to_armature, index + armature_end_index + 1));
     }
 
     return None;
