@@ -20,6 +20,7 @@ fn parse_data() {
     let blender_output = Command::new("blender")
         .args(&["--background", textured_cube_blend])
         .args(&["--python", run_addon])
+        .arg("-noaudio")
         .arg("--")
         .output()
         .expect("Failed to execute Blender process");

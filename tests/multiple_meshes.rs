@@ -23,6 +23,7 @@ fn parse_file_with_multiple_meshes() {
         .args(&["--python", run_addon])
         .args(&["--python-expr", &set_active_object_by_name("Mesh2")])
         .args(&["--python", run_addon])
+        .arg("-noaudio")
         .arg("--")
         .output()
         .expect("Failed to execute Blender process");

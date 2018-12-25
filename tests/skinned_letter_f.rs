@@ -23,6 +23,7 @@ fn parse_skinned_letter_f_mesh_data() {
         .args(&["--background", skinned_letter_f_blend])
         .args(&["--python-expr", &set_active_object_by_name("LetterF")])
         .args(&["--python", run_addon])
+        .arg("-noaudio")
         .arg("--")
         .output()
         .expect("Failed to execute Blender process");
