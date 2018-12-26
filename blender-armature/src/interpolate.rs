@@ -7,6 +7,9 @@
 //!
 //! A real usage example can be found in the [mesh-visualizer](https://github.com/chinedufn/landon/tree/master/mesh-visualizer)
 //!
+//! TODO: This needs heavy refactoring and cleanup - one of my first Rust projects and it's
+//! hard to extend.
+//!
 //! # Examples
 //!
 //! ```ignore
@@ -198,26 +201,15 @@ impl BlenderArmature {
 
         let keyframes = self.actions.get(action.action_name).unwrap();
 
-        let lowest_keyframe = {
-            let mut lowest_keyframe = std::f32::INFINITY;
-            let mut lowest_keyframe_idx = 0;
-
-            for (index, keyframe) in keyframes.iter().enumerate() {
-                if keyframe.frame_time_secs < lowest_keyframe {
-                    lowest_keyframe = keyframe.frame_time_secs;
-                    lowest_keyframe_idx = index;
-                }
-            }
-
-            &keyframes[lowest_keyframe_idx]
-        };
+        let lowest_keyframe = self.find_lowest_keyframe(action);
+        let highest_keyframe = self.find_highest_keyframe(action);
 
         let mut time_elapsed_since_first_keyframe = opts.current_time - action.start_time;
         let mut key_time_to_sample =
             lowest_keyframe.frame_time_secs + time_elapsed_since_first_keyframe;
 
         let action_duration =
-            keyframes.last().unwrap().frame_time_secs - lowest_keyframe.frame_time_secs;
+            highest_keyframe.frame_time_secs - lowest_keyframe.frame_time_secs;
 
         if time_elapsed_since_first_keyframe > action_duration {
             if action.should_loop {
@@ -227,7 +219,8 @@ impl BlenderArmature {
                 time_elapsed_since_first_keyframe = action_duration;
             }
 
-            key_time_to_sample = lowest_keyframe.frame_time_secs + time_elapsed_since_first_keyframe;
+            key_time_to_sample =
+                lowest_keyframe.frame_time_secs + time_elapsed_since_first_keyframe;
         }
 
         let (action_lower_keyframe, action_upper_keyframe) =
@@ -252,6 +245,38 @@ impl BlenderArmature {
         }
 
         interpolated_bones
+    }
+
+    fn find_lowest_keyframe<'a>(&'a self, action: &ActionSettings) -> &'a Keyframe {
+        let keyframes = self.actions.get(action.action_name).unwrap();
+
+        let mut lowest_keyframe = std::f32::INFINITY;
+        let mut lowest_keyframe_idx = 0;
+
+        for (index, keyframe) in keyframes.iter().enumerate() {
+            if keyframe.frame_time_secs < lowest_keyframe {
+                lowest_keyframe = keyframe.frame_time_secs;
+                lowest_keyframe_idx = index;
+            }
+        }
+
+        &keyframes[lowest_keyframe_idx]
+    }
+
+    fn find_highest_keyframe<'a>(&'a self, action: &ActionSettings) -> &'a Keyframe {
+        let keyframes = self.actions.get(action.action_name).unwrap();
+
+        let mut highest_keyframe = -std::f32::INFINITY;
+        let mut highest_keyframe_idx = 0;
+
+        for (index, keyframe) in keyframes.iter().enumerate() {
+            if keyframe.frame_time_secs > highest_keyframe {
+                highest_keyframe = keyframe.frame_time_secs;
+                highest_keyframe_idx = index;
+            }
+        }
+
+        &keyframes[highest_keyframe_idx]
     }
 }
 
@@ -291,26 +316,15 @@ fn get_surrounding_keyframes(
     for (index, keyframe) in keyframes.iter().enumerate() {
         let current_frame_time = keyframe.frame_time_secs;
 
-        if current_frame_time <= key_time_to_sample
-            && current_frame_time >= lowest_time_seen
-        {
+        if current_frame_time <= key_time_to_sample && current_frame_time >= lowest_time_seen {
             action_lower_keyframe = index;
             lowest_time_seen = keyframes[action_lower_keyframe].frame_time_secs;
         }
 
-        if current_frame_time >= key_time_to_sample
-            && current_frame_time <= highest_time_seen
-        {
+        if current_frame_time >= key_time_to_sample && current_frame_time <= highest_time_seen {
             action_upper_keyframe = index;
             highest_time_seen = keyframes[action_upper_keyframe].frame_time_secs;
         }
-
-        eprintln!("current_frame_time = {:#?}", current_frame_time);
-        eprintln!("lowest_time_seen = {:#?}", lowest_time_seen);
-        eprintln!("highest_time_seen = {:#?}", highest_time_seen);
-        eprintln!("action_lower_keyframe = {:#?}", action_lower_keyframe);
-        println!("action_upper_keyframe = {:#?}", action_upper_keyframe);
-        println!("");
     }
 
     (
@@ -330,8 +344,6 @@ mod tests {
     use super::*;
     use crate::Keyframe;
 
-    // TODO: Breadcrumb - make out first case create a test case then run it through some generic
-    // test function that we can re-use
     struct DualQuatTestCase<'a> {
         description: String,
         keyframes: Vec<TestKeyframe>,
@@ -367,7 +379,8 @@ mod tests {
                 current_action: ActionSettings::new("test", 0.0, true),
                 previous_action: None,
             },
-        };
+        }
+        .test();
     }
 
     #[test]
@@ -393,7 +406,39 @@ mod tests {
                 current_action: ActionSettings::new("test", 0.0, true),
                 previous_action: None,
             },
-        };
+        }
+        .test();
+    }
+
+    // Tests against bug where looping wasn't working properly
+    #[test]
+    fn looping_order_bugfix() {
+        DualQuatTestCase {
+            description: "Looping when keyframes aren't in ascending order".to_string(),
+            keyframes: vec![
+                TestKeyframe {
+                    frame: 1.0,
+                    bone: vec![8.0, 8.0, 8.0, 8.0, 0.0, 0.0, 0.0, 0.0],
+                },
+                TestKeyframe {
+                    frame: 2.0,
+                    bone: vec![20.0, 20.0, 20.0, 20.0, 00.0, 00.0, 0.0, 0.0],
+                },
+                TestKeyframe {
+                    frame: 0.0,
+                    bone: vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                },
+            ],
+            expected_bone: vec![4.0, 4.0, 4.0, 4.0, 0.0, 0.0, 0.0, 0.0],
+            interp_settings: InterpolationSettings {
+                current_time: 2.5,
+                joint_indices: vec![0],
+                blend_fn: None,
+                current_action: ActionSettings::new("test", 0.0, true),
+                previous_action: None,
+            },
+        }
+        .test();
     }
 
     #[test]
@@ -419,7 +464,8 @@ mod tests {
                 current_action: ActionSettings::new("test", 0.0, false),
                 previous_action: None,
             },
-        };
+        }
+        .test();
     }
 
     #[test]
@@ -452,7 +498,8 @@ mod tests {
                 current_action: ActionSettings::new("test", 10.0, true),
                 previous_action: Some(ActionSettings::new("test", 0.0, false)),
             },
-        };
+        }
+        .test();
     }
 
     #[test]
@@ -485,7 +532,8 @@ mod tests {
                 current_action: ActionSettings::new("test", 9.0, true),
                 previous_action: Some(ActionSettings::new("test", 5.0, false)),
             },
-        };
+        }
+        .test();
     }
 
     #[test]
@@ -544,11 +592,12 @@ mod tests {
                 current_action: ActionSettings::new("test", 0.0, true),
                 previous_action: None,
             },
-        };
+        }
+        .test();
     }
 
-    impl<'a> Drop for DualQuatTestCase<'a> {
-        fn drop(&mut self) {
+    impl<'a> DualQuatTestCase<'a> {
+        fn test(&mut self) {
             let mut actions = HashMap::new();
             let mut keyframes = vec![];
 
