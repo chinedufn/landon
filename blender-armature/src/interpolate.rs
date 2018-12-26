@@ -204,6 +204,7 @@ impl BlenderArmature {
 
             for (index, keyframe) in keyframes.iter().enumerate() {
                 if keyframe.frame_time_secs < lowest_keyframe {
+                    lowest_keyframe = keyframe.frame_time_secs;
                     lowest_keyframe_idx = index;
                 }
             }
