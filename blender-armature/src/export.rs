@@ -1,10 +1,10 @@
-use std::collections::HashMap;
 use crate::BlenderArmature;
 use std::collections::hash_map::Entry;
+use std::collections::HashMap;
+use serde_json;
 
 pub type ArmaturesByFilename = HashMap<String, ArmaturesByArmatureName>;
 pub type ArmaturesByArmatureName = HashMap<String, BlenderArmature>;
-
 
 /// Given a buffer of standard output from Blender we parse all of the armature JSON that was
 /// written to stdout by `blender-armature-to-json.py`.
@@ -32,7 +32,6 @@ pub fn parse_armatures_from_blender_stdout(
 
     Ok(filenames_to_armature)
 }
-
 
 /// Convert ArmatureeshByFilename into a HashMap<ArmatureName, BlenderArmature> that flattens all of the
 /// armatures across all of the files into one HashMap.
@@ -74,7 +73,7 @@ pub fn flatten_exported_armatures(
     Ok(flattened_armatures)
 }
 
-
+// FIXME: Move serde_json and parsing code behind a feature flag
 fn find_first_armature_after_index(
     blender_stdout: &str,
     index: usize,
@@ -123,4 +122,3 @@ pub enum FlattenArmatureError {
         duplicates: HashMap<String, Vec<String>>,
     },
 }
-

@@ -161,29 +161,28 @@ impl BlenderArmature {
                             panic!("We do not currently support the current action having different joints than the previous action");
                         }
 
-                        let mut prev_action_bone = prev_action_bone.vec();
-                        let cur_action_bone = cur_action_bone.vec();
+                        // FIXME: Ditch clones
+                        let prev = prev_action_bone.as_slice();
+                        let mut prev_action_bone: [f32; 8] = [0.0; 8];
+                        prev_action_bone.copy_from_slice(prev);
 
                         // Get the dot product of the start and end rotation quaternions. If the
                         // dot product is negative we negative the rotation portion of the first
                         // dual quaternion in order to ensure the shortest path rotation.
                         // http://www.xbdev.net/misc_demos/demos/dual_quaternions_beyond/paper.pdf
-                        if dot_product(&prev_action_bone, &cur_action_bone) < 0.0 {
+                        if dot_product(&prev_action_bone, cur_action_bone.as_slice()) < 0.0 {
                             prev_action_bone[0] = -prev_action_bone[0];
                             prev_action_bone[1] = -prev_action_bone[1];
                             prev_action_bone[2] = -prev_action_bone[2];
                             prev_action_bone[3] = -prev_action_bone[3];
                         }
 
-                        let new_bone: Vec<f32> = prev_action_bone
-                            .iter()
-                            .zip(cur_action_bone.iter())
-                            .map(|(prev, cur)| {
-                                prev + (cur - prev) * blend_func(cur_anim_elapsed_time)
-                            })
-                            .collect();
+                        let new_bone = [0.0; 8];
 
-                        (*cur_joint_idx, Bone::DualQuat(new_bone))
+                        let interpolation_amount = blend_func(cur_anim_elapsed_time);
+                        let new_bone = interpolate_bones(&Bone::DualQuat(prev_action_bone), &cur_action_bone, interpolation_amount);
+
+                        (*cur_joint_idx, new_bone)
                     },
                 )
                 .collect()
@@ -208,8 +207,7 @@ impl BlenderArmature {
         let mut key_time_to_sample =
             lowest_keyframe.frame_time_secs + time_elapsed_since_first_keyframe;
 
-        let action_duration =
-            highest_keyframe.frame_time_secs - lowest_keyframe.frame_time_secs;
+        let action_duration = highest_keyframe.frame_time_secs - lowest_keyframe.frame_time_secs;
 
         if time_elapsed_since_first_keyframe > action_duration {
             if action.should_loop {
@@ -284,11 +282,13 @@ fn interpolate_bones(start_bone: &Bone, end_bone: &Bone, amount: f32) -> Bone {
     match start_bone {
         &Bone::DualQuat(ref start_dual_quat) => match end_bone {
             &Bone::DualQuat(ref end_dual_quat) => {
-                let interpolated_dual_quat: Vec<f32> = start_dual_quat
-                    .iter()
-                    .zip(end_dual_quat.iter())
-                    .map(|(start, end)| (end - start) * amount + start)
-                    .collect();
+                let mut interpolated_dual_quat: [f32; 8] = [0.0; 8];
+
+                for index in 0..8 {
+                    let start = start_dual_quat[index];
+                    let end = end_dual_quat[index];
+                    interpolated_dual_quat[index] = (end - start) * amount + start;
+                }
 
                 Bone::DualQuat(interpolated_dual_quat)
             }
@@ -333,7 +333,7 @@ fn get_surrounding_keyframes(
     )
 }
 
-fn dot_product(a: &Vec<f32>, b: &Vec<f32>) -> f32 {
+fn dot_product(a: &[f32], b: &[f32]) -> f32 {
     a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]
 }
 
@@ -346,14 +346,14 @@ mod tests {
 
     struct DualQuatTestCase<'a> {
         description: String,
-        keyframes: Vec<TestKeyframe>,
-        expected_bone: Vec<f32>,
+        keyframes: Vec<TestKeyframeDualQuat>,
+        expected_bone: [f32; 8],
         interp_settings: InterpolationSettings<'a>,
     }
 
-    struct TestKeyframe {
+    struct TestKeyframeDualQuat {
         frame: f32,
-        bone: Vec<f32>,
+        bone: [f32; 8],
     }
 
     #[test]
@@ -361,16 +361,16 @@ mod tests {
         DualQuatTestCase {
             description: "".to_string(),
             keyframes: vec![
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 0.0,
-                    bone: vec![0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
+                    bone: [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
                 },
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 2.0,
-                    bone: vec![1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+                    bone: [1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
                 },
             ],
-            expected_bone: vec![0.75, 0.75, 0.75, 0.75, 0.25, 0.25, 0.25, 0.25],
+            expected_bone: [0.75, 0.75, 0.75, 0.75, 0.25, 0.25, 0.25, 0.25],
             interp_settings: InterpolationSettings {
                 current_time: 1.5,
                 // TODO: armature.get_group_indices(BlenderArmature::BONE_GROUPS_ALL)
@@ -389,16 +389,16 @@ mod tests {
             description: "Verify that the action gets looped by choosing a current_time > duration"
                 .to_string(),
             keyframes: vec![
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 1.0,
-                    bone: vec![0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
+                    bone: [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
                 },
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 3.0,
-                    bone: vec![1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+                    bone: [1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
                 },
             ],
-            expected_bone: vec![0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
+            expected_bone: [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
             interp_settings: InterpolationSettings {
                 current_time: 4.0,
                 joint_indices: vec![0],
@@ -416,20 +416,20 @@ mod tests {
         DualQuatTestCase {
             description: "Looping when keyframes aren't in ascending order".to_string(),
             keyframes: vec![
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 1.0,
-                    bone: vec![8.0, 8.0, 8.0, 8.0, 0.0, 0.0, 0.0, 0.0],
+                    bone: [8.0, 8.0, 8.0, 8.0, 0.0, 0.0, 0.0, 0.0],
                 },
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 2.0,
-                    bone: vec![20.0, 20.0, 20.0, 20.0, 00.0, 00.0, 0.0, 0.0],
+                    bone: [20.0, 20.0, 20.0, 20.0, 00.0, 00.0, 0.0, 0.0],
                 },
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 0.0,
-                    bone: vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    bone: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 },
             ],
-            expected_bone: vec![4.0, 4.0, 4.0, 4.0, 0.0, 0.0, 0.0, 0.0],
+            expected_bone: [4.0, 4.0, 4.0, 4.0, 0.0, 0.0, 0.0, 0.0],
             interp_settings: InterpolationSettings {
                 current_time: 2.5,
                 joint_indices: vec![0],
@@ -447,16 +447,16 @@ mod tests {
             description: "If you are not looping we should sample from the final frame if exceeded"
                 .to_string(),
             keyframes: vec![
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 3.0,
-                    bone: vec![1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+                    bone: [1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
                 },
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 5.0,
-                    bone: vec![3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0],
+                    bone: [3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0],
                 },
             ],
-            expected_bone: vec![3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0],
+            expected_bone: [3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0],
             interp_settings: InterpolationSettings {
                 current_time: 7.0,
                 joint_indices: vec![0],
@@ -473,24 +473,24 @@ mod tests {
         DualQuatTestCase {
             description: "Make sure should_loop: false works for previous animation".to_string(),
             keyframes: vec![
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 1.0,
-                    bone: vec![0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
+                    bone: [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
                 },
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 3.0,
-                    bone: vec![1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+                    bone: [1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
                 },
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 5.0,
-                    bone: vec![3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0],
+                    bone: [3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0],
                 },
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 7.0,
-                    bone: vec![1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+                    bone: [1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
                 },
             ],
-            expected_bone: vec![1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+            expected_bone: [1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
             interp_settings: InterpolationSettings {
                 current_time: 10.0,
                 joint_indices: vec![0],
@@ -507,24 +507,24 @@ mod tests {
         DualQuatTestCase {
             description: "Previous action gets blended into the new current action".to_string(),
             keyframes: vec![
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 0.0,
-                    bone: vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    bone: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 },
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 3.0,
-                    bone: vec![3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+                    bone: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
                 },
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 5.0,
-                    bone: vec![5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0],
+                    bone: [5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0],
                 },
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 8.0,
-                    bone: vec![8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0],
+                    bone: [8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0],
                 },
             ],
-            expected_bone: vec![3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+            expected_bone: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
             interp_settings: InterpolationSettings {
                 current_time: 10.0,
                 joint_indices: vec![0],
@@ -552,7 +552,7 @@ mod tests {
           "joint_index": {}
         }
     "#;
-        let mut armature = BlenderArmature::from_json(armature).unwrap();
+        let mut armature: BlenderArmature = serde_json::from_str(armature).unwrap();
         armature.actions_to_dual_quats();
 
         let interp_opts = InterpolationSettings {
@@ -572,18 +572,18 @@ mod tests {
         DualQuatTestCase {
             description: "Ensure that current_time == start_time works".to_string(),
             keyframes: vec![
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 0.0,
                     // This will be the expected bone since we're 0 seconds into our animation
-                    bone: vec![0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
+                    bone: [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
                 },
-                TestKeyframe {
+                TestKeyframeDualQuat {
                     frame: 2.0,
-                    bone: vec![1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+                    bone: [1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
                 },
             ],
             // Same as the first bone in the animation
-            expected_bone: vec![0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
+            expected_bone: [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
             interp_settings: InterpolationSettings {
                 current_time: 0.0,
                 // TODO: armature.get_group_indices(BlenderArmature::BONE_GROUPS_ALL)
@@ -619,8 +619,8 @@ mod tests {
             let interpolated_bone = interpolated_bones.get(&0).unwrap();
 
             assert_eq!(
-                interpolated_bone.vec(),
-                self.expected_bone,
+                interpolated_bone.as_slice(),
+                &self.expected_bone,
                 "{}",
                 self.description
             );
