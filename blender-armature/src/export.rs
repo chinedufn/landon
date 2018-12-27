@@ -1,7 +1,7 @@
 use crate::BlenderArmature;
+use serde_json;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use serde_json;
 
 pub type ArmaturesByFilename = HashMap<String, ArmaturesByArmatureName>;
 pub type ArmaturesByArmatureName = HashMap<String, BlenderArmature>;

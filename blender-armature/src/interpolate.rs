@@ -177,7 +177,7 @@ impl BlenderArmature {
                             prev_action_bone[3] = -prev_action_bone[3];
                         }
 
-                        let new_bone = [0.0; 8];
+                        let _new_bone = [0.0; 8];
 
                         let interpolation_amount = blend_func(cur_anim_elapsed_time);
                         let new_bone = interpolate_bones(&Bone::DualQuat(prev_action_bone), &cur_action_bone, interpolation_amount);

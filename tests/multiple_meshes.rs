@@ -8,6 +8,13 @@ use blender_mesh::parse_meshes_from_blender_stdout;
 use std::env::current_dir;
 use std::path::Path;
 use std::process::Command;
+use std::fs::File;
+use std::io::Write;
+
+// --python-expr wasn't working in travis-ci on linux so writing the scripts to disk
+// and using using --python instead
+static SELECT_MESH_1_SCRIPT: &'static str = "/tmp/select-mesh-1.py";
+static SELECT_MESH_2_SCRIPT: &'static str = "/tmp/select-mesh-2.py";
 
 #[test]
 fn parse_file_with_multiple_meshes() {
@@ -17,11 +24,18 @@ fn parse_file_with_multiple_meshes() {
     // TODO: Move the CLI spawning and parsing into `lib.rs`. In our test just verify
     // the returned mesh data
 
+    let mut select_mesh1 = File::create(SELECT_MESH_1_SCRIPT).unwrap();
+    select_mesh1.write_all(set_active_object_by_name("Mesh1").as_bytes()).unwrap();
+
+    let mut select_mesh2 = File::create(SELECT_MESH_2_SCRIPT).unwrap();
+    select_mesh2.write_all(set_active_object_by_name("Mesh2").as_bytes()).unwrap();
+
     let blender_output = Command::new("blender")
-        .args(&["--background", multiple_meshes_blend])
-        .args(&["--python-expr", &set_active_object_by_name("Mesh1")])
+        .arg(multiple_meshes_blend)
+        .arg("--background")
+        .args(&["--python", SELECT_MESH_1_SCRIPT])
         .args(&["--python", run_addon])
-        .args(&["--python-expr", &set_active_object_by_name("Mesh2")])
+        .args(&["--python-expr", SELECT_MESH_2_SCRIPT])
         .args(&["--python", run_addon])
         .arg("-noaudio")
         .arg("--")
@@ -29,7 +43,8 @@ fn parse_file_with_multiple_meshes() {
         .expect("Failed to execute Blender process");
 
     let stdout = String::from_utf8(blender_output.stdout).unwrap();
-    let _parsed_armatures = parse_meshes_from_blender_stdout(&stdout).unwrap();
+    let parsed_armatures = parse_meshes_from_blender_stdout(&stdout).unwrap();
+    assert_eq!(parsed_armatures.len(), 1);
 }
 
 fn abs_path(path: &str) -> String {

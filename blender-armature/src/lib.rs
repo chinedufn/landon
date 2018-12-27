@@ -146,7 +146,6 @@ impl Bone {
                     let mut rhs_mat4 = Matrix4::identity();
                     rhs_mat4.copy_from_slice(rhs_matrix);
 
-
                     let multiplied = rhs_mat4 * lhs_mat4;
 
                     lhs_matrix.copy_from_slice(multiplied.as_slice());
@@ -194,23 +193,17 @@ mod tests {
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
             frame_time_secs: 1.0,
-            bones: vec![Bone::Matrix(
-                [1.0, 6.0, 2.0, 1.0,
-                7.0, 1.0, 2.0, 5.0,
-                0.0, 4.0, 1.0, 0.0,
-                0.0, 0.0, 0.0, 1.0]
-            )],
+            bones: vec![Bone::Matrix([
+                1.0, 6.0, 2.0, 1.0, 7.0, 1.0, 2.0, 5.0, 0.0, 4.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+            ])],
         });
         start_actions.insert("Fly".to_string(), keyframes);
 
         let mut start_armature = BlenderArmature {
             actions: start_actions,
-            inverse_bind_poses: vec![Bone::Matrix(
-                [1.0, 0.0, 0.0, 0.0,
-                0.0, 1.0, 0.0, 0.0,
-                0.0, 0.0, 1.0, 0.0,
-                0.0, 0.0, 5.0, 1.0]
-            )],
+            inverse_bind_poses: vec![Bone::Matrix([
+                1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 1.0,
+            ])],
             ..BlenderArmature::default()
         };
 
@@ -220,12 +213,9 @@ mod tests {
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
             frame_time_secs: 1.0,
-            bones: vec![Bone::Matrix(
-                [1.0, 6.0, 7.0, 1.0,
-                7.0, 1.0, 27.0, 5.0,
-                0.0, 4.0, 1.0, 0.0,
-                0.0, 0.0, 5.0, 1.0]
-            )],
+            bones: vec![Bone::Matrix([
+                1.0, 6.0, 7.0, 1.0, 7.0, 1.0, 27.0, 5.0, 0.0, 4.0, 1.0, 0.0, 0.0, 0.0, 5.0, 1.0,
+            ])],
         });
         end_actions.insert("Fly".to_string(), keyframes);
 
@@ -243,12 +233,9 @@ mod tests {
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
             frame_time_secs: 1.0,
-            bones: vec![Bone::Matrix(
-                [1.0, 0.0, 0.0, 0.0,
-                0.0, 1.0, 0.0, 0.0,
-                0.0, 0.0, 1.0, 0.0,
-                0.0, 0.0, 0.0, 1.0]
-            )],
+            bones: vec![Bone::Matrix([
+                1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+            ])],
         });
         start_actions.insert("Fly".to_string(), keyframes);
 
@@ -263,10 +250,7 @@ mod tests {
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
             frame_time_secs: 1.0,
-            bones: vec![Bone::DualQuat(
-                [1.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0]
-            )],
+            bones: vec![Bone::DualQuat([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])],
         });
         end_actions.insert("Fly".to_string(), keyframes);
 
@@ -285,12 +269,9 @@ mod tests {
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
             frame_time_secs: 1.0,
-            bones: vec![Bone::Matrix(
-                [1.0, 0.0, 0.0, 0.0,
-                0.0, 1.0, 0.0, 0.0,
-                0.0, 0.0, 1.0, 0.0,
-                0.0, 0.0, 5.0, 1.0]
-            )],
+            bones: vec![Bone::Matrix([
+                1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 1.0,
+            ])],
         });
 
         start_actions.insert("Fly".to_string(), keyframes);
@@ -306,12 +287,9 @@ mod tests {
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
             frame_time_secs: 1.0,
-            bones: vec![Bone::Matrix(
-                [1.0, 0.0, 0.0, 0.0,
-                0.0, 1.0, 0.0, 0.0,
-                0.0, 0.0, 1.0, 5.0,
-                0.0, 0.0, 0.0, 1.0]
-            )],
+            bones: vec![Bone::Matrix([
+                1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 5.0, 0.0, 0.0, 0.0, 1.0,
+            ])],
         });
         end_actions.insert("Fly".to_string(), keyframes);
 

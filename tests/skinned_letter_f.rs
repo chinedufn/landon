@@ -8,8 +8,15 @@ use blender_armature::BlenderArmature;
 use blender_mesh::parse_meshes_from_blender_stdout;
 use blender_mesh::BlenderMesh;
 use std::env::current_dir;
+use std::fs::File;
+use std::io::Write;
 use std::path::Path;
 use std::process::Command;
+
+// --python-expr wasn't working in travis-ci on linux so writing the scripts to disk
+// and using using --python instead
+static SELECT_LETTERF_SCRIPT: &'static str = "/tmp/select-letter-f.py";
+static SELECT_LETTERFARMATURE_SCRIPT: &'static str = "/tmp/select-letter-f-armature.py";
 
 #[test]
 fn parse_skinned_letter_f_mesh_data() {
@@ -19,9 +26,15 @@ fn parse_skinned_letter_f_mesh_data() {
     // TODO: Move the CLI spawning and parsing into `lib.rs`. In our test just verify
     // the returned mesh data
 
+    let mut select_letterf = File::create(SELECT_LETTERF_SCRIPT).unwrap();
+    select_letterf
+        .write_all(set_active_object_by_name("LetterF").as_bytes())
+        .unwrap();
+
     let blender_output = Command::new("blender")
-        .args(&["--background", skinned_letter_f_blend])
-        .args(&["--python-expr", &set_active_object_by_name("LetterF")])
+        .arg(skinned_letter_f_blend)
+        .arg("--background")
+        .args(&["--python", SELECT_LETTERF_SCRIPT])
         .args(&["--python", run_addon])
         .arg("-noaudio")
         .arg("--")
@@ -57,13 +70,17 @@ fn parse_skinned_letter_f_armature_data() {
     // TODO: Move the CLI spawning and parsing into `lib.rs`. In our test just verify
     // the returned mesh data
 
+    let mut select_letterf_armature = File::create(SELECT_LETTERFARMATURE_SCRIPT).unwrap();
+    select_letterf_armature
+        .write_all(set_active_object_by_name("LetterFArmature").as_bytes())
+        .unwrap();
+
     let blender_output = Command::new("blender")
-        .args(&["--background", skinned_letter_f_blend])
-        .args(&[
-            "--python-expr",
-            &set_active_object_by_name("LetterFArmature"),
-        ])
+        .arg(skinned_letter_f_blend)
+        .arg("--background")
+        .args(&["--python", SELECT_LETTERFARMATURE_SCRIPT])
         .args(&["--python", run_addon])
+        .arg("-noaudio")
         .arg("--")
         .output()
         .expect("Failed to execute Blender process");

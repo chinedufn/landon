@@ -18,7 +18,8 @@ fn parse_data() {
     // the returned mesh data?
 
     let blender_output = Command::new("blender")
-        .args(&["--background", basic_cube_blend])
+        .arg(basic_cube_blend)
+        .arg("--background")
         .args(&["--python", run_addon])
         .arg("-noaudio")
         .arg("--")

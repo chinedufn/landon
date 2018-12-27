@@ -2,7 +2,7 @@
 
 use crate::BlenderArmature;
 use crate::Bone;
-use nalgebra::{Matrix3, Matrix4, Isometry3, Quaternion, Rotation3, UnitQuaternion, Vector4};
+use nalgebra::{Isometry3, Matrix3, Matrix4, Quaternion, Rotation3, UnitQuaternion, Vector4};
 
 impl BlenderArmature {
     /// Convert a matrix into a dual quaternion
@@ -10,7 +10,7 @@ impl BlenderArmature {
     /// Note that we use `w, x, y, z` and not `x, y, z, w` for our quaternion representation
     pub fn matrix_to_dual_quat(bone: &Bone) -> Bone {
         match bone {
-            Bone::DualQuat(dual_quat) => panic!("Already a dual quaternion"),
+            Bone::DualQuat(_dual_quat) => panic!("Already a dual quaternion"),
             Bone::Matrix(matrix) => {
                 let mut matrix4: Matrix4<f32> = Matrix4::identity();
                 matrix4.copy_from_slice(matrix);
@@ -39,16 +39,11 @@ impl BlenderArmature {
                 );
 
                 // w, i, j, k
-                let trans_quat = Quaternion::new(
-                    0.0,
-                    matrix[12],
-                    matrix[13],
-                    matrix[14],
-                );
+                let trans_quat = Quaternion::new(0.0, matrix[12], matrix[13], matrix[14]);
                 let trans_quat = trans_quat * rotation_quat;
                 let trans_quat = trans_quat * 0.5;
 
-                let mut dual_quat: [f32; 8] = [
+                let dual_quat: [f32; 8] = [
                     // w, i, j, k ... Quaternion has different indexing than the
                     // order of the parameters in the `new` function.
                     rotation_quat[3],
@@ -102,7 +97,7 @@ impl BlenderArmature {
 
 // https://github.com/stackgl/gl-quat/blob/master/fromMat3.js
 // [i, j, k, w]
-fn quaternion_from_mat3 (m: [f32; 9]) -> [f32; 4] {
+fn quaternion_from_mat3(m: [f32; 9]) -> [f32; 4] {
     // Algorithm in Ken Shoemake's article in 1987 SIGGRAPH course notes
     // article "Quaternion Calculus and Fast Animation".
     let f_trace = m[0] + m[4] + m[8];
@@ -136,7 +131,7 @@ fn quaternion_from_mat3 (m: [f32; 9]) -> [f32; 4] {
         out[k] = (m[k * 3 + i] + m[i * 3 + k]) * f_root;
     }
 
-    return out
+    return out;
 }
 
 #[cfg(test)]
