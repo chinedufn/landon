@@ -23,8 +23,10 @@ for obj in objects:
 ///
 /// You'll typically use something like
 ///
-///     `blender_mesh::parse_meshes_from_blender_stdout`
-///     `blender_armature::parse_meshes_from_blender_stdout`
+/// ```ignore
+///     blender_mesh::parse_meshes_from_blender_stdout
+///     blender_armature::parse_meshes_from_blender_stdout
+/// ```
 ///
 /// to parse the exported data into the data structures that you need.
 pub fn export_blender_data(blender_files: &Vec<String>) -> Result<String, String> {
