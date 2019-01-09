@@ -98,9 +98,6 @@ cargo test --all
 
 ## TODO
 
-- [ ] Integration test where we triangulate a UV sphere that was exported from Blender. Even after running triangulation
-in Blender our BlenderMesh's triangulate function is saying that there are more than 4 faces so need to see why.
-
 - [ ] BlenderMesh's triangulate function can deal with ngons. Right now only handles 3 or 4 faces
 
 ## See Also
