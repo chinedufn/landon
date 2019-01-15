@@ -42,6 +42,7 @@ use std::collections::HashMap;
 ///   - via slowly increasing the `current_time`
 ///
 /// And more..
+#[derive(Debug)]
 pub struct InterpolationSettings<'a> {
     /// The current time will get compared to the start time of your current / previous animations.
     /// Bones will be interpolated based on the seconds elapsed.
@@ -84,6 +85,7 @@ pub struct InterpolationSettings<'a> {
 }
 
 /// Settings for your armature's current action and (optionally) it's previous action.
+#[derive(Debug)]
 pub struct ActionSettings<'a> {
     /// The name of the action (animation) whose keyframes that you want to interpolate
     pub action_name: &'a str,

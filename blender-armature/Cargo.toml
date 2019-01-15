@@ -1,6 +1,6 @@
 [package]
 name = "blender-armature"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["Chinedu Francis Nwafili <frankie.nwafili@gmail.com>"]
 description = "Serialize / deserialize Blender armatures"
 keywords = ["blender", "skeleton", "armature", "bone", "vertex"]

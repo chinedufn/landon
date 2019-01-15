@@ -15,7 +15,7 @@ clap = {version = "2.32.0", features = ["yaml"]}
 
 [dev-dependencies]
 blender-mesh = {path = "./blender-mesh", version = "0.3.3"}
-blender-armature = {path = "./blender-armature", version = "0.1.2"}
+blender-armature = {path = "./blender-armature", version = "0.1.8"}
 serde = "1.0.82"
 serde_json = "1.0.33"
 
