@@ -85,7 +85,7 @@ pub struct InterpolationSettings<'a> {
 }
 
 /// Settings for your armature's current action and (optionally) it's previous action.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct ActionSettings<'a> {
     /// The name of the action (animation) whose keyframes that you want to interpolate
     pub action_name: &'a str,
