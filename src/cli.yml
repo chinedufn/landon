@@ -1,5 +1,5 @@
 name: landon
-version: "0.0.1"
+version: "0.1.2"
 author: Chinedu Francis Nwafili <frankie.nwafili@gmail.com>
 about: The Landon CLI
 subcommands:
