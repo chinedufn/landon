@@ -19,18 +19,27 @@ pub type ArmaturesByArmatureName = HashMap<String, BlenderArmature>;
 pub fn parse_armatures_from_blender_stdout(
     blender_stdout: &str,
 ) -> Result<ArmaturesByFilename, failure::Error> {
-    let mut filenames_to_armature = HashMap::new();
+    let mut filenames_to_armatures = HashMap::new();
 
     let mut index = 0;
 
-    while let Some((filename_to_armature, next_start_index)) =
+    while let Some((filename_to_armatures, next_start_index)) =
         find_first_armature_after_index(blender_stdout, index)
     {
-        filenames_to_armature.extend(filename_to_armature);
+        for (filename, armatures) in filename_to_armatures.into_iter() {
+            match filenames_to_armatures.entry(filename) {
+                Entry::Vacant(v) => {
+                    v.insert(armatures);
+                }
+                Entry::Occupied(ref mut o) => {
+                    o.get_mut().extend(armatures);
+                }
+            }
+        }
         index = next_start_index;
     }
 
-    Ok(filenames_to_armature)
+    Ok(filenames_to_armatures)
 }
 
 /// Convert ArmatureeshByFilename into a HashMap<ArmatureName, BlenderArmature> that flattens all of the
