@@ -26,7 +26,17 @@ pub fn parse_meshes_from_blender_stdout(
     while let Some((filename_to_mesh, next_start_index)) =
         find_first_mesh_after_index(blender_stdout, index)
     {
-        filenames_to_meshes.extend(filename_to_mesh);
+        for (filename, meshes) in filename_to_mesh.into_iter() {
+            match filenames_to_meshes.entry(filename) {
+                Entry::Vacant(v) => {
+                    v.insert(meshes);
+                }
+                Entry::Occupied(ref mut o) => {
+                    o.get_mut().extend(meshes);
+                }
+            }
+        }
+
         index = next_start_index;
     }
 
