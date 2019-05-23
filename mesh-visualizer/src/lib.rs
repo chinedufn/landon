@@ -13,6 +13,7 @@ use crate::render::Renderer;
 use crate::shader::ShaderSystem;
 use crate::shader::ShaderType;
 use crate::state_wrapper::{State, StateWrapper};
+use crate::view::MainView;
 use std::cell::RefCell;
 use std::rc::Rc;
 use virtual_dom_rs::DomUpdater;
@@ -26,6 +27,7 @@ mod assets;
 mod render;
 mod shader;
 mod state_wrapper;
+mod view;
 
 #[wasm_bindgen]
 pub struct App {
@@ -49,12 +51,7 @@ impl App {
         let document = window.document().unwrap();
         let body = document.body().unwrap();
 
-        let view = html! {
-          <div>
-             Hello World
-             <canvas id="mesh-visualizer" width="500" height="500"></canvas>
-           </div>
-        };
+        let view = MainView {}.render();
 
         let mut dom_updater = DomUpdater::new_append_to_mount(view, &body);
 
