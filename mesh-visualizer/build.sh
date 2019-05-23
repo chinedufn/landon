@@ -6,7 +6,7 @@ cd mesh-visualizer
 
 rm -rf ./out
 
-wasm-pack build --no-typescript --target web --out-dir ./out
+wasm-pack build --dev --no-typescript --target web --out-dir ./out
 
 cp ./index.html ./out/
 cp -r dist ./out/

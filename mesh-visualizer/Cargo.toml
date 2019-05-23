@@ -13,7 +13,9 @@ bincode = "1.0.1"
 blender-armature = { path = "../blender-armature" }
 blender-mesh = { path = "../blender-mesh" }
 console_error_panic_hook = "0.1.5"
+console_log = "0.1.2"
 js-sys = "0.3.22"
+log = "0.4.6"
 nalgebra = "0.16.12"
 serde = "1.0"
 virtual-dom-rs = "0.6.8"

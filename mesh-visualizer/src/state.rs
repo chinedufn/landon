@@ -15,8 +15,8 @@ impl State {
         State {
             last_tick_time: State::performance_now_to_system_time(),
             app_start_time: State::performance_now_to_system_time(),
-            //            current_model: "TexturedCube".to_string(),
-            current_model: "TriangulatedCube".to_string(),
+            current_model: "TexturedCube".to_string(),
+//            current_model: "TriangulatedCube".to_string(),
         }
     }
 

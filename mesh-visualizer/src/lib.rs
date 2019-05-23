@@ -1,5 +1,13 @@
-//! TODO: Use percy to render a UI that lets you select models to render
-//! and the animation to play
+#![feature(proc_macro_hygiene)]
+
+
+#[macro_use]
+extern crate log;
+
+#[macro_use]
+extern crate virtual_dom_rs;
+
+use virtual_dom_rs::prelude::*;
 
 use crate::assets::Assets;
 use crate::render::Renderer;
@@ -13,6 +21,8 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::WebGlRenderingContext as GL;
 use web_sys::*;
+use virtual_dom_rs::DomUpdater;
+
 mod assets;
 mod render;
 mod shader;
@@ -26,17 +36,31 @@ pub struct App {
     assets: Rc<RefCell<Assets>>,
     shader_sys: Rc<ShaderSystem>,
     renderer: Renderer,
+    dom_updater: DomUpdater
 }
 
 #[wasm_bindgen]
 impl App {
     #[wasm_bindgen(constructor)]
     pub fn new() -> App {
+        console_log::init();
         console_error_panic_hook::set_once();
 
-        let canvas = App::create_canvas().unwrap();
-        let document = window().unwrap().document().unwrap();
-        document.body().unwrap().append_child(&canvas);
+
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+        let body = document.body().unwrap();
+
+        let view = html! {
+          <div>
+             Hello World
+             <canvas id="mesh-visualizer" width="500" height="500"></canvas>
+           </div>
+        };
+
+        let mut dom_updater = DomUpdater::new_append_to_mount(view, &body);
+
+        let canvas = document.get_element_by_id("mesh-visualizer").unwrap().dyn_into().unwrap();
 
         let gl = Rc::new(App::create_webgl_context(&canvas).unwrap());
 
@@ -53,12 +77,14 @@ impl App {
             Rc::clone(&state),
         );
 
+
         App {
             gl: Rc::clone(&gl),
             state: Rc::clone(&state),
             assets: Rc::clone(&assets),
             shader_sys,
             renderer,
+            dom_updater
         }
     }
 
@@ -106,21 +132,6 @@ impl App {
         // TODO: Render a cube instead of a triangle
 
         // TODO: Add camera controls
-    }
-
-    fn create_canvas() -> Result<HtmlCanvasElement, JsValue> {
-        let canvas_id = "mesh-visualizer";
-
-        let window = window().unwrap();
-        let document = window.document().unwrap();
-
-        let canvas: HtmlCanvasElement = document.create_element("canvas").unwrap().dyn_into()?;
-
-        canvas.set_width(500);
-        canvas.set_height(500);
-        canvas.set_id(canvas_id);
-
-        Ok(canvas)
     }
 
     fn create_webgl_context(canvas: &HtmlCanvasElement) -> Result<WebGlRenderingContext, JsValue> {
