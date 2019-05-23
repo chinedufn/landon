@@ -47,8 +47,16 @@ animation with models that were exported using `landon`.
 ## Running the mesh visualizer locally
 
 ```
+# Install a static server that sets the application/wasm mime type
+npm install -g http-server
+# Watcher
+cargo install watchexec
+
 git clone https://github.com/chinedufn/landon
-npm start
+
+watchexec -r -w mesh-visualizer --ignore mesh-visualizer/out ./mesh-visualizer/build.sh
+
+http-server ./mesh-visualizer/out --open
 ```
 
 Your web browser should open up with an application that allows you to visualize all of the model's in our test suite.
