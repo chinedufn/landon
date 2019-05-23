@@ -2,7 +2,7 @@ use crate::assets::Assets;
 use crate::shader::Shader;
 use crate::shader::ShaderSystem;
 use crate::shader::ShaderType;
-use crate::state::State;
+use crate::state_wrapper::{State, StateWrapper};
 use blender_armature::ActionSettings;
 use blender_armature::BlenderArmature;
 use blender_armature::Bone;
@@ -25,7 +25,6 @@ pub struct Renderer {
     gl: Rc<WebGlRenderingContext>,
     assets: Rc<RefCell<Assets>>,
     shader_sys: Rc<ShaderSystem>,
-    state: Rc<State>,
 }
 
 trait Render {
@@ -265,13 +264,11 @@ impl Renderer {
         gl: Rc<WebGlRenderingContext>,
         assets: Rc<RefCell<Assets>>,
         shader_sys: Rc<ShaderSystem>,
-        state: Rc<State>,
     ) -> Renderer {
         Renderer {
             gl,
             assets,
             shader_sys,
-            state,
         }
     }
 
@@ -280,7 +277,7 @@ impl Renderer {
 
         let mesh = self.assets.borrow().meshes();
         let mesh = mesh.borrow();
-        let mesh = mesh.get(&self.state.current_model);
+        let mesh = mesh.get(state.current_model.as_str());
 
         if mesh.is_none() {
             return;
