@@ -14,6 +14,7 @@ use crate::shader::ShaderSystem;
 use crate::shader::ShaderType;
 use crate::state_wrapper::{State, StateWrapper};
 use crate::view::MainView;
+use state_wrapper::Msg;
 use std::cell::RefCell;
 use std::rc::Rc;
 use virtual_dom_rs::DomUpdater;
@@ -51,7 +52,12 @@ impl App {
         let document = window.document().unwrap();
         let body = document.body().unwrap();
 
-        let view = MainView {}.render();
+        let state_wrap = Rc::new(RefCell::new(StateWrapper::new(State::new())));
+
+        let view = MainView {
+            wrapper: Rc::clone(&state_wrap),
+        }
+        .render();
 
         let mut dom_updater = DomUpdater::new_append_to_mount(view, &body);
 
@@ -64,8 +70,6 @@ impl App {
         let gl = Rc::new(App::create_webgl_context(&canvas).unwrap());
 
         let shader_sys = Rc::new(ShaderSystem::new(Rc::clone(&gl)));
-
-        let state_wrap = Rc::new(RefCell::new(StateWrapper::new(State::new())));
 
         let assets = Rc::new(RefCell::new(Assets::new()));
 

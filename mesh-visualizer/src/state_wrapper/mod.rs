@@ -1,4 +1,4 @@
-use crate::state_wrapper::msg::Msg;
+pub use crate::state_wrapper::msg::Msg;
 pub use crate::state_wrapper::state::State;
 use std::ops::Deref;
 
@@ -14,6 +14,12 @@ impl StateWrapper {
         StateWrapper {
             state: PreventDirectStateMutation(state),
         }
+    }
+}
+
+impl StateWrapper {
+    pub fn msg(&mut self, msg: &Msg) {
+        self.state.msg(msg);
     }
 }
 
