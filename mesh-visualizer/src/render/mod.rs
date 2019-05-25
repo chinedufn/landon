@@ -1,6 +1,7 @@
 use crate::assets::Assets;
 use crate::shader::Shader;
 use crate::shader::ShaderKind;
+use crate::shader::ShaderKind::NonSkinnedNonTextured;
 use crate::shader::ShaderSystem;
 use crate::state_wrapper::State;
 use blender_armature::BlenderArmature;
@@ -119,6 +120,7 @@ impl<'a> Renderable for NonSkinnedMesh<'a> {
         let mut perspective_array = [0.; 16];
         perspective_array.copy_from_slice(perspective.as_matrix().as_slice());
 
+        // TODO: Cache uniform locations in the Shader.
         let perspective_uni =
             gl.get_uniform_location(shader.program.as_ref().unwrap(), "perspective");
         let perspective_uni = perspective_uni.as_ref();
@@ -149,6 +151,26 @@ impl<'a> Renderable for NonSkinnedMesh<'a> {
 
         gl.uniform_matrix4fv_with_f32_array(model_uni, false, &mut model_array);
         gl.uniform_matrix4fv_with_f32_array(view_uni, false, &mut view_array);
+
+        // FIXME: Add materials to both shaders .. not just non textured ..
+        if self.shader_kind() == NonSkinnedNonTextured {
+            let ambient_uni =
+                gl.get_uniform_location(shader.program.as_ref().unwrap(), "material.ambient");
+            let diffuse_uni =
+                gl.get_uniform_location(shader.program.as_ref().unwrap(), "material.diffuse");
+            let specular_uni =
+                gl.get_uniform_location(shader.program.as_ref().unwrap(), "material.specular");
+            let specular_intensity_uni = gl.get_uniform_location(
+                shader.program.as_ref().unwrap(),
+                "material.specular_intensity",
+            );
+
+            // Emerald material
+            gl.uniform3fv_with_f32_array(ambient_uni.as_ref(), &[0.0215, 0.1745, 0.0215]);
+            gl.uniform3fv_with_f32_array(diffuse_uni.as_ref(), &[0.7568, 0.61424, 0.07568]);
+            gl.uniform3fv_with_f32_array(specular_uni.as_ref(), &[0.633, 0.727811, 0.633]);
+            gl.uniform1f(specular_intensity_uni.as_ref(), 0.6);
+        }
 
         let num_indices = self.blender_mesh.vertex_position_indices.len() as i32;
         RenderInstructions::DrawElements { num_indices }
