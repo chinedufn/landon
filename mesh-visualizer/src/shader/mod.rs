@@ -1,6 +1,6 @@
 //! The shaders that power our WebGL rendering
 
-use crate::shader::ShaderType::*;
+use crate::shader::ShaderKind::*;
 use std::collections::HashMap;
 use std::rc::Rc;
 use wasm_bindgen::JsValue;
@@ -8,7 +8,7 @@ use web_sys::*;
 
 pub struct ShaderSystem {
     gl: Rc<WebGlRenderingContext>,
-    shaders: HashMap<ShaderType, Shader>,
+    shaders: HashMap<ShaderKind, Shader>,
 }
 
 // TODO: Move to console_log.rs module
@@ -18,7 +18,7 @@ macro_rules! clog {
 }
 
 #[derive(Eq, PartialEq, Hash)]
-pub enum ShaderType {
+pub enum ShaderKind {
     DualQuatSkin,
     NonSkinned,
     MatrixSkin,
@@ -40,16 +40,16 @@ impl ShaderSystem {
         ShaderSystem { shaders, gl }
     }
 
-    pub fn use_program(&self, shader_type: &ShaderType) {
+    pub fn use_program(&self, shader_type: &ShaderKind) {
         self.gl
             .use_program(self.shaders.get(shader_type).unwrap().program.as_ref())
     }
 
-    pub fn get_shader(&self, shader_type: &ShaderType) -> Option<&Shader> {
+    pub fn get_shader(&self, shader_type: &ShaderKind) -> Option<&Shader> {
         self.shaders.get(shader_type)
     }
 
-    fn init_shaders(gl: &WebGlRenderingContext) -> HashMap<ShaderType, Shader> {
+    fn init_shaders(gl: &WebGlRenderingContext) -> HashMap<ShaderKind, Shader> {
         let mut shaders = HashMap::new();
 
         let dual_quat_vertex = include_str!("./dual-quat-vertex.glsl");

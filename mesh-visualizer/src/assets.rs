@@ -4,15 +4,12 @@
 use bincode;
 use blender_armature::BlenderArmature;
 use blender_mesh::BlenderMesh;
-use js_sys::Promise;
-use js_sys::Uint8Array;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use wasm_bindgen::convert::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::*;
 
 type Meshes = Rc<RefCell<HashMap<String, BlenderMesh>>>;
 type Armatures = Rc<RefCell<HashMap<String, BlenderArmature>>>;
@@ -108,12 +105,4 @@ impl Assets {
     pub fn armatures(&self) -> Armatures {
         Rc::clone(&self.armatures)
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn foo() {}
 }

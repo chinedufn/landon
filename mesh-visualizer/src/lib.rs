@@ -11,7 +11,6 @@ use virtual_dom_rs::prelude::*;
 use crate::assets::Assets;
 use crate::render::Renderer;
 use crate::shader::ShaderSystem;
-use crate::shader::ShaderType;
 use crate::state_wrapper::{State, StateWrapper};
 use crate::view::MainView;
 use state_wrapper::Msg;
@@ -140,12 +139,4 @@ impl App {
 
         Ok(gl)
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn foo() {}
 }
