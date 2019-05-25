@@ -17,19 +17,15 @@ macro_rules! clog {
     ($($t:tt)*) => (log(&format!($($t)*)))
 }
 
-#[derive(Eq, PartialEq, Hash)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub enum ShaderKind {
     DualQuatSkin,
-    NonSkinned,
-    MatrixSkin,
+    NonSkinnedWithTexture,
+    NonSkinnedNonTextured,
 }
 
 pub struct Shader {
     pub program: Option<WebGlProgram>,
-    // TODO: We don't need buffers for each shader.. shaders can share one set of
-    // buffers. This should be a &Vec<WebGLBuffer> but need to figure out the lifetimes
-    // w/ wasm-bindgen
-    pub buffers: Vec<Option<WebGlBuffer>>,
 }
 
 // TODO: Breadcrumb - get our F rendering using our shader system
@@ -62,35 +58,34 @@ impl ShaderSystem {
         let non_skinned_program =
             ShaderSystem::create_shader_program(&gl, non_skinned_vertex, non_skinned_fragment);
 
-        let buffers = vec![
-            gl.create_buffer(),
-            gl.create_buffer(),
-            gl.create_buffer(),
-            gl.create_buffer(),
-            gl.create_buffer(),
-        ];
+        let non_skinned_non_textured_vertex =
+            include_str!("./non-skinned-non-textured-vertex.glsl");
+        let non_skinned_non_textured_fragment =
+            include_str!("./non-skinned-non-textured-fragment.glsl");
+        let non_skinned_non_textured_program = ShaderSystem::create_shader_program(
+            &gl,
+            non_skinned_non_textured_vertex,
+            non_skinned_non_textured_fragment,
+        );
 
         shaders.insert(
             DualQuatSkin,
             Shader {
                 program: Some(dual_quat_program.unwrap()),
-                buffers,
             },
         );
 
-        let buffers = vec![
-            gl.create_buffer(),
-            gl.create_buffer(),
-            gl.create_buffer(),
-            gl.create_buffer(),
-            gl.create_buffer(),
-        ];
-
         shaders.insert(
-            NonSkinned,
+            NonSkinnedWithTexture,
             Shader {
                 program: Some(non_skinned_program.unwrap()),
-                buffers,
+            },
+        );
+
+        shaders.insert(
+            NonSkinnedNonTextured,
+            Shader {
+                program: Some(non_skinned_non_textured_program.unwrap()),
             },
         );
 

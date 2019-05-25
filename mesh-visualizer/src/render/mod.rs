@@ -71,7 +71,11 @@ impl<'a> Renderable for NonSkinnedMesh<'a> {
         //        } else {
         //            ShaderKind::NonSkinned
         //        }
-        ShaderKind::NonSkinned
+        if let Some(_) = self.blender_mesh.vertex_uvs {
+            ShaderKind::NonSkinnedWithTexture
+        } else {
+            ShaderKind::NonSkinnedNonTextured
+        }
     }
 
     fn vao_key(&self) -> VaoKey {
@@ -206,6 +210,7 @@ impl Renderer {
         //            armature.unwrap().buffer_data(&self.gl, shader, &state);
         //        }
 
+        // TODO: Use VAOs and only buffer attributes once.
         renderable_mesh.buffer_attributes(&self.gl, shader);
 
         match renderable_mesh.set_uniforms(&self.gl, shader, state) {
