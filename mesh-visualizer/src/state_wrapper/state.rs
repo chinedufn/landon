@@ -34,11 +34,18 @@ impl State {
 }
 
 impl State {
-    pub fn msg(&mut self, msg: &Msg) {
+    pub fn msg(&mut self, msg: Msg) {
         match msg {
             Msg::Zoom(zoom) => {
-                self.camera_distance += *zoom;
+                self.camera_distance += zoom;
             }
+            Msg::SetCurrentMesh(mesh_name) => self.current_model = mesh_name.to_string(),
         }
+    }
+}
+
+impl State {
+    pub fn camera_distance(&self) -> f32 {
+        self.camera_distance
     }
 }

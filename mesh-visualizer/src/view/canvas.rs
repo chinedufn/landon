@@ -49,7 +49,7 @@ fn listen_for_zoom(
 
         let zoom_amount = event.delta_y() / 50.;
 
-        wrapper.borrow_mut().msg(&Msg::Zoom(zoom_amount as f32));
+        wrapper.borrow_mut().msg(Msg::Zoom(zoom_amount as f32));
     };
     let on_mouse_wheel = Closure::wrap(Box::new(on_mouse_wheel) as Box<FnMut(_)>);
 

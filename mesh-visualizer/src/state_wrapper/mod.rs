@@ -18,7 +18,7 @@ impl StateWrapper {
 }
 
 impl StateWrapper {
-    pub fn msg(&mut self, msg: &Msg) {
+    pub fn msg(&mut self, msg: Msg) {
         self.state.msg(msg);
     }
 }
@@ -42,7 +42,7 @@ impl Deref for PreventDirectStateMutation {
 }
 
 impl PreventDirectStateMutation {
-    fn msg(&mut self, msg: &Msg) {
+    fn msg(&mut self, msg: Msg) {
         self.0.msg(msg)
     }
 }

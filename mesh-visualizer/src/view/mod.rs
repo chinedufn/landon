@@ -21,6 +21,8 @@ impl View for MainView {
             wrapper: &self.wrapper,
         };
 
+        let wrapper = &self.wrapper;
+
         let view = html! {
           // Contains two side by side divs, one for the canvas, one for the controls
           // (sliders, buttons, etc)
@@ -28,7 +30,7 @@ impl View for MainView {
              <div>
               {canvas.render()}
              </div>
-             {ControlsView {}.render()}
+             {ControlsView {wrapper: &wrapper}.render()}
 
            </div>
         };

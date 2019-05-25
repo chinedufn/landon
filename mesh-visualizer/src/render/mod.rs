@@ -121,7 +121,7 @@ impl<'a> Renderable for NonSkinnedMesh<'a> {
         gl.uniform_matrix4fv_with_f32_array(perspective_uni, false, &mut perspective_array);
 
         // TODO: state.camera
-        let eye = Point3::new(1.0, 8.0, 10.0);
+        let eye = Point3::new(1.0, 8.0, state.camera_distance());
         let target = Point3::new(0.0, 0.0, 0.0);
         let view = Isometry3::look_at_rh(&eye, &target, &Vector3::y());
 
