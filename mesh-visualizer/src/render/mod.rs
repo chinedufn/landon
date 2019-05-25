@@ -167,7 +167,7 @@ impl<'a> Renderable for NonSkinnedMesh<'a> {
 
             // Emerald material
             gl.uniform3fv_with_f32_array(ambient_uni.as_ref(), &[0.0215, 0.1745, 0.0215]);
-            gl.uniform3fv_with_f32_array(diffuse_uni.as_ref(), &[0.7568, 0.61424, 0.07568]);
+            gl.uniform3fv_with_f32_array(diffuse_uni.as_ref(), &[0.07568, 0.61424, 0.07568]);
             gl.uniform3fv_with_f32_array(specular_uni.as_ref(), &[0.633, 0.727811, 0.633]);
             gl.uniform1f(specular_intensity_uni.as_ref(), 0.6);
         }
