@@ -14,7 +14,7 @@ fn main() {
 
     let mut blender_files = vec![];
 
-    let tests_dir = PathBuf::from("../tests");
+    let tests_dir = PathBuf::from("../crates/blender-export-test/src");
 
     for entry in tests_dir.read_dir().expect("blender-mesh tests dir") {
         let blender_file = entry.unwrap().path().display().to_string();
@@ -47,7 +47,10 @@ fn main() {
         .args(&["--python", "./blender-armature/install-armature-to-json.py"]);
 
     for blender_file in blender_files {
-        println!("cargo:rerun-if-changed=../tests/{}", blender_file);
+        println!(
+            "cargo:rerun-if-changed=../crates/blender-export-test/src/{}",
+            blender_file
+        );
 
         let open_script = &open_blend_file(&blender_file);
 
@@ -99,10 +102,12 @@ fn main() {
 }
 
 fn copy_texture_to_dist() {
-    println!("cargo:rerun-if-changed=../tests/textured_cube-uv-layout.png");
+    println!(
+        "cargo:rerun-if-changed=../crates/blender-export-test/src/textured_cube-uv-layout.png"
+    );
 
     fs::copy(
-        "../tests/textured_cube-uv-layout.png",
+        "../crates/blender-export-test/src/textured_cube-uv-layout.png",
         "./dist/textured_cube-uv-layout.png",
     )
     .unwrap();
