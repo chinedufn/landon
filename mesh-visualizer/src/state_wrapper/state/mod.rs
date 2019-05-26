@@ -1,17 +1,20 @@
 use crate::state_wrapper::msg::Msg;
 use crate::state_wrapper::state::camera::Camera;
+use crate::state_wrapper::state::mouse::Mouse;
 use std::time::Duration;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 use web_sys::window;
 
 mod camera;
+mod mouse;
 
 pub struct State {
     pub last_tick_time: SystemTime,
     pub app_start_time: SystemTime,
     /// The model that the user is currently viewing in their browser
     pub current_model: String,
+    mouse: Mouse,
     camera: Camera,
 }
 
@@ -21,6 +24,7 @@ impl State {
             last_tick_time: State::performance_now_to_system_time(),
             app_start_time: State::performance_now_to_system_time(),
             current_model: "TexturedCube".to_string(),
+            mouse: Mouse::default(),
             camera: Camera::new(),
         }
     }
@@ -38,10 +42,32 @@ impl State {
 impl State {
     pub fn msg(&mut self, msg: Msg) {
         match msg {
+            Msg::SetCurrentMesh(mesh_name) => self.current_model = mesh_name.to_string(),
             Msg::Zoom(zoom) => {
                 self.camera_mut().zoom(zoom);
             }
-            Msg::SetCurrentMesh(mesh_name) => self.current_model = mesh_name.to_string(),
+            Msg::MouseDown(x, y) => {
+                self.mouse.set_pressed(true);
+                self.mouse.set_pos(x, y);
+            }
+            Msg::MouseUp => {
+                self.mouse.set_pressed(false);
+            }
+            Msg::MouseMove(x, y) => {
+                if !self.mouse.get_pressed() {
+                    return;
+                }
+
+                let (old_x, old_y) = self.mouse.get_pos();
+
+                let x_delta = old_x as i32 - x;
+                let y_delta = y - old_y as i32;
+
+                self.camera.orbit_left_right(x_delta as f32 / 50.0);
+                self.camera.orbit_up_down(y_delta as f32 / 50.0);
+
+                self.mouse.set_pos(x, y);
+            }
         }
     }
 }

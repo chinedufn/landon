@@ -4,4 +4,10 @@ pub enum Msg {
     Zoom(f32),
     /// Set the current mesh to view in the model viewer
     SetCurrentMesh(String),
+    /// Mouse / finger pressed down
+    MouseDown(i32, i32),
+    /// Mouse / finger released
+    MouseUp,
+    /// Mouse / finger moved
+    MouseMove(i32, i32),
 }
