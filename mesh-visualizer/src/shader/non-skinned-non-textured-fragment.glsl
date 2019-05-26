@@ -1,6 +1,5 @@
 precision mediump float;
 
-// TODO: Pass this uniform in
 uniform vec3 uCameraPos;
 
 varying vec3 vNormal;
@@ -29,17 +28,16 @@ void main(void) {
 
   vec3 diffuse = diff * material.diffuse;
 
-  float shininess = material.specular_intensity;
-
   vec3 viewDir = normalize(uCameraPos - vWorldSpacePos);
   vec3 reflectDir = reflect(-lightDir, normal);
 
-  float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+  float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.specular_intensity);
 
-  vec3 specular = shininess * spec * material.specular;
+  vec3 specular = lightColor * spec * material.specular;
 
 //  vec4 meshColor = vec4(ambient + diffuse + specular, 1.0);
-     vec4 meshColor = vec4(ambient + diffuse + specular, 1.0);
+
+  vec4 meshColor = vec4(ambient + diffuse + specular, 1.0);
 
    gl_FragColor = meshColor;
 }

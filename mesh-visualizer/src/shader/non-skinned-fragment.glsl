@@ -1,6 +1,5 @@
 precision mediump float;
 
-// TODO: Pass this uniform in
 uniform vec3 uCameraPos;
 
 varying vec3 vNormal;

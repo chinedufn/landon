@@ -159,6 +159,14 @@ impl<'a> Renderable for NonSkinnedMesh<'a> {
             gl.uniform1f(specular_intensity_uni.as_ref(), 0.6);
         }
 
+        let camera_pos_uni =
+            gl.get_uniform_location(shader.program.as_ref().unwrap(), "uCameraPos");
+        let camera_pos = state.camera().get_eye_pos();
+        gl.uniform3fv_with_f32_array(
+            camera_pos_uni.as_ref(),
+            &[camera_pos[0], camera_pos[1], camera_pos[2]],
+        );
+
         let num_indices = self.blender_mesh.vertex_position_indices.len() as i32;
         RenderInstructions::DrawElements { num_indices }
     }
