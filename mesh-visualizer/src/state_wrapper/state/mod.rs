@@ -1,15 +1,18 @@
 use crate::state_wrapper::msg::Msg;
+use crate::state_wrapper::state::camera::Camera;
 use std::time::Duration;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 use web_sys::window;
+
+mod camera;
 
 pub struct State {
     pub last_tick_time: SystemTime,
     pub app_start_time: SystemTime,
     /// The model that the user is currently viewing in their browser
     pub current_model: String,
-    camera_distance: f32,
+    camera: Camera,
 }
 
 impl State {
@@ -18,8 +21,7 @@ impl State {
             last_tick_time: State::performance_now_to_system_time(),
             app_start_time: State::performance_now_to_system_time(),
             current_model: "TexturedCube".to_string(),
-            camera_distance: 10.
-            //            current_model: "TriangulatedCube".to_string(),
+            camera: Camera::new(),
         }
     }
 
@@ -37,7 +39,7 @@ impl State {
     pub fn msg(&mut self, msg: Msg) {
         match msg {
             Msg::Zoom(zoom) => {
-                self.camera_distance += zoom;
+                self.camera_mut().zoom(zoom);
             }
             Msg::SetCurrentMesh(mesh_name) => self.current_model = mesh_name.to_string(),
         }
@@ -45,7 +47,11 @@ impl State {
 }
 
 impl State {
-    pub fn camera_distance(&self) -> f32 {
-        self.camera_distance
+    pub fn camera(&self) -> &Camera {
+        &self.camera
+    }
+
+    pub fn camera_mut(&mut self) -> &mut Camera {
+        &mut self.camera
     }
 }

@@ -114,43 +114,30 @@ impl<'a> Renderable for NonSkinnedMesh<'a> {
         shader: &Shader,
         state: &State,
     ) -> RenderInstructions {
-        let fovy = PI / 3.0;
-        let perspective = Perspective3::new(fovy, 1.0, 0.1, 50.0);
-
-        let mut perspective_array = [0.; 16];
-        perspective_array.copy_from_slice(perspective.as_matrix().as_slice());
-
         // TODO: Cache uniform locations in the Shader.
         let perspective_uni =
             gl.get_uniform_location(shader.program.as_ref().unwrap(), "perspective");
-        let perspective_uni = perspective_uni.as_ref();
-        gl.uniform_matrix4fv_with_f32_array(perspective_uni, false, &mut perspective_array);
+        let perspective = state.camera().projection();
+        gl.uniform_matrix4fv_with_f32_array(perspective_uni.as_ref(), false, &perspective);
 
-        // TODO: state.camera
-        let eye = Point3::new(1.0, 8.0, state.camera_distance());
-        let target = Point3::new(0.0, 0.0, 0.0);
-        let view = Isometry3::look_at_rh(&eye, &target, &Vector3::y());
+        let view = state.camera().view();
 
-        let view = view.to_homogeneous();
+        let view_uni = gl.get_uniform_location(shader.program.as_ref().unwrap(), "view");
+        let view_uni = view_uni.as_ref();
 
         let pos = (0.0, 0.0, 0.0);
         let model = Isometry3::new(Vector3::new(pos.0, pos.1, pos.2), nalgebra::zero());
         let model = model.to_homogeneous();
 
         let mut model_array = [0.; 16];
-        let mut view_array = [0.; 16];
 
         model_array.copy_from_slice(model.as_slice());
-        view_array.copy_from_slice(view.as_slice());
 
         let model_uni = gl.get_uniform_location(shader.program.as_ref().unwrap(), "model");
         let model_uni = model_uni.as_ref();
 
-        let view_uni = gl.get_uniform_location(shader.program.as_ref().unwrap(), "view");
-        let view_uni = view_uni.as_ref();
-
         gl.uniform_matrix4fv_with_f32_array(model_uni, false, &mut model_array);
-        gl.uniform_matrix4fv_with_f32_array(view_uni, false, &mut view_array);
+        gl.uniform_matrix4fv_with_f32_array(view_uni, false, &view);
 
         // FIXME: Add materials to both shaders .. not just non textured ..
         if self.shader_kind() == NonSkinnedNonTextured {
