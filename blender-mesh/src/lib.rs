@@ -16,7 +16,6 @@
 //! @see https://docs.blender.org/manual/en/dev/modeling/meshes/introduction.html - Mesh Introduction
 //! @see https://github.com/chinedufn/blender-actions-to-json - Exporting blender armatures / actions
 
-#[deny(missing_docs)]
 #[macro_use]
 extern crate failure;
 #[macro_use]

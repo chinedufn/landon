@@ -103,7 +103,7 @@ class MeshToJSON(bpy.types.Operator):
                 mesh_json['vertex_group_weights'].append(group.weight)
                 # groupName = mesh.vertex_groups[group.group].name
 
-            if mesh_json['armature_name'] != None:
+            if mesh_json['armature_name'] is not None:
                 mesh_json['num_groups_for_each_vertex'].append(num_groups)
 
         if mesh.data.uv_textures:

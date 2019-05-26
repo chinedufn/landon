@@ -24,6 +24,7 @@ members = [
   # TODO: Rename to `Mesh` and `Armature`
   "blender-armature",
   "blender-mesh",
+  "crates/blender-export-test",
   "mesh-visualizer"
 ]
 
