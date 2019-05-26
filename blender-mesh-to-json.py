@@ -1,15 +1,15 @@
 # The goal of this addon is to export all of the actions for the active
 # armature into a JSON file
 
-bl_info = {
-    "name": "Export Mesh to JSON",
-    "category": "Import-Export"
-}
-
 import bpy
 import json
 import os
 from mathutils import Vector
+
+bl_info = {
+    "name": "Export Mesh to JSON",
+    "category": "Import-Export"
+}
 
 # Write our JSON to stdout by default or to a file if specified.
 # Stdout mesh JSON is wrapped in a start and end indicators
@@ -19,7 +19,8 @@ from mathutils import Vector
 # ... mesh json ...
 # END_MESH_JSON $BLENDER_FILEPATH $MESH_NAME
 class MeshToJSON(bpy.types.Operator):
-    """Given an active armature, export it's actions and keyframed bone pose information to a JSON file"""
+    """Given an active armature, export it's actions and keyframed bone
+    pose information to a JSON file"""
     # Unique identifier for the addon
     bl_idname = 'import_export.mesh2json'
     # Display name in the interface
@@ -31,7 +32,7 @@ class MeshToJSON(bpy.types.Operator):
     # filepath = bpy.props.StringProperty(name='filepath')
 
     def execute(self, context):
-        bpy.ops.object.mode_set(mode = 'OBJECT')
+        bpy.ops.object.mode_set(mode='OBJECT')
 
         mesh = bpy.context.active_object
         mesh_json = {
@@ -51,10 +52,12 @@ class MeshToJSON(bpy.types.Operator):
                 # [x, y, z]
                 'min_corner': [],
                 'max_corner': []
+            },
+            'materials': {
             }
         }
 
-        if mesh.parent != None and mesh.parent.type == 'ARMATURE':
+        if mesh.parent is not None and mesh.parent.type == 'ARMATURE':
             mesh_json['armature_name'] = mesh.parent.name
 
         if mesh.data.uv_textures:
@@ -73,9 +76,10 @@ class MeshToJSON(bpy.types.Operator):
                 mesh_json['vertex_position_indices'].append(face.vertices[i])
                 # TODO: Maintain a dictionary with (x, y, z) => normal index
                 # for normals that we've already run into.
-                # Re-use an existing normal index wherever possible. Especially important
-                # for smoothed models that mostly re-use the same normals. Test this by
-                # making a cube with to faces that have the same normal
+                # Re-use an existing normal index wherever possible.
+                # Especially important for smoothed models that mostly re-use
+                # the same normals. Test this by making a cube with to faces
+                # that have the same normal
                 mesh_json['vertex_normal_indices'].append(index)
                 if mesh.data.uv_textures:
                     mesh_json['vertex_uv_indices'].append(face.loop_indices[i])
@@ -158,6 +162,22 @@ class MeshToJSON(bpy.types.Operator):
         bpy.ops.object.mode_set(mode = 'OBJECT')
         mesh_json['bounding_box']['min_corner'] = min_corner
         mesh_json['bounding_box']['max_corner'] = max_corner
+
+        for material in mesh.data.materials:
+            mesh_json['materials'][material.name] = {
+                'diffuse_color': [
+                    material.diffuse_color[0],
+                    material.diffuse_color[1],
+                    material.diffuse_color[2],
+                ],
+                'specular_color': [
+                    material.specular_color[0],
+                    material.specular_color[1],
+                    material.specular_color[2],
+                ],
+                'specular_intensity': material.specular_intensity,
+                'alpha': material.alpha
+            }
 
         # START_MESH_JSON $BLENDER_FILEPATH $MESH_NAME
         # ... mesh json ...

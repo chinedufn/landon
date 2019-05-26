@@ -23,12 +23,15 @@ extern crate serde_derive;
 
 pub use self::export::*;
 use crate::bounding_box::BoundingBox;
+use crate::material::Material;
 use serde_json;
 use serde_json::Error;
+use std::collections::HashMap;
 
 mod bounding_box;
 mod combine_indices;
 mod export;
+mod material;
 mod y_up;
 
 /// Something went wrong in the Blender child process that was trying to parse your mesh data.
@@ -77,6 +80,8 @@ pub struct BlenderMesh {
     /// TODO: enum..? if they're all equal we replace the MyEnum::PerVertex(Vec<u8>) with MyEnum::Equal(4)
     pub num_groups_for_each_vertex: Option<Vec<u8>>, // TODO: textures: HashMap<TextureNameString, {uvs, uv_indices}>,
     pub bounding_box: BoundingBox,
+    /// A map of material name (in Blender) to the material's data
+    pub(self) materials: HashMap<String, Material>,
 }
 
 impl BlenderMesh {
