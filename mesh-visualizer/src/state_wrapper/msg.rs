@@ -10,4 +10,8 @@ pub enum Msg {
     MouseUp,
     /// Mouse / finger moved
     MouseMove(i32, i32),
+    /// Set the roughness in the principled shader
+    SetRoughness(f32),
+    /// Set the metalic in the principled shader
+    SetMetallic(f32),
 }

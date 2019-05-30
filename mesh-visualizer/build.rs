@@ -44,13 +44,13 @@ fn main() {
         .args(&["--python", install_mesh2json_path])
         // TODO: An API in our root crate for writing the script to a tmp file and giving you
         // a link to it
-        .args(&["--python", "./blender-armature/install-armature-to-json.py"]);
+        .args(&[
+            "--python",
+            "../blender-armature/install-armature-to-json.py",
+        ]);
 
     for blender_file in blender_files {
-        println!(
-            "cargo:rerun-if-changed=../crates/blender-export-test/src/{}",
-            blender_file
-        );
+        println!("cargo:rerun-if-changed={}", blender_file);
 
         let open_script = &open_blend_file(&blender_file);
 
@@ -64,12 +64,11 @@ fn main() {
         .expect("Failed to execute Blender process");
 
     let blender_stdout = String::from_utf8(blender_output.stdout).unwrap();
-    fs::write("/tmp/foobar", blender_stdout.clone()).unwrap();
-    fs::write(
-        "/tmp/error",
-        String::from_utf8(blender_output.stderr).unwrap(),
-    )
-    .unwrap();
+    let blender_stderr = String::from_utf8(blender_output.stderr).unwrap();
+
+    if blender_stderr.len() > 0 {
+        panic!("{}", blender_stderr);
+    }
 
     let meshes = blender_mesh::parse_meshes_from_blender_stdout(&blender_stdout).unwrap();
     let armatures = blender_armature::parse_armatures_from_blender_stdout(&blender_stdout).unwrap();

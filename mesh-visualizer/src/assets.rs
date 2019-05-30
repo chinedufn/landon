@@ -1,6 +1,7 @@
 //! Managers the loading and storage of our assets.
 //! Namely, meshes and armatures that came from Blender and textures png's.
 
+use crate::state_wrapper::{Msg, StateWrapper};
 use bincode;
 use blender_armature::BlenderArmature;
 use blender_mesh::BlenderMesh;
@@ -39,7 +40,7 @@ impl Assets {
         }
     }
 
-    pub fn load_meshes(&mut self) {
+    pub fn load_meshes(&mut self, state_wrap: Rc<RefCell<StateWrapper>>) {
         let request_url = "/dist/meshes.bytes";
 
         let meshes_clone = Rc::clone(&self.meshes);
@@ -61,6 +62,12 @@ impl Assets {
                     .borrow_mut()
                     .insert(mesh_name.to_string(), mesh);
             }
+
+            // Refresh material params now that we've loaded our mesh
+            let current_model = state_wrap.borrow().current_model.clone();
+            state_wrap
+                .borrow_mut()
+                .msg(Msg::SetCurrentMesh(current_model));
         };
 
         let closure = Closure::wrap(Box::new(deserialize_meshes) as Box<FnMut(_)>);

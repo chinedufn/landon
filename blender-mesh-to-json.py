@@ -164,20 +164,40 @@ class MeshToJSON(bpy.types.Operator):
         mesh_json['bounding_box']['max_corner'] = max_corner
 
         for material in mesh.data.materials:
-            mesh_json['materials'][material.name] = {
-                'diffuse_color': [
-                    material.diffuse_color[0],
-                    material.diffuse_color[1],
-                    material.diffuse_color[2],
-                ],
-                'specular_color': [
-                    material.specular_color[0],
-                    material.specular_color[1],
-                    material.specular_color[2],
-                ],
-                'specular_intensity': material.specular_intensity,
-                'alpha': material.alpha
-            }
+            if material.node_tree == None:
+                continue;
+
+            # Iterate over the nodes until we find the Principled BSDF node. Then
+            # read its properties
+            for node in material.node_tree.nodes:
+                if node.type == 'BSDF_PRINCIPLED':
+                    if len(node.inputs['Base Color'].links) > 0:
+                        # If there is a node feeding into the base_color, use that node's output color
+                        baseColor = node.inputs['Base Color'].links[0].from_node.outputs['Color'].default_value
+                    else:
+                        # Otherwise use the output color set in the principled nodes color selector
+                        baseColor = node.inputs['Base Color'].default_value
+
+                    if len(node.inputs['Roughness'].links) > 0:
+                        # If there is a node feeding into the roughness, use that node's output color
+                        roughness = node.inputs['Roughness'].links[0].from_node.outputs['Value'].default_value
+                    else:
+                        # Otherwise use the output color set in the principled nodes color selector
+                        roughness = node.inputs['Roughness'].default_value
+
+                    if len(node.inputs['Metallic'].links) > 0:
+                        # If there is a node feeding into the metallic, use that node's output color
+                        metallic = node.inputs['Metallic'].links[0].from_node.outputs['Value'].default_value
+                    else:
+                        # Otherwise use the output color set in the principled nodes color selector
+                        metallic = node.inputs['Metallic'].default_value
+
+
+                    mesh_json['materials'][material.name] = {
+                        'base_color': [baseColor[0], baseColor[1], baseColor[2]],
+                        'roughness': roughness,
+                        'metallic': metallic
+                    }
 
         # START_MESH_JSON $BLENDER_FILEPATH $MESH_NAME
         # ... mesh json ...

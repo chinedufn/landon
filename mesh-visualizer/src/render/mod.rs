@@ -152,11 +152,15 @@ impl<'a> Renderable for NonSkinnedMesh<'a> {
                 "material.specular_intensity",
             );
 
-            // Emerald material
-            gl.uniform3fv_with_f32_array(ambient_uni.as_ref(), &[0.0215, 0.1745, 0.0215]);
-            gl.uniform3fv_with_f32_array(diffuse_uni.as_ref(), &[0.07568, 0.61424, 0.07568]);
-            gl.uniform3fv_with_f32_array(specular_uni.as_ref(), &[0.633, 0.727811, 0.633]);
-            gl.uniform1f(specular_intensity_uni.as_ref(), 0.6);
+            let base_color_uni =
+                gl.get_uniform_location(shader.program.as_ref().unwrap(), "baseColor");
+
+            let base_color = match self.blender_mesh.materials().iter().next() {
+                Some((_, material)) => material.base_color(),
+                None => &[0.8, 0.552, 0.017],
+            };
+
+            gl.uniform3fv_with_f32_array(base_color_uni.as_ref(), base_color);
         }
 
         let camera_pos_uni =
@@ -166,6 +170,12 @@ impl<'a> Renderable for NonSkinnedMesh<'a> {
             camera_pos_uni.as_ref(),
             &[camera_pos[0], camera_pos[1], camera_pos[2]],
         );
+
+        let roughness_uni = gl.get_uniform_location(shader.program.as_ref().unwrap(), "roughness");
+        gl.uniform1f(roughness_uni.as_ref(), state.roughness());
+
+        let metallic_uni = gl.get_uniform_location(shader.program.as_ref().unwrap(), "metallic");
+        gl.uniform1f(metallic_uni.as_ref(), state.metallic());
 
         let num_indices = self.blender_mesh.vertex_position_indices.len() as i32;
         RenderInstructions::DrawElements { num_indices }

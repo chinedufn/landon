@@ -23,7 +23,7 @@ extern crate serde_derive;
 
 pub use self::export::*;
 use crate::bounding_box::BoundingBox;
-use crate::material::Material;
+use crate::material::PrincipledBSDF;
 use serde_json;
 use serde_json::Error;
 use std::collections::HashMap;
@@ -81,7 +81,7 @@ pub struct BlenderMesh {
     pub num_groups_for_each_vertex: Option<Vec<u8>>, // TODO: textures: HashMap<TextureNameString, {uvs, uv_indices}>,
     pub bounding_box: BoundingBox,
     /// A map of material name (in Blender) to the material's data
-    pub(self) materials: HashMap<String, Material>,
+    pub(self) materials: HashMap<String, PrincipledBSDF>,
 }
 
 impl BlenderMesh {

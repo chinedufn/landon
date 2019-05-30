@@ -51,7 +51,12 @@ impl App {
         let document = window.document().unwrap();
         let body = document.body().unwrap();
 
-        let state_wrap = Rc::new(RefCell::new(StateWrapper::new(State::new())));
+        let assets = Rc::new(RefCell::new(Assets::new()));
+
+        let state_wrap = Rc::new(RefCell::new(StateWrapper::new(
+            State::new(),
+            Rc::clone(&assets),
+        )));
 
         let view = MainView {
             wrapper: Rc::clone(&state_wrap),
@@ -70,8 +75,6 @@ impl App {
 
         let shader_sys = Rc::new(ShaderSystem::new(Rc::clone(&gl)));
 
-        let assets = Rc::new(RefCell::new(Assets::new()));
-
         let renderer = Renderer::new(Rc::clone(&gl), Rc::clone(&assets), Rc::clone(&shader_sys));
 
         App {
@@ -85,7 +88,9 @@ impl App {
     }
 
     pub fn start(&mut self) {
-        self.assets.borrow_mut().load_meshes();
+        self.assets
+            .borrow_mut()
+            .load_meshes(Rc::clone(&self.state_wrap));
         //        self.assets.borrow_mut().load_armature("LetterFArmature");
     }
 

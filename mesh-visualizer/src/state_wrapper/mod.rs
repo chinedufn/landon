@@ -1,25 +1,54 @@
+use crate::assets::Assets;
 pub use crate::state_wrapper::msg::Msg;
+use crate::state_wrapper::msg::Msg::SetRoughness;
 pub use crate::state_wrapper::state::State;
+use std::cell::RefCell;
 use std::ops::Deref;
+use std::rc::Rc;
 
 mod msg;
 mod state;
 
 pub struct StateWrapper {
     state: PreventDirectStateMutation,
+    assets: Rc<RefCell<Assets>>,
 }
 
 impl StateWrapper {
-    pub fn new(state: State) -> StateWrapper {
+    pub fn new(state: State, assets: Rc<RefCell<Assets>>) -> StateWrapper {
         StateWrapper {
             state: PreventDirectStateMutation(state),
+            assets,
         }
     }
 }
 
 impl StateWrapper {
     pub fn msg(&mut self, msg: Msg) {
-        self.state.msg(msg);
+        match &msg {
+            Msg::SetCurrentMesh(mesh_name) => {
+                match self
+                    .assets
+                    .borrow()
+                    .meshes()
+                    .borrow()
+                    .get(mesh_name.as_str())
+                {
+                    Some(mesh) => {
+                        if let Some((_name, material)) = mesh.materials().iter().next() {
+                            self.state.msg(Msg::SetRoughness(material.roughness()));
+                            self.state.msg(Msg::SetMetallic(material.metallic()));
+                        }
+
+                        self.state.msg(msg)
+                    }
+                    None => {
+                        self.state.msg(msg);
+                    }
+                };
+            }
+            _ => self.state.msg(msg),
+        }
     }
 }
 

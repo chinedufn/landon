@@ -2,54 +2,53 @@ use crate::BlenderMesh;
 use std::collections::HashMap;
 
 /// Material data for a mesh
+///
+/// # Blender
+///
+/// When exporting from Blender we read this data from the first Principled BSDF node in the
+/// node editor for the material
+///
+/// https://docs.blender.org/manual/en/latest/render/cycles/nodes/types/shaders/principled.html
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(test, derive(Default))]
-pub struct Material {
+pub struct PrincipledBSDF {
     /// [r, g, b]
-    diffuse_color: [f32; 3],
-    /// [r, g, b]
-    specular_color: [f32; 3],
-    /// Shininess
-    specular_intensity: f32,
-    /// Transparency
-    alpha: f32,
+    base_color: [f32; 3],
+    /// roughness
+    roughness: f32,
+    /// metallic
+    metallic: f32,
 }
 
-impl Material {
-    /// The diffuse_color of the material.
+impl PrincipledBSDF {
+    /// The base_color of the material.
     ///
     /// https://docs.blender.org/api/blender2.8/bpy.types.Material.html#bpy.types.Material.diffuse_color
     #[inline]
-    pub fn diffuse_color(&self) -> &[f32; 3] {
-        &self.diffuse_color
+    pub fn base_color(&self) -> &[f32; 3] {
+        &self.base_color
     }
 
-    /// The specular_color of the material
+    /// The roughness of the material.
     ///
-    /// https://docs.blender.org/api/blender2.8/bpy.types.Material.html#bpy.types.Material.specular_color
+    /// https://docs.blender.org/api/blender2.8/bpy.types.Material.html#bpy.types.Material.roughness
     #[inline]
-    pub fn specular_color(&self) -> &[f32; 3] {
-        &self.specular_color
+    pub fn roughness(&self) -> f32 {
+        self.roughness
     }
 
-    /// The shininess of the material, from 0 to 1
+    /// How metallic the material is. Most materials should be 0.0 or 1.0.
     ///
-    /// https://docs.blender.org/api/blender2.8/bpy.types.Material.html#bpy.types.Material.specular_intensity
+    /// https://docs.blender.org/api/blender2.8/bpy.types.Material.html#bpy.types.Material.metallic
     #[inline]
-    pub fn specular_intensity(&self) -> f32 {
-        self.specular_intensity
-    }
-
-    /// The transparency of the material
-    #[inline]
-    pub fn alpha(&self) -> f32 {
-        self.alpha
+    pub fn metallic(&self) -> f32 {
+        self.metallic
     }
 }
 
 impl BlenderMesh {
     /// Get the materials for this mesh, indexed by their name
-    pub fn materials(&self) -> &HashMap<String, Material> {
+    pub fn materials(&self) -> &HashMap<String, PrincipledBSDF> {
         &self.materials
     }
 }

@@ -16,6 +16,8 @@ pub struct State {
     pub current_model: String,
     mouse: Mouse,
     camera: Camera,
+    roughness: f32,
+    metallic: f32,
 }
 
 impl State {
@@ -23,9 +25,11 @@ impl State {
         State {
             last_tick_time: State::performance_now_to_system_time(),
             app_start_time: State::performance_now_to_system_time(),
-            current_model: "TexturedCube".to_string(),
+            current_model: "Suzanne".to_string(),
             mouse: Mouse::default(),
             camera: Camera::new(),
+            roughness: 0.5,
+            metallic: 0.0,
         }
     }
 
@@ -68,6 +72,12 @@ impl State {
 
                 self.mouse.set_pos(x, y);
             }
+            Msg::SetRoughness(roughness) => {
+                self.roughness = roughness;
+            }
+            Msg::SetMetallic(metallic) => {
+                self.metallic = metallic;
+            }
         }
     }
 }
@@ -79,5 +89,15 @@ impl State {
 
     pub fn camera_mut(&mut self) -> &mut Camera {
         &mut self.camera
+    }
+}
+
+impl State {
+    pub fn roughness(&self) -> f32 {
+        self.roughness
+    }
+
+    pub fn metallic(&self) -> f32 {
+        self.metallic
     }
 }

@@ -11,11 +11,14 @@ varying vec3 vWorldSpacePos;
 varying vec2 vTextureCoord;
 
 void main (void) {
-  gl_Position = perspective * view * model * vec4(aVertexPosition, 1.0);
+  vec4 vertexWorldPos = model * vec4(aVertexPosition, 1.0);
 
+  gl_Position = perspective * view * vertexWorldPos;
+
+  // FIXME: Transform normal using model matrix ..
   vNormal = aVertexNormal;
 
-  // World space is same as model space since model matrix is identity.
+  // TODO: World space is same as model space since model matrix is identity.
   // If that changes simply multiple `aVertexPos` by the model matrix.
   vWorldSpacePos = aVertexPosition;
 }
