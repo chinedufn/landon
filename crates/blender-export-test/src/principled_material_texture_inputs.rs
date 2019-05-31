@@ -11,13 +11,13 @@ use std::process::Command;
 
 #[test]
 fn parse_data() {
-    let principled_material_with_input_nodes_blend = &rel_workspace_string(
-        &"crates/blender-export-test/src/principled_material_with_input_nodes.blend",
+    let principled_material_texture_inputs_blend = &rel_workspace_string(
+        &"crates/blender-export-test/src/principled_material_texture_inputs.blend",
     );
     let run_addon = &rel_workspace_string(&"run-addon.py");
 
     let blender_output = Command::new("blender")
-        .arg(principled_material_with_input_nodes_blend)
+        .arg(principled_material_texture_inputs_blend)
         .arg("--background")
         .args(&["--python", run_addon])
         .arg("-noaudio")
@@ -34,7 +34,7 @@ fn parse_data() {
 
     let (_filename, mesh) = parsed_meshes.iter().next().unwrap();
 
-    let mesh = mesh.get("CubeWithInputs").unwrap();
+    let mesh = mesh.get("CubeWithTextureInputs").unwrap();
 
     let expected_mesh = &expected_mesh_data();
     let expected_mesh: BlenderMesh = serde_json::from_str(expected_mesh).unwrap();
@@ -57,10 +57,10 @@ fn expected_mesh_data() -> String {
                 "max_corner": [1.0000005, 1.0000004, 1.0]
             },
             "materials": {
-                "Gold": {
-                    "base_color": [0.4, 0.5, 0.6],
-                    "metallic": 0.2,
-                    "roughness": 0.3
+                "Metal": {
+                    "base_color": {"ImageTexture": "metal-material.jpg"},
+                    "metallic": {"ImageTexture": "metal-material.jpg"},
+                    "roughness": {"ImageTexture": "metal-material.jpg"}
                 }
             }
         }

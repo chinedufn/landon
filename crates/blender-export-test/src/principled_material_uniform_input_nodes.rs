@@ -11,13 +11,13 @@ use std::process::Command;
 
 #[test]
 fn parse_data() {
-    let principled_material_no_input_nodes_blend = &rel_workspace_string(
-        &"crates/blender-export-test/src/principled_material_no_input_nodes.blend",
+    let principled_material_uniform_input_nodes_blend = &rel_workspace_string(
+        &"crates/blender-export-test/src/principled_material_uniform_input_nodes.blend",
     );
     let run_addon = &rel_workspace_string(&"run-addon.py");
 
     let blender_output = Command::new("blender")
-        .arg(principled_material_no_input_nodes_blend)
+        .arg(principled_material_uniform_input_nodes_blend)
         .arg("--background")
         .args(&["--python", run_addon])
         .arg("-noaudio")
@@ -34,7 +34,7 @@ fn parse_data() {
 
     let (_filename, mesh) = parsed_meshes.iter().next().unwrap();
 
-    let mesh = mesh.get("GoldCube").unwrap();
+    let mesh = mesh.get("CubeWithInputs").unwrap();
 
     let expected_mesh = &expected_mesh_data();
     let expected_mesh: BlenderMesh = serde_json::from_str(expected_mesh).unwrap();
@@ -58,11 +58,9 @@ fn expected_mesh_data() -> String {
             },
             "materials": {
                 "Gold": {
-                    "base_color": {
-                      "Uniform": [0.800000011920929, 0.5519999861717224, 0.017000000923871994]
-                    },
-                    "metallic": {"Uniform": 1.0},
-                    "roughness": {"Uniform": 0.75}
+                    "base_color": {"Uniform": [0.4, 0.5, 0.6]},
+                    "metallic": {"Uniform": 0.2},
+                    "roughness": {"Uniform": 0.3}
                 }
             }
         }

@@ -10,11 +10,17 @@ A cube with a principled material node that has no nodes feeding into it.
 
 We're verifying that we properly read the values from the sliders that are on the Principled BSDF node.
 
-### ./src/principled_material_with_input_nodes.blend
+### ./src/principled_material_uniform_input_nodes.blend
 
-A cube with a principled material node with other nodes feeding into it.
+A cube with a principled material node with other uniform nodes feeding into it.
 
 We're verifying that we properly read the values from those nodes.
+
+## ./src/principled_material_texture_inputs.blend
+
+A cube with a principled material node with texture nodes feeding into it.
+
+We're verifying that we properly export the names of the textures.
 
 ### ./src/suzanne.blend
 

@@ -69,6 +69,7 @@ pub struct BlenderMesh {
     /// TODO: Combine vertex_uvs, vertex_uv_indices, texture_name into texture_info
     pub vertex_uvs: Option<Vec<f32>>,
     pub vertex_uv_indices: Option<Vec<u16>>,
+    // FIXME: Remove - all textures should come from PrincipledBSDF materials going forwards
     pub texture_name: Option<String>,
     pub armature_name: Option<String>,
     /// TODO: When we move to single index triangulate and add new vertices give those vertices the same group indices / weights

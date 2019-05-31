@@ -60,10 +60,6 @@ class MeshToJSON(bpy.types.Operator):
         if mesh.parent is not None and mesh.parent.type == 'ARMATURE':
             mesh_json['armature_name'] = mesh.parent.name
 
-        if mesh.data.uv_textures:
-            texture_name = mesh.data.uv_textures.active.data[0].image.name
-            mesh_json['texture_name'] = os.path.splitext(texture_name)[0]
-
         # TODO: Handle triangular polygons, not just quads
         # cube.data.polygons[1].vertices[0]. Check if length
         # of face is 4... Use a triangular face in Blender to unit test.
@@ -170,31 +166,67 @@ class MeshToJSON(bpy.types.Operator):
             # Iterate over the nodes until we find the Principled BSDF node. Then
             # read its properties
             for node in material.node_tree.nodes:
+                baseColor = {}
+                roughness = {}
+                metallic = {}
+
+                # TODO:
+                # .node_tree.nodes[0].inputs['Base Color'].links[0].from_node.image.name
+
                 if node.type == 'BSDF_PRINCIPLED':
                     if len(node.inputs['Base Color'].links) > 0:
-                        # If there is a node feeding into the base_color, use that node's output color
-                        baseColor = node.inputs['Base Color'].links[0].from_node.outputs['Color'].default_value
+                        link = node.inputs['Base Color'].links[0]
+
+                        # If there is a node feeding into the base_color, use
+                        # that node's output color or image
+
+                        if link.from_node.type == 'TEX_IMAGE':
+                            baseColor['ImageTexture'] = link.from_node.image.name
+                        else:
+                            color = link.from_node.outputs['Color'].default_value
+                            baseColor['Uniform'] = [
+                                color[0], color[1], color[2]
+                            ]
                     else:
-                        # Otherwise use the output color set in the principled nodes color selector
-                        baseColor = node.inputs['Base Color'].default_value
+                        # Otherwise use the output color set in the principled
+                        # nodes color selector
+                        color = node.inputs['Base Color'].default_value
+                        baseColor['Uniform'] = [
+                            color[0], color[1], color[2]
+                        ]
 
                     if len(node.inputs['Roughness'].links) > 0:
-                        # If there is a node feeding into the roughness, use that node's output color
-                        roughness = node.inputs['Roughness'].links[0].from_node.outputs['Value'].default_value
+                        link = node.inputs['Roughness'].links[0]
+
+                        # If there is a node feeding into the roughness, use
+                        # that node's output color or image
+
+                        if link.from_node.type == 'TEX_IMAGE':
+                            roughness['ImageTexture'] = link.from_node.image.name
+                        else:
+                            roughness['Uniform'] = link.from_node.outputs['Value'].default_value
                     else:
-                        # Otherwise use the output color set in the principled nodes color selector
-                        roughness = node.inputs['Roughness'].default_value
+                        # Otherwise use the output color set in the principled
+                        # nodes color selector
+                        roughness['Uniform'] = node.inputs['Roughness'].default_value
 
                     if len(node.inputs['Metallic'].links) > 0:
-                        # If there is a node feeding into the metallic, use that node's output color
-                        metallic = node.inputs['Metallic'].links[0].from_node.outputs['Value'].default_value
-                    else:
-                        # Otherwise use the output color set in the principled nodes color selector
-                        metallic = node.inputs['Metallic'].default_value
+                        link = node.inputs['Metallic'].links[0]
 
+                        # If there is a node feeding into the metallic, use
+                        # that node's output color or image
+
+                        if link.from_node.type == 'TEX_IMAGE':
+                            metallic['ImageTexture'] = link.from_node.image.name
+                        else:
+                            metallic['Uniform'] = link.from_node.outputs['Value'].default_value
+                    else:
+                        # Otherwise use the output color set in the principled
+                        # nodes color selector
+                        metallic['Uniform'] = node.inputs['Metallic'].default_value
 
                     mesh_json['materials'][material.name] = {
-                        'base_color': [baseColor[0], baseColor[1], baseColor[2]],
+                        'base_color': baseColor,
                         'roughness': roughness,
                         'metallic': metallic
                     }
