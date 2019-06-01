@@ -2,6 +2,7 @@ use crate::assets::Assets;
 pub use crate::state_wrapper::msg::Msg;
 use crate::state_wrapper::msg::Msg::SetRoughness;
 pub use crate::state_wrapper::state::State;
+use blender_mesh::MaterialInput;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -36,8 +37,13 @@ impl StateWrapper {
                 {
                     Some(mesh) => {
                         if let Some((_name, material)) = mesh.materials().iter().next() {
-                            self.state.msg(Msg::SetRoughness(material.roughness()));
-                            self.state.msg(Msg::SetMetallic(material.metallic()));
+                            if let MaterialInput::Uniform(roughness) = material.roughness() {
+                                self.state.msg(Msg::SetRoughness(*roughness));
+                            }
+
+                            if let MaterialInput::Uniform(metallic) = material.metallic() {
+                                self.state.msg(Msg::SetRoughness(*metallic));
+                            }
                         }
 
                         self.state.msg(msg)

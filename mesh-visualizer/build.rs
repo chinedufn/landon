@@ -14,7 +14,10 @@ fn main() {
 
     let mut blender_files = vec![];
 
-    let tests_dir = PathBuf::from("../crates/blender-export-test/src");
+    let workspace_root = format!("{}/../", env!("CARGO_MANIFEST_DIR"));
+    let workspace_root = PathBuf::from(workspace_root).canonicalize().unwrap();
+
+    let tests_dir = workspace_root.join("crates/blender-export-test/src");
 
     for entry in tests_dir.read_dir().expect("blender-mesh tests dir") {
         let blender_file = entry.unwrap().path().display().to_string();
@@ -46,7 +49,10 @@ fn main() {
         // a link to it
         .args(&[
             "--python",
-            "../blender-armature/install-armature-to-json.py",
+            workspace_root
+                .join("blender-armature/install-armature-to-json.py")
+                .to_str()
+                .unwrap(),
         ]);
 
     for blender_file in blender_files {
@@ -84,7 +90,8 @@ fn main() {
     }
 
     let meshes = bincode::serialize(&mesh_names_to_models).unwrap();
-    fs::write("./dist/meshes.bytes", meshes).unwrap();
+    let meshes_output = workspace_root.join("mesh-visualizer/dist/meshes.bytes");
+    fs::write(meshes_output.to_str().unwrap(), meshes).unwrap();
 
     let mut armature_names_to_data = HashMap::new();
 
@@ -97,7 +104,8 @@ fn main() {
     }
 
     let armatures = bincode::serialize(&armature_names_to_data).unwrap();
-    fs::write("./dist/armatures.bytes", &armatures).unwrap();
+    let armatures_output = workspace_root.join("mesh-visualizer/dist/armatures.bytes");
+    fs::write(armatures_output.to_str().unwrap(), &armatures).unwrap();
 }
 
 fn copy_texture_to_dist() {

@@ -5,7 +5,7 @@ use crate::shader::ShaderKind::NonSkinnedNonTextured;
 use crate::shader::ShaderSystem;
 use crate::state_wrapper::State;
 use blender_armature::BlenderArmature;
-use blender_mesh::BlenderMesh;
+use blender_mesh::{BlenderMesh, MaterialInput};
 use js_sys::WebAssembly;
 use nalgebra::Perspective3;
 use nalgebra::{Isometry3, Point3, Vector3};
@@ -156,7 +156,10 @@ impl<'a> Renderable for NonSkinnedMesh<'a> {
                 gl.get_uniform_location(shader.program.as_ref().unwrap(), "baseColor");
 
             let base_color = match self.blender_mesh.materials().iter().next() {
-                Some((_, material)) => material.base_color(),
+                Some((_, material)) => match material.base_color() {
+                    MaterialInput::Uniform(color) => color,
+                    _ => &[0.8, 0.552, 0.017],
+                },
                 None => &[0.8, 0.552, 0.017],
             };
 
