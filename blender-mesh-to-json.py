@@ -43,7 +43,6 @@ class MeshToJSON(bpy.types.Operator):
             'vertex_normal_indices': [],
             'vertex_uvs': [],
             'vertex_uv_indices': [],
-            'texture_name': None,
             'armature_name': None,
             'vertex_group_indices': [],
             'vertex_group_weights': [],
@@ -106,7 +105,7 @@ class MeshToJSON(bpy.types.Operator):
             if mesh_json['armature_name'] is not None:
                 mesh_json['num_groups_for_each_vertex'].append(num_groups)
 
-        if mesh.data.uv_textures:
+        if mesh.data.uv_layers:
             for loop in mesh.data.uv_layers.active.data:
                 mesh_json['vertex_uvs'].append(loop.uv.x)
                 mesh_json['vertex_uvs'].append(loop.uv.y)
@@ -116,7 +115,7 @@ class MeshToJSON(bpy.types.Operator):
             mesh_json['vertex_group_weights'] = None
             mesh_json['num_groups_for_each_vertex'] = None
 
-        if mesh_json['texture_name'] == None:
+        if not mesh_json['vertex_uvs']:
             mesh_json['vertex_uvs'] = None
             mesh_json['vertex_uv_indices'] = None
 
@@ -169,9 +168,6 @@ class MeshToJSON(bpy.types.Operator):
                 baseColor = {}
                 roughness = {}
                 metallic = {}
-
-                # TODO:
-                # .node_tree.nodes[0].inputs['Base Color'].links[0].from_node.image.name
 
                 if node.type == 'BSDF_PRINCIPLED':
                     if len(node.inputs['Base Color'].links) > 0:
