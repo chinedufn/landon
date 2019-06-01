@@ -26,7 +26,6 @@ pub struct PrincipledBSDF {
 /// This can either be some uniform value that will get used across all vertices / fragments
 /// in your shader, or a texture.
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(test, derive(Default))]
 pub enum MaterialInput<T> {
     /// Some value that is uniform across all vertices / fragments in your mesh.
     Uniform(T),
@@ -48,9 +47,20 @@ pub enum MaterialInput<T> {
     /// ## Examples
     ///
     /// ```
-    /// let material_input = MaterialInput::ImageTexture(String::from("metal.jpg"));
+    /// use blender_mesh::MaterialInput;
+    /// let material_input: MaterialInput<String> =
+    ///     MaterialInput::ImageTexture(String::from("metal.jpg"));
     /// ```
     ImageTexture(String),
+}
+
+impl<T> Default for MaterialInput<T>
+where
+    T: Default,
+{
+    fn default() -> Self {
+        MaterialInput::Uniform(T::default())
+    }
 }
 
 impl PrincipledBSDF {

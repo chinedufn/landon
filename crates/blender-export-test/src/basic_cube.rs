@@ -56,7 +56,8 @@ fn expected_mesh_data() -> String {
             "bounding_box": {
                 "min_corner": [-1.7881393432617188e-07, -2.980232238769531e-07, 0.0],
                 "max_corner": [1.000000238418579, 1.000000238418579, 1.0]
-            }
+            },
+            "materials": {}
         }
     "#.to_string()
 }

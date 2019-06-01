@@ -13,11 +13,7 @@ use std::process::Command;
 fn parse_data() {
     let textured_cube_blend =
         &rel_workspace_string(&"crates/blender-export-test/src/textured_cube.blend");
-    let _install_addon = &rel_workspace_string(&"install-addon.py");
     let run_addon = &rel_workspace_string(&"run-addon.py");
-
-    // TODO: Move the CLI spawning and parsing into `lib.rs`? In our test just verify
-    // the returned mesh data?
 
     let blender_output = Command::new("blender")
         .arg(textured_cube_blend)
