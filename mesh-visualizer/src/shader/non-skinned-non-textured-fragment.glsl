@@ -7,15 +7,6 @@ uniform vec3 uCameraPos;
 varying vec3 vNormal;
 varying vec3 vWorldSpacePos;
 
-struct Material {
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
-    float specular_intensity;
-};
-
-uniform Material material;
-
 // TODO: Array of multiple light colors and positions to support
 // multiple point lights.
 // TODO: Use uniforms

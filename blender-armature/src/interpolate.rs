@@ -18,7 +18,7 @@
 //! use blender_armature::InterpolationConfig as InterpConf;
 //!
 //! // TODO: Tell reader how to get some JSON
-//! let armature = BlenderArmature::from_json(r#"...");
+//! let armature = BlenderArmature::from_json(r#"..."#);
 //! let config = InterpConfig {
 //!   // TODO ...
 //! };

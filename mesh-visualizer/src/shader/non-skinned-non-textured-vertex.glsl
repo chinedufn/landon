@@ -18,7 +18,5 @@ void main (void) {
   // FIXME: Transform normal using model matrix ..
   vNormal = aVertexNormal;
 
-  // TODO: World space is same as model space since model matrix is identity.
-  // If that changes simply multiple `aVertexPos` by the model matrix.
-  vWorldSpacePos = aVertexPosition;
+  vWorldSpacePos = vertexWorldPos.xyz;
 }
