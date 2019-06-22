@@ -141,17 +141,6 @@ impl<'a> Renderable for NonSkinnedMesh<'a> {
 
         // FIXME: Add materials to both shaders .. not just non textured ..
         if self.shader_kind() == NonSkinnedNonTextured {
-            let ambient_uni =
-                gl.get_uniform_location(shader.program.as_ref().unwrap(), "material.ambient");
-            let diffuse_uni =
-                gl.get_uniform_location(shader.program.as_ref().unwrap(), "material.diffuse");
-            let specular_uni =
-                gl.get_uniform_location(shader.program.as_ref().unwrap(), "material.specular");
-            let specular_intensity_uni = gl.get_uniform_location(
-                shader.program.as_ref().unwrap(),
-                "material.specular_intensity",
-            );
-
             let base_color_uni =
                 gl.get_uniform_location(shader.program.as_ref().unwrap(), "baseColor");
 
@@ -179,6 +168,13 @@ impl<'a> Renderable for NonSkinnedMesh<'a> {
 
         let metallic_uni = gl.get_uniform_location(shader.program.as_ref().unwrap(), "metallic");
         gl.uniform1f(metallic_uni.as_ref(), state.metallic());
+
+        let light_pos_uni = gl.get_uniform_location(shader.program.as_ref().unwrap(), "lightPos");
+        gl.uniform3fv_with_f32_array(light_pos_uni.as_ref(), &[1.1, 1.1, 1.1]);
+
+        let light_color_uni =
+            gl.get_uniform_location(shader.program.as_ref().unwrap(), "lightColor");
+        gl.uniform3fv_with_f32_array(light_color_uni.as_ref(), &[1.0, 1.0, 1.0]);
 
         let num_indices = self.blender_mesh.vertex_position_indices.len() as i32;
         RenderInstructions::DrawElements { num_indices }

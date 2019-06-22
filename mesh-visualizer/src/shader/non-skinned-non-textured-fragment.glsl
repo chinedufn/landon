@@ -9,9 +9,8 @@ varying vec3 vWorldSpacePos;
 
 // TODO: Array of multiple light colors and positions to support
 // multiple point lights.
-// TODO: Use uniforms
-const vec3 lightColor = vec3(1.0, 1.0, 1.0);
-const vec3 lightPos = vec3(2.0, 2.0, 2.0);
+uniform vec3 lightColor;
+uniform vec3 lightPos;
 
 uniform vec3 baseColor;
 
@@ -22,59 +21,27 @@ uniform float metallic;
 
 // TODO: Comment each of these functions where we define them - describing exactly what they are
 // what what they're doing.
+vec3 calculateLighting(vec3 lightPos, vec3 lightColor);
+vec3 calculateF0(vec3 baseColor, float metallic);
 float DistributionGGX(vec3 normal, vec3 halfwayVector, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
 float GeometrySmith(vec3 normal, vec3 toCamera, vec3 lightDir, float roughness);
-vec3 fresnelSchlick(float cosTheta, vec3 F0);
+vec3 fresnelSchlick(vec3 F0, float vDotH);
 
-// TODO: BREADCRUMB - the specular highlight is the same no matter what angle I look
-// at ... so we're miscalculating something somewhere in here. Need to read over
-// the shader and figure out what.
-
-// TODO: Rename veriables from one letter names to more descriptive names
 void main(void) {
-    vec3 surfaceNormal = normalize(vNormal);
-    vec3 toCamera = normalize(uCameraPos - vWorldSpacePos);
-
-    vec3 F0 = vec3(0.04);
-    F0 = mix(F0, baseColor, metallic);
 
     // ---------- Reflectance equation --------------------------------------------------
 
-    // Sum of the inpact of all lights (currently just one light)
+    // Sum of the inpact of all lights (TODO: currently just one light)
     vec3 Lo = vec3(0.0);
 
     // Calculate the per light radiance
-    vec3 lightDir = normalize(lightPos - vWorldSpacePos);
-    vec3 H = normalize(toCamera + lightDir);
-    float distance = length(lightPos - vWorldSpacePos);
-    float attenuation = 1.0 / (distance * distance);
-    vec3 radiance = lightColor * attenuation;
-    radiance = lightColor;
-
-    // cook-torrence brdf
-    float NDF = DistributionGGX(surfaceNormal, H, roughness);
-    float G = GeometrySmith(surfaceNormal, toCamera, lightDir, roughness);
-    vec3 F = fresnelSchlick(max(dot(H, toCamera), 0.0), F0);
-
-    vec3 kS = F;
-    vec3 kD = vec3(1.0) - kS;
-    kD *= 1.0 - metallic;
-
-    vec3 numerator = NDF * G * F;
-    float denominator = 4.0 *
-      max(dot(surfaceNormal, toCamera), 0.0) *
-      max(dot(surfaceNormal, lightDir), 0.0);
-
-    vec3 specular = numerator / max(denominator, 0.001);
-
-    // Add the outgoing radiance Lo
-    float NdotL = max(dot(surfaceNormal, lightDir), 0.0);
-    Lo += (kD * baseColor / PI + specular) * radiance * NdotL;
+    // TODO: We only have one light right now - in future iterate through multiple lights
+    Lo += calculateLighting(lightPos, lightColor);
 
     // --------------------------------------------------
 
-    vec3 ambient = vec3(0.04) * baseColor;
+    vec3 ambient = vec3(0.03) * baseColor;
     vec3 color = ambient + Lo;
 
     color = color / (color + vec3(1.0));
@@ -83,6 +50,60 @@ void main(void) {
     gl_FragColor = vec4(color, 1.0);
 }
 
+// FIXME: Still need to thoroughly comment the pieces and break down into smalling functions
+// that are each commented
+
+// Reflectance equation
+//
+// f(l, v) = D(h) * F(v, h) * G(l, v, h)
+//           ---------------------------
+//            4 * (n · l) * (n · v)
+
+vec3 calculateLighting (vec3 lightPos, vec3 lightColor) {
+    vec3 surfaceNormal = normalize(vNormal);
+
+    vec3 fragToCamera = normalize(uCameraPos - vWorldSpacePos);
+    vec3 fragToLight = normalize(lightPos - vWorldSpacePos);
+
+    vec3 halfwayVec = normalize(fragToCamera + fragToLight);
+
+    vec3 F0 = calculateF0(baseColor, metallic);
+
+    // FIXME: Need to re-read about lighting then comment what this is doing exactly
+    float distance = length(lightPos - vWorldSpacePos);
+    float attenuation = 1.0 / (distance * distance);
+    vec3 radiance = lightColor * attenuation;
+
+    // cook-torrence brdf
+    float NDF = DistributionGGX(surfaceNormal, halfwayVec, roughness);
+    float G = GeometrySmith(surfaceNormal, fragToCamera, fragToLight, roughness);
+    vec3 F = fresnelSchlick(F0, dot(fragToCamera, halfwayVec));
+
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - metallic;
+
+    vec3 numerator = NDF * G * F;
+    float denominator = 4.0 *
+    max(dot(surfaceNormal, fragToCamera), 0.0) *
+    max(dot(surfaceNormal, fragToLight), 0.0);
+
+    vec3 specular = numerator / max(denominator, 0.001);
+
+    // Add the outgoing radiance Lo
+    float NdotL = max(dot(surfaceNormal, fragToLight), 0.0);
+
+    return (kD * baseColor / PI + specular) * radiance * NdotL;
+}
+
+// The amount that the surface reflects light when looking directly at it.
+// (Known as the the surface reflection as incidence zero)
+//
+// For non metallics we use a constant approximation of 0.04
+// For metallics we use the base color of the fragment
+vec3 calculateF0 (vec3 baseColor, float metallic) {
+    return mix(vec3(0.04), baseColor, metallic);
+}
 
 // FIXME: Thoroughly comment
 float DistributionGGX(vec3 normal, vec3 halfwayVector, float roughness) {
@@ -120,6 +141,8 @@ float GeometrySchlickGGX(float NdotV, float roughness) {
 }
 
 
-vec3 fresnelSchlick(float cosTheta, vec3 F0) {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+vec3 fresnelSchlick(vec3 F0, float nDotH) {
+    float sphericalGaussian = (-5.55473 * nDotH - 6.98316) * nDotH;
+
+    return F0 + (1.0 - F0) * pow(2.0, sphericalGaussian);
 }
