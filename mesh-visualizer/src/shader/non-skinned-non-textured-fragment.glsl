@@ -1,14 +1,10 @@
 precision mediump float;
 
-// TODO: Heavily comment this shader
-
 uniform vec3 uCameraPos;
 
 varying vec3 vNormal;
 varying vec3 vWorldSpacePos;
 
-// TODO: Array of multiple light colors and positions to support
-// multiple point lights.
 uniform vec3 lightColor;
 uniform vec3 lightPos;
 
@@ -19,13 +15,15 @@ const float PI = 3.14159265359;
 uniform float roughness;
 uniform float metallic;
 
-// TODO: Comment each of these functions where we define them - describing exactly what they are
-// what what they're doing.
 vec3 calculateLighting(vec3 lightPos, vec3 lightColor);
+
 vec3 calculateF0(vec3 baseColor, float metallic);
-float DistributionGGX(vec3 normal, vec3 halfwayVector, float roughness);
+
+float TrowbridgeReitzGGX(vec3 normal, vec3 halfwayVector, float roughness);
+
 float GeometrySchlickGGX(float NdotV, float roughness);
 float GeometrySmith(vec3 normal, vec3 toCamera, vec3 lightDir, float roughness);
+
 vec3 fresnelSchlick(vec3 F0, float vDotH);
 
 void main(void) {
@@ -50,14 +48,6 @@ void main(void) {
     gl_FragColor = vec4(color, 1.0);
 }
 
-// FIXME: Still need to thoroughly comment the pieces and break down into smalling functions
-// that are each commented
-
-// Reflectance equation
-//
-// f(l, v) = D(h) * F(v, h) * G(l, v, h)
-//           ---------------------------
-//            4 * (n · l) * (n · v)
 
 vec3 calculateLighting (vec3 lightPos, vec3 lightColor) {
     vec3 surfaceNormal = normalize(vNormal);
@@ -69,28 +59,38 @@ vec3 calculateLighting (vec3 lightPos, vec3 lightColor) {
 
     vec3 F0 = calculateF0(baseColor, metallic);
 
-    // FIXME: Need to re-read about lighting then comment what this is doing exactly
+    // Radiance of this point light
     float distance = length(lightPos - vWorldSpacePos);
     float attenuation = 1.0 / (distance * distance);
     vec3 radiance = lightColor * attenuation;
 
-    // cook-torrence brdf
-    float NDF = DistributionGGX(surfaceNormal, halfwayVec, roughness);
-    float G = GeometrySmith(surfaceNormal, fragToCamera, fragToLight, roughness);
-    vec3 F = fresnelSchlick(F0, dot(fragToCamera, halfwayVec));
+    // Cool torrence BRDF
+    //
+    // f(l, v) = D(h) * F(v, h) * G(l, v, h)   <----- numerator
+    //           ---------------------------
+    //            4 * (n · l) * (n · v)        <----- denominator
 
-    vec3 kS = F;
-    vec3 kD = vec3(1.0) - kS;
+    float D = TrowbridgeReitzGGX(surfaceNormal, halfwayVec, roughness);
+    vec3 F = fresnelSchlick(F0, dot(fragToCamera, halfwayVec));
+    float G = GeometrySmith(surfaceNormal, fragToCamera, fragToLight, roughness);
+
+    // We used the fresenel-shlick approxmimation to approximate the percentage of incoming light this is
+    // reflected (specular)
+    // Since energy is conserved, the absored lighting (diffuse) + the specular lighting should equal `1.0`
+    vec3 kD = vec3(1.0) - F;
+
+    // Metallic surfaces don't have diffuse lighting, only specular.
+    // So if this surface is metallic we'll multiply the diffuse component `kD` by zero.
     kD *= 1.0 - metallic;
 
-    vec3 numerator = NDF * G * F;
+    vec3 numerator = D * F * G;
+
     float denominator = 4.0 *
     max(dot(surfaceNormal, fragToCamera), 0.0) *
     max(dot(surfaceNormal, fragToLight), 0.0);
 
     vec3 specular = numerator / max(denominator, 0.001);
 
-    // Add the outgoing radiance Lo
     float NdotL = max(dot(surfaceNormal, fragToLight), 0.0);
 
     return (kD * baseColor / PI + specular) * radiance * NdotL;
@@ -105,8 +105,7 @@ vec3 calculateF0 (vec3 baseColor, float metallic) {
     return mix(vec3(0.04), baseColor, metallic);
 }
 
-// FIXME: Thoroughly comment
-float DistributionGGX(vec3 normal, vec3 halfwayVector, float roughness) {
+float TrowbridgeReitzGGX(vec3 normal, vec3 halfwayVector, float roughness) {
     float a = roughness * roughness;
     float aSquared = a * a;
 
@@ -119,7 +118,6 @@ float DistributionGGX(vec3 normal, vec3 halfwayVector, float roughness) {
     return aSquared / denom;
 }
 
-// FIXME: Thoroughly comment
 float GeometrySmith(vec3 normal, vec3 toCamera, vec3 lightDir, float roughness) {
     float normalDotViewDir = max(dot(normal, toCamera), 0.0);
     float normalDotLightDir = max(dot(normal, lightDir), 0.0);
@@ -130,7 +128,6 @@ float GeometrySmith(vec3 normal, vec3 toCamera, vec3 lightDir, float roughness) 
     return ggx1 * ggx2;
 }
 
-// FIXME: Thoroughly comment
 float GeometrySchlickGGX(float NdotV, float roughness) {
     float r = (roughness + 1.0);
     float k = (r * r) / 8.0;
@@ -139,7 +136,6 @@ float GeometrySchlickGGX(float NdotV, float roughness) {
 
     return NdotV / denom;
 }
-
 
 vec3 fresnelSchlick(vec3 F0, float nDotH) {
     float sphericalGaussian = (-5.55473 * nDotH - 6.98316) * nDotH;
