@@ -19,6 +19,8 @@ pub struct PrincipledBSDF {
     roughness: MaterialInput<f32, (String, Channel)>,
     /// metallic
     metallic: MaterialInput<f32, (String, Channel)>,
+    /// The filename for the material's normal map
+    normal_map: Option<String>,
 }
 
 /// An input to a material property.

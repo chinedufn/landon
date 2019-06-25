@@ -168,6 +168,7 @@ class MeshToJSON(bpy.types.Operator):
                 baseColor = {}
                 roughness = {}
                 metallic = {}
+                normalMap = None
 
                 if node.type == 'BSDF_PRINCIPLED':
                     if len(node.inputs['Base Color'].links) > 0:
@@ -229,15 +230,26 @@ class MeshToJSON(bpy.types.Operator):
                             ]
                         else:
                             metallic['Uniform'] = link.from_node.outputs['Value'].default_value
+
                     else:
                         # Otherwise use the output color set in the principled
                         # nodes color selector
                         metallic['Uniform'] = node.inputs['Metallic'].default_value
 
+                    # Work backwards up to the normal map's image texture.
+                    # Principled Node -> Normal Map -> Image Texture
+                    if len(node.inputs['Normal'].links) > 0:
+                        link = node.inputs['Normal'].links[0]
+
+                        if link.from_node.type == 'NORMAL_MAP':
+                            normalMapNode = link.from_node
+                            normalMap = normalMapNode.inputs['Color'].links[0].from_node.image.name
+
                     mesh_json['materials'][material.name] = {
                         'base_color': baseColor,
                         'roughness': roughness,
-                        'metallic': metallic
+                        'metallic': metallic,
+                        'normal_map': normalMap
                     }
 
         # START_MESH_JSON $BLENDER_FILEPATH $MESH_NAME
