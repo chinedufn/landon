@@ -33,7 +33,7 @@ mod combine_indices;
 mod export;
 mod material;
 mod y_up;
-pub use material::MaterialInput;
+pub use material::{Channel, MaterialInput};
 
 /// Something went wrong in the Blender child process that was trying to parse your mesh data.
 #[derive(Debug, Fail)]

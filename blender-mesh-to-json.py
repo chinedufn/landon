@@ -199,7 +199,12 @@ class MeshToJSON(bpy.types.Operator):
                         # that node's output color or image
 
                         if link.from_node.type == 'TEX_IMAGE':
-                            roughness['ImageTexture'] = link.from_node.image.name
+                            # If the channels weren't split, default to red
+                            # channel
+                            roughness['ImageTexture'] = [
+                                link.from_node.image.name,
+                                "R"
+                            ]
                         elif link.from_node.type == 'SEPRGB':
                             print(mesh.name)
                             # example: ["some-texture.png", "R"]
@@ -221,7 +226,12 @@ class MeshToJSON(bpy.types.Operator):
                         # that node's output color or image
 
                         if link.from_node.type == 'TEX_IMAGE':
-                            metallic['ImageTexture'] = link.from_node.image.name
+                            metallic['ImageTexture'] = [
+                                # If the channels weren't split, default to
+                                # green channel
+                                link.from_node.image.name,
+                                "G"
+                            ]
                         elif link.from_node.type == 'SEPRGB':
                             # example: ["some-texture.png", "G"]
                             metallic['ImageTexture'] = [

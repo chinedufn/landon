@@ -61,8 +61,8 @@ fn expected_mesh_data() -> String {
             "materials": {
                 "Metal": {
                     "base_color": {"ImageTexture": "metal-material.jpg"},
-                    "metallic": {"ImageTexture": "metal-material.jpg"},
-                    "roughness": {"ImageTexture": "metal-material.jpg"}
+                    "metallic": {"ImageTexture": ["metal-material.jpg", "G"]},
+                    "roughness": {"ImageTexture": ["metal-material.jpg", "R"]}
                 }
             }
         }

@@ -50,7 +50,7 @@ pub enum MaterialInput<U, I> {
     ///
     /// ```
     /// // Metalness can be read from the green channel of metal.jpg
-    /// use blender_mesh::MaterialInput;
+    /// use blender_mesh::{MaterialInput, Channel};
     /// let metalness: MaterialInput<f32, (String, Channel)> =
     ///     MaterialInput::ImageTexture((String::from("metal.jpg"), Channel::Green));
     /// ```
