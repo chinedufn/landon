@@ -14,11 +14,11 @@ use std::ops::Deref;
 #[cfg_attr(test, derive(Default))]
 pub struct PrincipledBSDF {
     /// [r, g, b]
-    base_color: MaterialInput<[f32; 3]>,
+    base_color: MaterialInput<[f32; 3], String>,
     /// roughness
-    roughness: MaterialInput<f32>,
+    roughness: MaterialInput<f32, (String, Channel)>,
     /// metallic
-    metallic: MaterialInput<f32>,
+    metallic: MaterialInput<f32, (String, Channel)>,
 }
 
 /// An input to a material property.
@@ -26,9 +26,9 @@ pub struct PrincipledBSDF {
 /// This can either be some uniform value that will get used across all vertices / fragments
 /// in your shader, or a texture.
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-pub enum MaterialInput<T> {
+pub enum MaterialInput<U, I> {
     /// Some value that is uniform across all vertices / fragments in your mesh.
-    Uniform(T),
+    Uniform(U),
     /// The name of the texture image (excluding the full path) from an image texture node
     /// in Blender's material editor.
     ///
@@ -47,19 +47,32 @@ pub enum MaterialInput<T> {
     /// ## Examples
     ///
     /// ```
+    /// // Metalness can be read from the green channel of metal.jpg
     /// use blender_mesh::MaterialInput;
-    /// let material_input: MaterialInput<String> =
-    ///     MaterialInput::ImageTexture(String::from("metal.jpg"));
+    /// let metalness: MaterialInput<f32, (String, Channel)> =
+    ///     MaterialInput::ImageTexture((String::from("metal.jpg"), Channel::Green));
     /// ```
-    ImageTexture(String),
+    ImageTexture(I),
 }
 
-impl<T> Default for MaterialInput<T>
+/// An individual channel within an image.
+/// Red, Green, or Blue.
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub enum Channel {
+    #[serde(rename = "R")]
+    Red,
+    #[serde(rename = "G")]
+    Green,
+    #[serde(rename = "B")]
+    Blue,
+}
+
+impl<U, I> Default for MaterialInput<U, I>
 where
-    T: Default,
+    U: Default,
 {
     fn default() -> Self {
-        MaterialInput::Uniform(T::default())
+        MaterialInput::Uniform(U::default())
     }
 }
 
@@ -68,7 +81,7 @@ impl PrincipledBSDF {
     ///
     /// https://docs.blender.org/api/blender2.8/bpy.types.Material.html#bpy.types.Material.diffuse_color
     #[inline]
-    pub fn base_color(&self) -> &MaterialInput<[f32; 3]> {
+    pub fn base_color(&self) -> &MaterialInput<[f32; 3], String> {
         &self.base_color
     }
 
@@ -76,7 +89,7 @@ impl PrincipledBSDF {
     ///
     /// https://docs.blender.org/api/blender2.8/bpy.types.Material.html#bpy.types.Material.roughness
     #[inline]
-    pub fn roughness(&self) -> &MaterialInput<f32> {
+    pub fn roughness(&self) -> &MaterialInput<f32, (String, Channel)> {
         &self.roughness
     }
 
@@ -84,7 +97,7 @@ impl PrincipledBSDF {
     ///
     /// https://docs.blender.org/api/blender2.8/bpy.types.Material.html#bpy.types.Material.metallic
     #[inline]
-    pub fn metallic(&self) -> &MaterialInput<f32> {
+    pub fn metallic(&self) -> &MaterialInput<f32, (String, Channel)> {
         &self.metallic
     }
 }

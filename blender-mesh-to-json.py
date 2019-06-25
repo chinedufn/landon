@@ -199,6 +199,13 @@ class MeshToJSON(bpy.types.Operator):
 
                         if link.from_node.type == 'TEX_IMAGE':
                             roughness['ImageTexture'] = link.from_node.image.name
+                        elif link.from_node.type == 'SEPRGB':
+                            print(mesh.name)
+                            # example: ["some-texture.png", "R"]
+                            roughness['ImageTexture'] = [
+                                link.from_node.inputs['Image'].links[0].from_node.image.name,
+                                link.from_socket.name # R, G or B
+                            ]
                         else:
                             roughness['Uniform'] = link.from_node.outputs['Value'].default_value
                     else:
@@ -214,6 +221,12 @@ class MeshToJSON(bpy.types.Operator):
 
                         if link.from_node.type == 'TEX_IMAGE':
                             metallic['ImageTexture'] = link.from_node.image.name
+                        elif link.from_node.type == 'SEPRGB':
+                            # example: ["some-texture.png", "G"]
+                            metallic['ImageTexture'] = [
+                                link.from_node.inputs['Image'].links[0].from_node.image.name,
+                                link.from_socket.name # R, G or B
+                            ]
                         else:
                             metallic['Uniform'] = link.from_node.outputs['Value'].default_value
                     else:

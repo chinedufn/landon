@@ -96,9 +96,9 @@ fn attach_mouse_up_handler(
     };
 
     let handler = Closure::wrap(Box::new(handler) as Box<FnMut(_)>);
-
     canvas.add_event_listener_with_callback("mouseup", handler.as_ref().unchecked_ref())?;
     handler.forget();
+
     Ok(())
 }
 
@@ -185,9 +185,7 @@ fn attach_touch_end_handler(
     };
 
     let handler = Closure::wrap(Box::new(handler) as Box<FnMut(_)>);
-
     canvas.add_event_listener_with_callback("touchend", handler.as_ref().unchecked_ref())?;
-
     handler.forget();
 
     Ok(())
