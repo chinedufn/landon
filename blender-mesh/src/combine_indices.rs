@@ -81,14 +81,16 @@ impl BlenderMesh {
                 expanded_positions.insert(start_vert_id * 3 + 1, y);
                 expanded_positions.insert(start_vert_id * 3 + 2, z);
 
-                expanded_normals.insert(start_vert_id * 3, self.vertex_x_normal(normal_index));
-                expanded_normals.insert(start_vert_id * 3 + 1, self.vertex_y_normal(normal_index));
-                expanded_normals.insert(start_vert_id * 3 + 2, self.vertex_z_normal(normal_index));
+                let (x, y, z) = self.vertex_normal_at_idx(normal_index);
+                expanded_normals.insert(start_vert_id * 3, x);
+                expanded_normals.insert(start_vert_id * 3 + 1, y);
+                expanded_normals.insert(start_vert_id * 3 + 2, z);
 
                 if has_uvs {
                     let uv_index = uv_index.unwrap();
-                    expanded_uvs.insert(start_vert_id * 2, self.vertex_x_uv(uv_index));
-                    expanded_uvs.insert(start_vert_id * 2 + 1, self.vertex_y_uv(uv_index));
+                    let (x, y) = self.vertex_uv_at_idx(uv_index);
+                    expanded_uvs.insert(start_vert_id * 2, x);
+                    expanded_uvs.insert(start_vert_id * 2 + 1, y);
                 }
 
                 let start_vert_id = start_vert_id as u16;
@@ -214,66 +216,13 @@ impl BlenderMesh {
             None => None,
         }
     }
-
-    fn vertex_pos_at_idx(&self, vertex_id: u16) -> (f32, f32, f32) {
-        (
-            self.vertex_x_pos(vertex_id),
-            self.vertex_y_pos(vertex_id),
-            self.vertex_z_pos(vertex_id),
-        )
-    }
-    fn vertex_normal_at_idx(&self, vertex_id: u16) -> (f32, f32, f32) {
-        (
-            self.vertex_x_normal(vertex_id),
-            self.vertex_y_normal(vertex_id),
-            self.vertex_z_normal(vertex_id),
-        )
-    }
-    fn vertex_uv_at_idx(&self, vertex_id: u16) -> (f32, f32) {
-        (self.vertex_x_uv(vertex_id), self.vertex_y_uv(vertex_id))
-    }
-    fn vertex_x_pos(&self, vertex_id: u16) -> f32 {
-        self.vertex_positions[vertex_id as usize * 3 + 0]
-    }
-    fn vertex_y_pos(&self, vertex_id: u16) -> f32 {
-        self.vertex_positions[vertex_id as usize * 3 + 1]
-    }
-    fn vertex_z_pos(&self, vertex_id: u16) -> f32 {
-        self.vertex_positions[vertex_id as usize * 3 + 2]
-    }
-    fn vertex_x_normal(&self, vertex_id: u16) -> f32 {
-        self.vertex_normals[vertex_id as usize * 3 + 0]
-    }
-    fn vertex_y_normal(&self, vertex_id: u16) -> f32 {
-        self.vertex_normals[vertex_id as usize * 3 + 1]
-    }
-    fn vertex_z_normal(&self, vertex_id: u16) -> f32 {
-        self.vertex_normals[vertex_id as usize * 3 + 2]
-    }
-    fn vertex_x_uv(&self, vertex_id: u16) -> f32 {
-        self.vertex_uvs.as_ref().unwrap()[vertex_id as usize * 2 + 0]
-    }
-    fn vertex_y_uv(&self, vertex_id: u16) -> f32 {
-        self.vertex_uvs.as_ref().unwrap()[vertex_id as usize * 2 + 1]
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // Concatenate a series of vectors into one vector
-    macro_rules! concat_vecs {
-        ( $( $vec:expr),* ) => {
-            {
-                let mut concatenated_vec = Vec::new();
-                $(
-                    concatenated_vec.append(&mut $vec.clone());
-                )*
-                concatenated_vec
-            }
-        }
-    }
+    use crate::concat_vecs;
+    use crate::test_utils::*;
 
     struct CombineIndicesTest {
         mesh_to_combine: BlenderMesh,
@@ -327,10 +276,10 @@ mod tests {
         });
     }
 
+    // We create a mesh where our first three triangles have no repeating vertices
+    // (across norms, uvs and positions) then our fourth triangle has all repeating vertices
     #[test]
     fn combine_pos_norm_uv_indices() {
-        // We create a mesh where our first three triangles have no repeating vertices
-        // (across norms, uvs and positions) then our fourth triangle has all repeating vertices
         let mesh_to_combine = BlenderMesh {
             vertex_positions: concat_vecs!(v(0), v(1), v(2), v(3)),
             vertex_normals: concat_vecs!(v(4), v(5), v(6)),
@@ -428,28 +377,5 @@ mod tests {
             ]),
             ..BlenderMesh::default()
         }
-    }
-
-    // Create a 3 dimensional vector with all three values the same.
-    // Useful for quickly generating some fake vertex data.
-    // v(0.0) -> vec![0.0, 0.0, 0.0]
-    fn v(val: u8) -> Vec<f32> {
-        vec![val as f32, val as f32, val as f32]
-    }
-
-    fn v2_x4(vert1: u8, vert2: u8, vert3: u8, vert4: u8) -> Vec<f32> {
-        concat_vecs!(v2(vert1), v2(vert2), v2(vert3), v2(vert4))
-    }
-
-    fn v3_x4(v1: u8, v2: u8, v3: u8, v4: u8) -> Vec<f32> {
-        concat_vecs!(v(v1), v(v2), v(v3), v(v4))
-    }
-
-    fn v3_x3(v1: u8, v2: u8, v3: u8) -> Vec<f32> {
-        concat_vecs!(v(v1), v(v2), v(v3))
-    }
-
-    fn v2(val: u8) -> Vec<f32> {
-        vec![val as f32, val as f32]
     }
 }
