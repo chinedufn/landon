@@ -1,5 +1,4 @@
 use crate::BlenderMesh;
-use std::cmp::max;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
@@ -13,10 +12,6 @@ impl BlenderMesh {
     /// OpenGL only supports one index buffer, we convert our vertex data
     /// from having three indices to having one. This usually requires some duplication of
     /// vertex data. We duplicate the minimum amount of vertex data necessary.
-    ///
-    /// FIXME: Wrote a test and threw code at the wall until it passed. Need to refactor
-    /// this extensively! Any work on this before refactoring will not be worth the time
-    /// Split this up into smaller functions that it calls, and clean up those functions.
     pub fn combine_vertex_indices(&mut self) {
         type PosIndex = u16;
         type NormalIndex = u16;
@@ -229,12 +224,12 @@ mod tests {
         expected_combined_mesh: BlenderMesh,
     }
 
-    fn test_combine_indices(mut combine_indices_test: CombineIndicesTest) {
-        combine_indices_test
-            .mesh_to_combine
-            .combine_vertex_indices();
-        let combined_mesh = combine_indices_test.mesh_to_combine;
-        assert_eq!(combined_mesh, combine_indices_test.expected_combined_mesh);
+    impl CombineIndicesTest {
+        fn test(&mut self) {
+            self.mesh_to_combine.combine_vertex_indices();
+            let combined_mesh = &self.mesh_to_combine;
+            assert_eq!(combined_mesh, &self.expected_combined_mesh);
+        }
     }
 
     #[test]
@@ -242,10 +237,11 @@ mod tests {
         let mesh_to_combine = make_mesh_to_combine_without_uvs();
         let expected_combined_mesh = make_expected_combined_mesh();
 
-        test_combine_indices(CombineIndicesTest {
+        CombineIndicesTest {
             mesh_to_combine,
             expected_combined_mesh,
-        });
+        }
+        .test();
     }
 
     // We create a mesh that might have been triangulated before it was exported from Blender.
@@ -270,10 +266,11 @@ mod tests {
             ..BlenderMesh::default()
         };
 
-        test_combine_indices(CombineIndicesTest {
+        CombineIndicesTest {
             mesh_to_combine,
             expected_combined_mesh,
-        });
+        }
+        .test();
     }
 
     // We create a mesh where our first three triangles have no repeating vertices
@@ -330,10 +327,19 @@ mod tests {
             ..BlenderMesh::default()
         };
 
-        test_combine_indices(CombineIndicesTest {
+        CombineIndicesTest {
             mesh_to_combine,
             expected_combined_mesh,
-        });
+        }
+        .test();
+    }
+
+    /// Given a mesh, first calculate its face tangents.
+    /// Then, when we combine indices, calculate the per vertex tangents.
+    #[test]
+    fn calculate_per_vertex_tangents() {
+        // TODO:
+        assert_eq!(2, 2);
     }
 
     fn make_mesh_to_combine_without_uvs() -> BlenderMesh {

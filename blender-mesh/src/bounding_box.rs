@@ -13,7 +13,6 @@ pub struct BoundingBox {
     pub max_corner: Point3<f32>,
 }
 
-#[cfg(test)]
 impl Default for BoundingBox {
     fn default() -> Self {
         BoundingBox {

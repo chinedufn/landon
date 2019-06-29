@@ -24,6 +24,7 @@ extern crate serde_derive;
 pub use self::export::*;
 use crate::bounding_box::BoundingBox;
 use crate::material::PrincipledBSDF;
+use crate::vertex_data::VertexData;
 pub use material::{Channel, MaterialInput};
 use serde_json;
 use serde_json::Error;
@@ -33,10 +34,11 @@ mod bone;
 mod bounding_box;
 mod combine_indices;
 mod export;
+mod individual_vertex;
 mod material;
 mod tangent;
 mod triangulate;
-mod vertex_data_lookup;
+mod vertex_data;
 mod y_up;
 
 #[cfg(test)]
@@ -88,12 +90,19 @@ pub struct BlenderMesh {
     pub num_groups_for_each_vertex: Option<Vec<u8>>, // TODO: textures: HashMap<TextureNameString, {uvs, uv_indices}>,
     pub bounding_box: BoundingBox,
     /// A map of material name (in Blender) to the material's data
-    pub(self) materials: HashMap<String, PrincipledBSDF>,
-    /// Tangent vector to the vertex, calculated using [`BlenderMesh.calculate_tangents`],
-    /// Useful for normal mapping
+    materials: HashMap<String, PrincipledBSDF>,
+    /// Tangent vectors per vertex, useful for normal mapping.
     ///
-    /// [`BlenderMesh.calculate_tangents`]: struct.BlenderMesh.html#method.calculate_tangents
-    vertex_tangents: Option<Vec<f32>>,
+    /// These get set during [`BlenderMesh.combine_indices`], if there are triangle_tangents.
+    ///
+    /// Useful for normal mapping.
+    per_vertex_tangents: Option<Vec<f32>>,
+    /// Tangent vector to the vertex, calculated using [`BlenderMesh.calculate_face_tangents`].
+    ///
+    /// [`BlenderMesh.calculate_face_tangents`]: struct.BlenderMesh.html#method.calculate_face_tangents
+    face_tangents: Option<Vec<f32>>,
+    #[serde(default)] // TODO: Temporary until we move all of the data above into VertexData
+    vertex_data: VertexData,
 }
 
 impl BlenderMesh {
