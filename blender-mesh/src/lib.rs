@@ -22,6 +22,7 @@ extern crate failure;
 extern crate serde_derive;
 
 pub use self::export::*;
+use crate::bone::BoneInfluencesPerVertex;
 use crate::bounding_box::BoundingBox;
 use crate::material::PrincipledBSDF;
 use crate::vertex_data::VertexData;
@@ -87,7 +88,7 @@ pub struct BlenderMesh {
     pub vertex_group_indices: Option<Vec<u8>>,
     pub vertex_group_weights: Option<Vec<f32>>,
     /// TODO: enum..? if they're all equal we replace the MyEnum::PerVertex(Vec<u8>) with MyEnum::Equal(4)
-    pub num_groups_for_each_vertex: Option<Vec<u8>>, // TODO: textures: HashMap<TextureNameString, {uvs, uv_indices}>,
+    bone_influences_per_vertex: Option<BoneInfluencesPerVertex>,
     pub bounding_box: BoundingBox,
     /// A map of material name (in Blender) to the material's data
     materials: HashMap<String, PrincipledBSDF>,

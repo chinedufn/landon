@@ -1,8 +1,12 @@
+use self::create_single_index_config::CreateSingleIndexConfig;
+use crate::bone::BoneInfluencesPerVertex;
 use crate::vertex_data::{AttributeSize, VertexAttribute};
 use crate::BlenderMesh;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
+
+mod create_single_index_config;
 
 /// Used to set temporary data that should get overwritten.
 ///
@@ -24,7 +28,11 @@ impl BlenderMesh {
     /// vertex data. We duplicate the minimum amount of vertex data necessary.
     ///
     /// FIXME: Make this function set BlenderMesh.vertex_data = VertexData::SingleIndexVertexData
-    pub fn combine_vertex_indices(&mut self) {
+    pub fn combine_vertex_indices(&mut self, config: &CreateSingleIndexConfig) {
+        if let Some(bone_influences_per_vertex) = config.bone_influences_per_vertex {
+            self.set_bone_influences_per_vertex(bone_influences_per_vertex);
+        }
+
         let has_uvs = self.vertex_uvs.is_some();
 
         let mut largest_vert_id = *self.vertex_position_indices.iter().max().unwrap() as usize;
@@ -47,14 +55,10 @@ impl BlenderMesh {
 
         let mut expanded_pos_indices = vec![];
 
-        // TODO: Revisit these clones when we refactor..
         let mut new_group_indices = self.vertex_group_indices.clone();
         let mut new_group_weights = self.vertex_group_weights.clone();
-        let mut new_groups_for_each_vert = self.num_groups_for_each_vertex.clone();
 
         expanded_pos_indices.resize(self.vertex_position_indices.len(), 0);
-
-        let vert_group_map = self.vertex_group_as_hashmap();
 
         for (elem_array_index, start_vert_id) in self.vertex_position_indices.iter().enumerate() {
             let start_vert_id = *start_vert_id;
@@ -123,32 +127,23 @@ impl BlenderMesh {
                 expanded_uvs.push(v);
             }
 
-            // TODO: Move this into its own function out of our way..
-            match self.num_groups_for_each_vertex.as_ref() {
-                Some(num_groups_for_each_vertex) => {
-                    let pos_index = start_vert_id as usize;
-                    // Where in our vector of group indices / weights does this vertex start?
-                    let group_data_start_idx =
-                        *vert_group_map.as_ref().unwrap().get(&pos_index).unwrap() as usize;
+            // If the mesh has bone influences append bone data to the end of the bone vectors
+            // to account for this newly generated vertex.
+            // TODO: BREADCRUMB -  Move this into its own function out of our way..
+            if let Some(bone_influences_per_vertex) = config.bone_influences_per_vertex {
+                let vert_idx = start_vert_id as usize;
+                // Where in our vector of group indices / weights does this vertex start?
+                let group_data_start_idx = vert_idx * bone_influences_per_vertex as usize;
 
-                    // How many groups does this vertex have?
-                    let num_groups_for_this_vertex = num_groups_for_each_vertex[pos_index as usize];
-                    new_groups_for_each_vert
-                        .as_mut()
-                        .unwrap()
-                        .push(num_groups_for_this_vertex);
+                for i in 0..bone_influences_per_vertex {
+                    let group_data_idx = group_data_start_idx + i as usize;
+                    let weight = new_group_weights.as_ref().unwrap()[group_data_idx];
+                    new_group_weights.as_mut().unwrap().push(weight);
 
-                    for i in 0..num_groups_for_this_vertex {
-                        let group_data_idx = group_data_start_idx + i as usize;
-                        let weight = new_group_weights.as_ref().unwrap()[group_data_idx];
-                        new_group_weights.as_mut().unwrap().push(weight);
-
-                        let index = new_group_indices.as_ref().unwrap()[group_data_idx];
-                        new_group_indices.as_mut().unwrap().push(index);
-                    }
+                    let index = new_group_indices.as_ref().unwrap()[group_data_idx];
+                    new_group_indices.as_mut().unwrap().push(index);
                 }
-                None => {}
-            };
+            }
 
             encountered_vert_data.insert(
                 (start_vert_id as u16, normal_index, uv_index),
@@ -162,7 +157,6 @@ impl BlenderMesh {
         self.vertex_positions = expanded_positions.data().clone();
 
         self.vertex_group_indices = new_group_indices;
-        self.num_groups_for_each_vertex = new_groups_for_each_vert;
         self.vertex_group_weights = new_group_weights;
 
         if has_uvs {
@@ -209,28 +203,6 @@ impl BlenderMesh {
 
         encountered_vert_data.insert((start_vert_id, normal_index, uv_index), start_vert_id);
     }
-
-    // Create a hashmap that allows us, given some vertex index, to look up the first group index
-    // and weight for that vertex.
-    // This is necessary because different vertices can have different numbers of groups so we
-    // need to know where in our vector of group indices/weights a particular vertex's data starts.
-    fn vertex_group_as_hashmap(&self) -> Option<HashMap<usize, u32>> {
-        let mut total_previous: u32 = 0;
-
-        match self.num_groups_for_each_vertex.as_ref() {
-            Some(num_groups_per) => {
-                let mut map = HashMap::new();
-
-                for (index, num) in num_groups_per.iter().enumerate() {
-                    map.insert(index, total_previous);
-                    total_previous += *num as u32;
-                }
-
-                Some(map)
-            }
-            None => None,
-        }
-    }
 }
 
 type PosIndex = u16;
@@ -264,11 +236,16 @@ mod tests {
     struct CombineIndicesTest {
         mesh_to_combine: BlenderMesh,
         expected_combined_mesh: BlenderMesh,
+        create_single_idx_config: Option<CreateSingleIndexConfig>,
     }
 
     impl CombineIndicesTest {
         fn test(&mut self) {
-            self.mesh_to_combine.combine_vertex_indices();
+            self.mesh_to_combine.combine_vertex_indices(
+                self.create_single_idx_config
+                    .as_ref()
+                    .unwrap_or(&CreateSingleIndexConfig::default()),
+            );
             let combined_mesh = &self.mesh_to_combine;
             assert_eq!(combined_mesh, &self.expected_combined_mesh);
         }
@@ -279,9 +256,14 @@ mod tests {
         let mesh_to_combine = make_mesh_to_combine_without_uvs();
         let expected_combined_mesh = make_expected_combined_mesh();
 
+        let create_single_idx_config = Some(CreateSingleIndexConfig {
+            bone_influences_per_vertex: Some(3),
+        });
+
         CombineIndicesTest {
             mesh_to_combine,
             expected_combined_mesh,
+            create_single_idx_config,
         }
         .test();
     }
@@ -317,6 +299,8 @@ mod tests {
         CombineIndicesTest {
             mesh_to_combine,
             expected_combined_mesh,
+
+            create_single_idx_config: None,
         }
         .test();
     }
@@ -346,6 +330,7 @@ mod tests {
         CombineIndicesTest {
             mesh_to_combine,
             expected_combined_mesh,
+            create_single_idx_config: None,
         }
         .test();
     }
@@ -407,6 +392,7 @@ mod tests {
         CombineIndicesTest {
             mesh_to_combine,
             expected_combined_mesh,
+            create_single_idx_config: None,
         }
         .test();
     }
@@ -432,7 +418,7 @@ mod tests {
             // position indices 4, 5, 6 and 7 and use those for the second to last 4 and
             // then last 4 indices
             vertex_normal_indices: Some(vec![0, 1, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2]),
-            num_groups_for_each_vertex: Some(vec![3, 2, 5, 1]),
+            bone_influences_per_vertex: Some(vec![3, 2, 5, 1].into()),
             vertex_group_indices: Some(vec![0, 1, 2, 0, 3, 4, 5, 6, 7, 8, 11]),
             vertex_group_weights: Some(vec![
                 0.05, 0.8, 0.15, 0.5, 0.5, 0.1, 0.2, 0.2, 0.2, 0.3, 0.999,
@@ -450,13 +436,15 @@ mod tests {
             vertex_position_indices: vec![0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7],
             num_vertices_in_each_face: vec![4, 4, 4],
             vertex_normals: end_normals,
-            num_groups_for_each_vertex: Some(vec![3, 2, 5, 1, 3, 2, 5, 1]),
+            bone_influences_per_vertex: Some(BoneInfluencesPerVertex::Uniform(3)),
+            // Config.bone_influences_per_vertex = 3
             vertex_group_indices: Some(vec![
-                0, 1, 2, 0, 3, 4, 5, 6, 7, 8, 11, 0, 1, 2, 0, 3, 4, 5, 6, 7, 8, 11,
+                1, 2, 0, 0, 3, 0, 8, 5, 6, 11, 0, 0, 1, 2, 0, 0, 3, 0, 8, 5, 6, 11, 0, 0,
             ]),
+            // Config.bone_influences_per_vertex = 3
             vertex_group_weights: Some(vec![
-                0.05, 0.8, 0.15, 0.5, 0.5, 0.1, 0.2, 0.2, 0.2, 0.3, 0.999, 0.05, 0.8, 0.15, 0.5,
-                0.5, 0.1, 0.2, 0.2, 0.2, 0.3, 0.999,
+                0.8, 0.15, 0.05, 0.5, 0.5, 0.0, 0.3, 0.2, 0.2, 0.999, 0.0, 0.0, 0.8, 0.15, 0.05,
+                0.5, 0.5, 0.0, 0.3, 0.2, 0.2, 0.999, 0.0, 0.0,
             ]),
             ..BlenderMesh::default()
         }
