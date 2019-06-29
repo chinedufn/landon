@@ -22,12 +22,19 @@ impl BlenderMesh {
 
         let mut largest_vert_id = *self.vertex_position_indices.iter().max().unwrap() as usize;
 
+        eprintln!("largest_vert_id = {:#?}", largest_vert_id);
+
         let mut encountered_vert_data: EncounteredIndices = HashMap::new();
         let mut encountered_vert_ids = HashSet::new();
 
-        let mut expanded_positions = HashMap::new();
-        let mut expanded_normals = HashMap::new();
-        let mut expanded_uvs = HashMap::new();
+        let mut expanded_positions = vec![];
+        expanded_positions.resize((largest_vert_id + 1) * 3, 12345.);
+
+        let mut expanded_normals = vec![];
+        expanded_normals.resize((largest_vert_id + 1) * 3, 12345.);
+
+        let mut expanded_uvs = vec![];
+        expanded_uvs.resize((largest_vert_id + 1) * 2, 12345.);
 
         let mut expanded_pos_indices = vec![];
 
@@ -72,20 +79,20 @@ impl BlenderMesh {
 
                 // TODO: Six methods to get and set the normal, pos, and uv for a vertex_num
                 let (x, y, z) = self.vertex_pos_at_idx(start_vert_id as u16);
-                expanded_positions.insert(start_vert_id * 3, x);
-                expanded_positions.insert(start_vert_id * 3 + 1, y);
-                expanded_positions.insert(start_vert_id * 3 + 2, z);
+                expanded_positions[start_vert_id * 3] = x;
+                expanded_positions[start_vert_id * 3 + 1] = y;
+                expanded_positions[start_vert_id * 3 + 2] = z;
 
                 let (x, y, z) = self.vertex_normal_at_idx(normal_index);
-                expanded_normals.insert(start_vert_id * 3, x);
-                expanded_normals.insert(start_vert_id * 3 + 1, y);
-                expanded_normals.insert(start_vert_id * 3 + 2, z);
+                expanded_normals[start_vert_id * 3] = x;
+                expanded_normals[start_vert_id * 3 + 1] = y;
+                expanded_normals[start_vert_id * 3 + 2] = z;
 
                 if has_uvs {
                     let uv_index = uv_index.unwrap();
-                    let (x, y) = self.vertex_uv_at_idx(uv_index);
-                    expanded_uvs.insert(start_vert_id * 2, x);
-                    expanded_uvs.insert(start_vert_id * 2 + 1, y);
+                    let (u, v) = self.vertex_uv_at_idx(uv_index);
+                    expanded_uvs[start_vert_id * 2] = u;
+                    expanded_uvs[start_vert_id * 2 + 1] = v;
                 }
 
                 let start_vert_id = start_vert_id as u16;
@@ -106,20 +113,20 @@ impl BlenderMesh {
             expanded_pos_indices[elem_array_index] = largest_vert_id as u16;
 
             let (x, y, z) = self.vertex_pos_at_idx(start_vert_id);
-            expanded_positions.insert(largest_vert_id * 3, x);
-            expanded_positions.insert(largest_vert_id * 3 + 1, y);
-            expanded_positions.insert(largest_vert_id * 3 + 2, z);
+            expanded_positions.push(x);
+            expanded_positions.push(y);
+            expanded_positions.push(z);
 
             let (x, y, z) = self.vertex_normal_at_idx(normal_index);
-            expanded_normals.insert(largest_vert_id * 3, x);
-            expanded_normals.insert(largest_vert_id * 3 + 1, y);
-            expanded_normals.insert(largest_vert_id * 3 + 2, z);
+            expanded_normals.push(x);
+            expanded_normals.push(y);
+            expanded_normals.push(z);
 
             if has_uvs {
                 let uv_index = uv_index.unwrap();
-                let (x, y) = self.vertex_uv_at_idx(uv_index);
-                expanded_uvs.insert(largest_vert_id * 2, x);
-                expanded_uvs.insert(largest_vert_id * 2 + 1, y);
+                let (u, v) = self.vertex_uv_at_idx(uv_index);
+                expanded_uvs.push(u);
+                expanded_uvs.push(v);
             }
 
             // TODO: Move this into its own function out of our way..
@@ -161,29 +168,16 @@ impl BlenderMesh {
         // are incorrect.
         // This helps when debugging issues in our export / pre-process pipeline.
         self.vertex_normals.resize(largest_vert_id * 3 + 3, 12345.0);
-        self.vertex_positions
-            .resize(largest_vert_id * 3 + 3, 12345.0);
 
-        expanded_normals.iter().for_each(|(idx, value)| {
-            self.vertex_normals[*idx] = *value;
-        });
-        expanded_positions.iter().for_each(|(idx, value)| {
-            self.vertex_positions[*idx] = *value;
-        });
+        self.vertex_normals = expanded_normals;
+        self.vertex_positions = expanded_positions;
 
         self.vertex_group_indices = new_group_indices;
         self.num_groups_for_each_vertex = new_groups_for_each_vert;
         self.vertex_group_weights = new_group_weights;
 
         if has_uvs {
-            let mut uvs = vec![];
-            uvs.resize(largest_vert_id * 2 + 2, 12345.0);
-
-            expanded_uvs.iter().for_each(|(idx, value)| {
-                uvs[*idx] = *value;
-            });
-
-            self.vertex_uvs = Some(uvs);
+            self.vertex_uvs = Some(expanded_uvs);
         }
 
         self.vertex_normal_indices = None;
@@ -236,6 +230,41 @@ mod tests {
     fn combine_pos_norm_indices() {
         let mesh_to_combine = make_mesh_to_combine_without_uvs();
         let expected_combined_mesh = make_expected_combined_mesh();
+
+        CombineIndicesTest {
+            mesh_to_combine,
+            expected_combined_mesh,
+        }
+        .test();
+    }
+
+    // Verify that we do not panic if we're combining indices where some of the indices have
+    // larger indices coming before smaller indices.
+    //
+    // This ensures that we properly resize our final data vectors before we start pushing data
+    // to them, vs. trying to set data into an index that is larger than the length of the
+    // vector at the time.
+    #[test]
+    fn combine_mesh_with_non_sequential_indices() {
+        let mesh_to_combine = BlenderMesh {
+            vertex_positions: concat_vecs!(v(5), v(6), v(7)),
+            vertex_normals: concat_vecs!(v(10), v(11), v(12)),
+            vertex_uvs: Some(concat_vecs!(v2(15), v2(16), v2(17))),
+            num_vertices_in_each_face: vec![3],
+            vertex_position_indices: vec![2, 1, 0],
+            vertex_normal_indices: Some(vec![2, 1, 0]),
+            vertex_uv_indices: Some(vec![2, 1, 0]),
+            ..BlenderMesh::default()
+        };
+
+        let expected_combined_mesh = BlenderMesh {
+            vertex_position_indices: vec![2, 1, 0],
+            vertex_positions: concat_vecs!(v(5), v(6), v(7)),
+            vertex_normals: concat_vecs!(v(10), v(11), v(12)),
+            vertex_uvs: Some(concat_vecs!(v2(15), v2(16), v2(17))),
+            num_vertices_in_each_face: vec![3],
+            ..BlenderMesh::default()
+        };
 
         CombineIndicesTest {
             mesh_to_combine,
