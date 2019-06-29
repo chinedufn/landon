@@ -1,3 +1,7 @@
+mod vertex_attribute;
+
+pub(crate) use self::vertex_attribute::{AttributeSize, BoneAttributes, VertexAttribute};
+
 /// Per vertex data from the BlenderMesh.
 ///
 /// When exporting from Blender there data is exported with multiple indices,
@@ -82,38 +86,6 @@ pub struct SingleIndexVertexData {
     normals: VertexAttribute,
     uvs: Option<VertexAttribute>,
     bones: Option<BoneAttributes>,
-}
-
-/// Data for an individual vertex attribute such as positions, normals or uvs.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
-pub struct VertexAttribute {
-    /// The underlying vector of floats for this data
-    data: Vec<f32>,
-    /// Positions and normals have a size of 3 (x, y, z)
-    /// Uvs have a size of 2 (u, v)
-    size: AttributeSize,
-}
-
-/// The number of components per vertex.
-///
-/// For example - a position would have 3 components per vertex, a uv would have 2.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-pub enum AttributeSize {
-    Two,
-    Three,
-}
-
-impl Default for AttributeSize {
-    fn default() -> Self {
-        AttributeSize::Three
-    }
-}
-
-/// Used for vertex skinning
-#[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
-struct BoneAttributes {
-    bone_indices: VertexAttribute,
-    bone_weights: VertexAttribute,
 }
 
 /// The amount that each bone in the mesh's parent armature influences each vertex.

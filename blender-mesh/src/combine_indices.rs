@@ -1,6 +1,15 @@
+use crate::vertex_data::{AttributeSize, VertexAttribute};
 use crate::BlenderMesh;
 use std::collections::HashMap;
 use std::collections::HashSet;
+
+/// Used to set temporary data that should get overwritten.
+///
+/// So, if we ever see this number in our data it should make it easier to see that the
+/// data was improperly generated somehow.
+///
+/// Our unit tests should prevemt this, so this is a safety precaution.
+const EASILY_RECOGNIZABLE_NUMBER: f32 = 123456789.;
 
 impl BlenderMesh {
     /// We export our models with indices for positions, normals and uvs because
@@ -12,6 +21,8 @@ impl BlenderMesh {
     /// OpenGL only supports one index buffer, we convert our vertex data
     /// from having three indices to having one. This usually requires some duplication of
     /// vertex data. We duplicate the minimum amount of vertex data necessary.
+    ///
+    /// FIXME: Make this function set BlenderMesh.vertex_data = VertexData::SingleIndexVertexData
     pub fn combine_vertex_indices(&mut self) {
         type PosIndex = u16;
         type NormalIndex = u16;
@@ -22,19 +33,20 @@ impl BlenderMesh {
 
         let mut largest_vert_id = *self.vertex_position_indices.iter().max().unwrap() as usize;
 
-        eprintln!("largest_vert_id = {:#?}", largest_vert_id);
-
         let mut encountered_vert_data: EncounteredIndices = HashMap::new();
         let mut encountered_vert_ids = HashSet::new();
 
         let mut expanded_positions = vec![];
-        expanded_positions.resize((largest_vert_id + 1) * 3, 12345.);
+        expanded_positions.resize((largest_vert_id + 1) * 3, EASILY_RECOGNIZABLE_NUMBER);
+        let mut expanded_positions = VertexAttribute::new(expanded_positions, AttributeSize::Three);
 
         let mut expanded_normals = vec![];
-        expanded_normals.resize((largest_vert_id + 1) * 3, 12345.);
+        expanded_normals.resize((largest_vert_id + 1) * 3, EASILY_RECOGNIZABLE_NUMBER);
+        let mut expanded_normals = VertexAttribute::new(expanded_normals, AttributeSize::Three);
 
         let mut expanded_uvs = vec![];
-        expanded_uvs.resize((largest_vert_id + 1) * 2, 12345.);
+        expanded_uvs.resize((largest_vert_id + 1) * 2, EASILY_RECOGNIZABLE_NUMBER);
+        let mut expanded_uvs = VertexAttribute::new(expanded_uvs, AttributeSize::Two);
 
         let mut expanded_pos_indices = vec![];
 
@@ -79,20 +91,15 @@ impl BlenderMesh {
 
                 // TODO: Six methods to get and set the normal, pos, and uv for a vertex_num
                 let (x, y, z) = self.vertex_pos_at_idx(start_vert_id as u16);
-                expanded_positions[start_vert_id * 3] = x;
-                expanded_positions[start_vert_id * 3 + 1] = y;
-                expanded_positions[start_vert_id * 3 + 2] = z;
+                expanded_positions.set_three_components(start_vert_id, x, y, z);
 
                 let (x, y, z) = self.vertex_normal_at_idx(normal_index);
-                expanded_normals[start_vert_id * 3] = x;
-                expanded_normals[start_vert_id * 3 + 1] = y;
-                expanded_normals[start_vert_id * 3 + 2] = z;
+                expanded_normals.set_three_components(start_vert_id, x, y, z);
 
                 if has_uvs {
                     let uv_index = uv_index.unwrap();
                     let (u, v) = self.vertex_uv_at_idx(uv_index);
-                    expanded_uvs[start_vert_id * 2] = u;
-                    expanded_uvs[start_vert_id * 2 + 1] = v;
+                    expanded_uvs.set_two_components(start_vert_id, u, v);
                 }
 
                 let start_vert_id = start_vert_id as u16;
@@ -164,20 +171,15 @@ impl BlenderMesh {
 
         self.vertex_position_indices = expanded_pos_indices;
 
-        // We use `12345.0` so that if something goes wrong it's easier to notice that the values
-        // are incorrect.
-        // This helps when debugging issues in our export / pre-process pipeline.
-        self.vertex_normals.resize(largest_vert_id * 3 + 3, 12345.0);
-
-        self.vertex_normals = expanded_normals;
-        self.vertex_positions = expanded_positions;
+        self.vertex_normals = expanded_normals.data().clone();
+        self.vertex_positions = expanded_positions.data().clone();
 
         self.vertex_group_indices = new_group_indices;
         self.num_groups_for_each_vertex = new_groups_for_each_vert;
         self.vertex_group_weights = new_group_weights;
 
         if has_uvs {
-            self.vertex_uvs = Some(expanded_uvs);
+            self.vertex_uvs = Some(expanded_uvs.data().clone());
         }
 
         self.vertex_normal_indices = None;
