@@ -2,6 +2,7 @@ use crate::vertex_data::{AttributeSize, VertexAttribute};
 use crate::BlenderMesh;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::ops::{Deref, DerefMut};
 
 /// Used to set temporary data that should get overwritten.
 ///
@@ -24,16 +25,12 @@ impl BlenderMesh {
     ///
     /// FIXME: Make this function set BlenderMesh.vertex_data = VertexData::SingleIndexVertexData
     pub fn combine_vertex_indices(&mut self) {
-        type PosIndex = u16;
-        type NormalIndex = u16;
-        type UvIndex = Option<u16>;
-        type EncounteredIndices = HashMap<(PosIndex, NormalIndex, UvIndex), PosIndex>;
-
         let has_uvs = self.vertex_uvs.is_some();
 
         let mut largest_vert_id = *self.vertex_position_indices.iter().max().unwrap() as usize;
 
-        let mut encountered_vert_data: EncounteredIndices = HashMap::new();
+        let mut encountered_vert_data = EncounteredIndexCombinations::default();
+
         let mut encountered_vert_ids = HashSet::new();
 
         let mut expanded_positions = vec![];
@@ -67,9 +64,8 @@ impl BlenderMesh {
                 None => None,
             };
 
-            let vert_id_to_reuse = encountered_vert_data
-                .get(&(start_vert_id, normal_index, uv_index))
-                .cloned();
+            let vert_id_to_reuse =
+                encountered_vert_data.get(&(start_vert_id, normal_index, uv_index));
 
             // If we have a vertex that is already using the same indices that this current vertex is using
             // OR we have never seen this vertex index we will either:
@@ -78,35 +74,26 @@ impl BlenderMesh {
 
             // If we've already seen this combination of vertex indices we'll re-use the index
             if vert_id_to_reuse.is_some() {
-                expanded_pos_indices[elem_array_index] = vert_id_to_reuse.unwrap();
+                expanded_pos_indices[elem_array_index] = *vert_id_to_reuse.unwrap();
                 continue;
             }
 
             // If this is our first time seeing this combination of vertex indices we'll insert
             // the expanded data
             if !encountered_vert_ids.contains(&start_vert_id) {
-                expanded_pos_indices[elem_array_index] = start_vert_id;
-
-                let start_vert_id = start_vert_id as usize;
-
-                // TODO: Six methods to get and set the normal, pos, and uv for a vertex_num
-                let (x, y, z) = self.vertex_pos_at_idx(start_vert_id as u16);
-                expanded_positions.set_three_components(start_vert_id, x, y, z);
-
-                let (x, y, z) = self.vertex_normal_at_idx(normal_index);
-                expanded_normals.set_three_components(start_vert_id, x, y, z);
-
-                if has_uvs {
-                    let uv_index = uv_index.unwrap();
-                    let (u, v) = self.vertex_uv_at_idx(uv_index);
-                    expanded_uvs.set_two_components(start_vert_id, u, v);
-                }
-
-                let start_vert_id = start_vert_id as u16;
-
                 encountered_vert_ids.insert(start_vert_id);
-                encountered_vert_data
-                    .insert((start_vert_id, normal_index, uv_index), start_vert_id);
+
+                self.handle_first_vertex_encounter(
+                    &mut encountered_vert_data,
+                    &mut expanded_pos_indices,
+                    start_vert_id,
+                    elem_array_index,
+                    &mut expanded_positions,
+                    &mut expanded_normals,
+                    &mut expanded_uvs,
+                    normal_index,
+                    uv_index,
+                );
 
                 continue;
             }
@@ -186,6 +173,43 @@ impl BlenderMesh {
         self.vertex_uv_indices = None;
     }
 
+    // TODO: Way too many parameters - just working on splitting things up into smaller functions..
+    fn handle_first_vertex_encounter(
+        &self,
+        encountered_vert_data: &mut EncounteredIndexCombinations,
+        expanded_pos_indices: &mut Vec<u16>,
+        start_vert_id: u16,
+        elem_array_index: usize,
+        expanded_positions: &mut VertexAttribute,
+        expanded_normals: &mut VertexAttribute,
+        expanded_uvs: &mut VertexAttribute,
+        normal_index: u16,
+        uv_index: Option<u16>,
+    ) {
+        let has_uvs = self.vertex_uvs.is_some();
+
+        expanded_pos_indices[elem_array_index] = start_vert_id;
+
+        let start_vert_id = start_vert_id as usize;
+
+        // TODO: Six methods to get and set the normal, pos, and uv for a vertex_num
+        let (x, y, z) = self.vertex_pos_at_idx(start_vert_id as u16);
+        expanded_positions.set_three_components(start_vert_id, x, y, z);
+
+        let (x, y, z) = self.vertex_normal_at_idx(normal_index);
+        expanded_normals.set_three_components(start_vert_id, x, y, z);
+
+        if has_uvs {
+            let uv_index = uv_index.unwrap();
+            let (u, v) = self.vertex_uv_at_idx(uv_index);
+            expanded_uvs.set_two_components(start_vert_id, u, v);
+        }
+
+        let start_vert_id = start_vert_id as u16;
+
+        encountered_vert_data.insert((start_vert_id, normal_index, uv_index), start_vert_id);
+    }
+
     // Create a hashmap that allows us, given some vertex index, to look up the first group index
     // and weight for that vertex.
     // This is necessary because different vertices can have different numbers of groups so we
@@ -206,6 +230,28 @@ impl BlenderMesh {
             }
             None => None,
         }
+    }
+}
+
+type PosIndex = u16;
+type NormalIndex = u16;
+type UvIndex = Option<u16>;
+#[derive(Debug, Default)]
+struct EncounteredIndexCombinations {
+    encountered: HashMap<(PosIndex, NormalIndex, UvIndex), PosIndex>,
+}
+
+impl Deref for EncounteredIndexCombinations {
+    type Target = HashMap<(PosIndex, NormalIndex, UvIndex), PosIndex>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.encountered
+    }
+}
+
+impl DerefMut for EncounteredIndexCombinations {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.encountered
     }
 }
 
