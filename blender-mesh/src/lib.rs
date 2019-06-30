@@ -20,6 +20,8 @@
 extern crate failure;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
+extern crate log;
 
 pub use self::combine_indices::CreateSingleIndexConfig;
 pub use self::export::*;
@@ -103,7 +105,9 @@ pub struct BlenderMesh {
     ///
     /// [`BlenderMesh.calculate_face_tangents`]: struct.BlenderMesh.html#method.calculate_face_tangents
     face_tangents: Option<Vec<f32>>,
-    #[serde(default)] // TODO: Temporary until we move all of the data above into VertexData
+    // FIXME: Temporary move all of the vertex data above into VertexData
+    // Then we no longer need default .. it'll be required
+    #[serde(default)]
     vertex_data: VertexData,
 }
 

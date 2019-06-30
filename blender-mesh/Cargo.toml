@@ -16,6 +16,7 @@ serde = "1"
 serde_derive = "1"
 serde_json = "1"
 nalgebra = {version = "0.16", features = ["serde-serialize"]}
+log = "0.4.6"
 
 [dev-dependencies]
 blender-armature = { version = "0.1.9", path = "../blender-armature" }

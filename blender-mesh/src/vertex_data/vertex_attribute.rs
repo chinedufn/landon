@@ -41,6 +41,11 @@ impl VertexAttribute {
     pub fn data(&self) -> &Vec<f32> {
         &self.data
     }
+
+    /// Get the underlying data for this attribute mutably.
+    pub(crate) fn data_mut(&mut self) -> &mut Vec<f32> {
+        &mut self.data
+    }
 }
 
 impl VertexAttribute {

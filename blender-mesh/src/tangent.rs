@@ -9,6 +9,14 @@ impl BlenderMesh {
 
         None
     }
+
+    pub(crate) fn vertex_tangents_mut(&mut self) -> Option<&mut Vec<f32>> {
+        if let Some(tangents) = self.per_vertex_tangents.as_mut() {
+            return Some(tangents.data_mut());
+        }
+
+        None
+    }
 }
 
 /// Indicates an error while calculating the tangents for a mesh's verticies
@@ -80,7 +88,7 @@ impl BlenderMesh {
             face_tangents.push(tangent_y);
             face_tangents.push(tangent_z);
 
-            total_indices_processed += vertices_in_face;
+            total_indices_processed += vertices_in_face as u16;
         }
 
         self.face_tangents = Some(face_tangents);

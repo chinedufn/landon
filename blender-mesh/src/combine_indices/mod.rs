@@ -29,6 +29,9 @@ impl BlenderMesh {
     /// TODO: Need to continue refactoring
     ///
     /// TODO: Make this function set BlenderMesh.vertex_data = VertexData::SingleIndexVertexData
+    ///
+    /// TODO: Don't work on additionally functionality until we've broken up these tests
+    /// and implementation into smaller, specific pieces.
     pub fn combine_vertex_indices(&mut self, config: &CreateSingleIndexConfig) {
         if let Some(bone_influences_per_vertex) = config.bone_influences_per_vertex {
             self.set_bone_influences_per_vertex(bone_influences_per_vertex);
@@ -66,11 +69,17 @@ impl BlenderMesh {
         expanded_pos_indices.resize(self.vertex_position_indices.len(), 0);
 
         let mut face_idx = 0;
-        let mut vertices_until_next_face = self.num_vertices_in_each_face[0] - 1;
+        let mut vertices_until_next_face = self.num_vertices_in_each_face[0];
 
         let mut expanded_tangents = vec![];
         expanded_tangents.resize((largest_vert_id + 1) * 3, EASILY_RECOGNIZABLE_NUMBER);
         let mut expanded_tangents = VertexAttribute::new(expanded_tangents, AttributeSize::Three);
+
+        let total_indices: usize = self
+            .num_vertices_in_each_face
+            .iter()
+            .map(|x| *x as usize)
+            .sum();
 
         // FIXME: Split this loop into a function
         for (elem_array_index, start_vert_id) in self.vertex_position_indices.iter().enumerate() {
@@ -149,8 +158,6 @@ impl BlenderMesh {
                 );
             }
 
-            // TODO: All of this needs cleanup
-
             if face_idx + 1 < self.num_vertices_in_each_face.len() {
                 vertices_until_next_face -= 1;
             }
@@ -158,7 +165,7 @@ impl BlenderMesh {
             if vertices_until_next_face == 0 {
                 face_idx += 1;
                 if face_idx < self.num_vertices_in_each_face.len() {
-                    vertices_until_next_face = self.num_vertices_in_each_face[face_idx] - 1;
+                    vertices_until_next_face = self.num_vertices_in_each_face[face_idx];
                 }
             }
         }
@@ -328,9 +335,11 @@ impl DerefMut for EncounteredIndexCombinations {
     }
 }
 
-// TODO: These tests are getting hard to manage.
-// We need smaller tests that test individual pieces of the combining.
-// Then we can keep it to only a handful of tests that test entire meshes.
+/// TODO: These tests are getting hard to manage.
+/// We need smaller tests that test individual pieces of the combining.
+/// Then we can keep it to only a handful of tests that test entire meshes.
+/// TODO: Don't work on additionally functionality until we've broken up these tests
+/// and implementation into smaller, specific pieces.
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -512,7 +521,7 @@ mod tests {
     /// Verify that when we re-use a vertex we add in the tangent of the second vertex that we're
     /// skipping to the first one that we're re-using.
     ///
-    /// Numbers in these tests were not verified by hand.
+    /// NOTE: Numbers in these tests were not verified by hand.
     /// Instead, we took this common tangent calculation formula wrote tests, and verified
     /// that the rendered models looked visually correct (meaning that our test values are also correct).
     #[test]
@@ -549,24 +558,15 @@ mod tests {
         };
 
         let expected_combined_mesh = BlenderMesh {
-            vertex_positions: concat_vecs!(v3_x4(0, 1, 2, 3), v3_x4(0, 1, 2, 3), v3_x4(0, 1, 2, 3)),
-            vertex_position_indices: concat_vecs![
-                // First Triangle
-                vec![0, 1, 2, 3,],
-                // Second Triangle
-                vec![4, 5, 6, 7],
-                // Third Triangle
-                vec![8, 9, 10, 11],
-                // Fourth Triangle
-                vec![8, 9, 10, 11]
-            ],
+            vertex_positions: vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0],
+
+            vertex_position_indices: vec![0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3],
             num_vertices_in_each_face: vec![4, 4, 4, 4],
-            vertex_normals: concat_vecs!(v3_x4(4, 5, 4, 5), v3_x4(6, 6, 6, 6), v3_x4(6, 6, 6, 6)),
-            vertex_uvs: Some(concat_vecs!(
-                v2_x4(7, 8, 7, 8),
-                v2_x4(9, 9, 9, 9),
-                v2_x4(10, 10, 10, 10)
-            )),
+            vertex_normals: vec![4.0, 4.0, 4.0, 5.0, 5.0, 5.0, 6.0, 6.0, 6.0, 7.0, 7.0, 7.0],
+            vertex_uvs: Some(vec![0.0, 0.0, 0.5, 0.0, 1.0, 1.0, 0.0, 1.0]),
+            face_tangents: Some(vec![
+                2.0, 0.0, 0.0, 2.0, 0.0, 0.0, 2.0, 0.0, 0.0, 2.0, 0.0, 0.0,
+            ]),
             // 4 duplicate vertices, each with [2., 0., 0.] as the tangent
             // When combined we get [8., 0., 0.]
             per_vertex_tangents: Some(VertexAttribute::new(
@@ -576,17 +576,17 @@ mod tests {
             ..BlenderMesh::default()
         };
 
-        let create_single_idx_config = CreateSingleIndexConfig {
+        let create_single_idx_config = Some(CreateSingleIndexConfig {
             bone_influences_per_vertex: None,
             calculate_vertex_tangents: true,
-        };
+        });
 
-        mesh_to_combine.combine_vertex_indices(&create_single_idx_config);
-
-        assert_eq!(
-            mesh_to_combine.per_vertex_tangents,
-            expected_combined_mesh.per_vertex_tangents
-        );
+        CombineIndicesTest {
+            mesh_to_combine,
+            expected_combined_mesh,
+            create_single_idx_config,
+        }
+        .test();
     }
 
     fn make_mesh_to_combine_without_uvs() -> BlenderMesh {
