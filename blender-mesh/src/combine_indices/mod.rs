@@ -1,5 +1,4 @@
 use self::create_single_index_config::CreateSingleIndexConfig;
-use crate::bone::BoneInfluencesPerVertex;
 use crate::vertex_data::{AttributeSize, VertexAttribute};
 use crate::BlenderMesh;
 use std::collections::HashMap;
@@ -35,6 +34,10 @@ impl BlenderMesh {
             self.set_bone_influences_per_vertex(bone_influences_per_vertex);
         }
 
+        if config.calculate_vertex_tangents {
+            self.calculate_face_tangents().unwrap();
+        }
+
         let has_uvs = self.vertex_uvs.is_some();
 
         let mut largest_vert_id = *self.vertex_position_indices.iter().max().unwrap() as usize;
@@ -62,6 +65,13 @@ impl BlenderMesh {
 
         expanded_pos_indices.resize(self.vertex_position_indices.len(), 0);
 
+        let mut face_idx = 0;
+        let mut vertices_until_next_face = self.num_vertices_in_each_face[0] - 1;
+
+        let mut expanded_tangents = vec![];
+        expanded_tangents.resize((largest_vert_id + 1) * 3, EASILY_RECOGNIZABLE_NUMBER);
+        let mut expanded_tangents = VertexAttribute::new(expanded_tangents, AttributeSize::Three);
+
         // FIXME: Split this loop into a function
         for (elem_array_index, start_vert_id) in self.vertex_position_indices.iter().enumerate() {
             let start_vert_id = *start_vert_id;
@@ -77,14 +87,26 @@ impl BlenderMesh {
             // If we've already seen this combination of vertex indices we'll re-use the index
             if vert_id_to_reuse.is_some() {
                 expanded_pos_indices[elem_array_index] = *vert_id_to_reuse.unwrap();
-                continue;
-            }
 
-            // If this is our first time seeing this vertex index of vertex indices we'll insert
-            // the expanded data
-            if !encountered_vert_ids.contains(&start_vert_id) {
+                if let Some(face_tangents) = &self.face_tangents {
+                    if face_tangents.len() > 0 {
+                        let (x, y, z) = self.face_tangent_at_idx(face_idx);
+                        expanded_tangents.increment_three_components(
+                            *vert_id_to_reuse.unwrap() as usize,
+                            x,
+                            y,
+                            z,
+                        );
+                    }
+                }
+            } else if !encountered_vert_ids.contains(&start_vert_id) {
+                // If this is our first time seeing this vertex index of vertex indices we'll insert
+                // the expanded data
+
                 encountered_vert_ids.insert(start_vert_id);
 
+                // TODO: Use a data structure that holds some of this stuff so we don't need
+                // to pass it around everywhere ..
                 self.handle_first_vertex_encounter(
                     &mut encountered_vert_data,
                     &mut expanded_pos_indices,
@@ -93,37 +115,50 @@ impl BlenderMesh {
                     &mut expanded_positions,
                     &mut expanded_normals,
                     &mut expanded_uvs,
+                    &mut expanded_tangents,
                     normal_index,
                     uv_index,
+                    face_idx,
+                );
+            } else {
+                // If we've encountered an existing position index but the normal / uv indices for this
+                // vertex aren't the same as ones that we've previously encountered we'll need to
+                // create a new vertex index with this new combination of data.
+
+                largest_vert_id += 1;
+
+                expanded_pos_indices[elem_array_index] = largest_vert_id as u16;
+
+                self.push_generated_vertex_data(
+                    start_vert_id,
+                    normal_index,
+                    uv_index,
+                    config.bone_influences_per_vertex,
+                    new_group_indices.as_mut(),
+                    new_group_weights.as_mut(),
+                    &mut expanded_positions,
+                    &mut expanded_normals,
+                    &mut expanded_uvs,
+                    &mut expanded_tangents,
+                    face_idx,
                 );
 
-                continue;
+                encountered_vert_data.insert(
+                    (start_vert_id as u16, normal_index, uv_index),
+                    largest_vert_id as u16,
+                );
             }
 
-            // If we've encountered an existing position index but the normal / uv indices for this
-            // vertex aren't the same as ones that we've previously encountered we'll need to
-            // create a new vertex index with this new combination of data.
+            if face_idx + 1 < self.num_vertices_in_each_face.len() {
+                vertices_until_next_face -= 1;
+            }
 
-            largest_vert_id += 1;
-
-            expanded_pos_indices[elem_array_index] = largest_vert_id as u16;
-
-            self.push_generated_vertex_data(
-                start_vert_id,
-                normal_index,
-                uv_index,
-                config.bone_influences_per_vertex,
-                new_group_indices.as_mut(),
-                new_group_weights.as_mut(),
-                &mut expanded_positions,
-                &mut expanded_normals,
-                &mut expanded_uvs,
-            );
-
-            encountered_vert_data.insert(
-                (start_vert_id as u16, normal_index, uv_index),
-                largest_vert_id as u16,
-            );
+            if vertices_until_next_face == 0 {
+                face_idx += 1;
+                if face_idx < self.num_vertices_in_each_face.len() {
+                    vertices_until_next_face = self.num_vertices_in_each_face[face_idx] - 1;
+                }
+            }
         }
 
         self.vertex_position_indices = expanded_pos_indices;
@@ -133,6 +168,10 @@ impl BlenderMesh {
 
         self.vertex_group_indices = new_group_indices;
         self.vertex_group_weights = new_group_weights;
+
+        if config.calculate_vertex_tangents {
+            self.per_vertex_tangents = Some(expanded_tangents);
+        }
 
         if has_uvs {
             self.vertex_uvs = Some(expanded_uvs.data().clone());
@@ -152,8 +191,10 @@ impl BlenderMesh {
         expanded_positions: &mut VertexAttribute,
         expanded_normals: &mut VertexAttribute,
         expanded_uvs: &mut VertexAttribute,
+        expanded_tangents: &mut VertexAttribute,
         normal_index: u16,
         uv_index: Option<u16>,
+        face_idx: usize,
     ) {
         let has_uvs = self.vertex_uvs.is_some();
 
@@ -174,6 +215,13 @@ impl BlenderMesh {
             expanded_uvs.set_two_components(start_vert_id, u, v);
         }
 
+        if let Some(face_tangents) = &self.face_tangents {
+            if face_tangents.len() > 0 {
+                let (x, y, z) = self.face_tangent_at_idx(face_idx);
+                expanded_tangents.set_three_components(start_vert_id, x, y, z);
+            }
+        }
+
         let start_vert_id = start_vert_id as u16;
 
         encountered_vert_data.insert((start_vert_id, normal_index, uv_index), start_vert_id);
@@ -191,6 +239,8 @@ impl BlenderMesh {
         expanded_positions: &mut VertexAttribute,
         expanded_normals: &mut VertexAttribute,
         expanded_uvs: &mut VertexAttribute,
+        expanded_tangents: &mut VertexAttribute,
+        face_idx: usize,
     ) {
         let has_uvs = self.vertex_uvs.is_some();
 
@@ -209,6 +259,15 @@ impl BlenderMesh {
             let (u, v) = self.vertex_uv_at_idx(uv_index);
             expanded_uvs.push(u);
             expanded_uvs.push(v);
+        }
+
+        if let Some(face_tangents) = &self.face_tangents {
+            if face_tangents.len() > 0 {
+                let (x, y, z) = self.face_tangent_at_idx(face_idx);
+                expanded_tangents.push(x);
+                expanded_tangents.push(y);
+                expanded_tangents.push(z);
+            }
         }
 
         // If the mesh has bone influences append bone data to the end of the bone vectors
@@ -267,9 +326,13 @@ impl DerefMut for EncounteredIndexCombinations {
     }
 }
 
+// TODO: These tests are getting hard to manage.
+// We need smaller tests that test individual pieces of the combining.
+// Then we can keep it to only a handful of tests that test entire meshes.
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::bone::BoneInfluencesPerVertex;
     use crate::concat_vecs;
     use crate::test_utils::*;
 
@@ -298,6 +361,7 @@ mod tests {
 
         let create_single_idx_config = Some(CreateSingleIndexConfig {
             bone_influences_per_vertex: Some(3),
+            calculate_vertex_tangents: false,
         });
 
         CombineIndicesTest {
@@ -339,7 +403,6 @@ mod tests {
         CombineIndicesTest {
             mesh_to_combine,
             expected_combined_mesh,
-
             create_single_idx_config: None,
         }
         .test();
@@ -379,7 +442,19 @@ mod tests {
     // (across norms, uvs and positions) then our fourth triangle has all repeating vertices
     #[test]
     fn combine_pos_norm_uv_indices() {
-        let mesh_to_combine = BlenderMesh {
+        let mesh_to_combine = mesh_to_combine_pos_norm_uv_indices();
+        let expected_combined_mesh = expected_mesh_to_combine_pos_norm_uv_indices();
+
+        CombineIndicesTest {
+            mesh_to_combine,
+            expected_combined_mesh,
+            create_single_idx_config: None,
+        }
+        .test();
+    }
+
+    fn mesh_to_combine_pos_norm_uv_indices() -> BlenderMesh {
+        BlenderMesh {
             vertex_positions: concat_vecs!(v(0), v(1), v(2), v(3)),
             vertex_normals: concat_vecs!(v(4), v(5), v(6)),
             num_vertices_in_each_face: vec![4, 4, 4, 4],
@@ -405,6 +480,70 @@ mod tests {
             // We already tested vertex group indices / weights about so not bothering setting up
             // more test data
             ..BlenderMesh::default()
+        }
+    }
+
+    fn expected_mesh_to_combine_pos_norm_uv_indices() -> BlenderMesh {
+        BlenderMesh {
+            vertex_positions: concat_vecs!(v3_x4(0, 1, 2, 3), v3_x4(0, 1, 2, 3), v3_x4(0, 1, 2, 3)),
+            vertex_position_indices: concat_vecs![
+                // First Triangle
+                vec![0, 1, 2, 3,],
+                // Second Triangle
+                vec![4, 5, 6, 7],
+                // Third Triangle
+                vec![8, 9, 10, 11],
+                // Fourth Triangle
+                vec![8, 9, 10, 11]
+            ],
+            num_vertices_in_each_face: vec![4, 4, 4, 4],
+            vertex_normals: concat_vecs!(v3_x4(4, 5, 4, 5), v3_x4(6, 6, 6, 6), v3_x4(6, 6, 6, 6)),
+            vertex_uvs: Some(concat_vecs!(
+                v2_x4(7, 8, 7, 8),
+                v2_x4(9, 9, 9, 9),
+                v2_x4(10, 10, 10, 10)
+            )),
+            ..BlenderMesh::default()
+        }
+    }
+
+    /// Verify that when we re-use a vertex we add in the tangent of the second vertex that we're
+    /// skipping to the first one that we're re-using.
+    ///
+    /// Numbers in these tests were not verified by hand.
+    /// Instead, we took this common tangent calculation formula wrote tests, and verified
+    /// that the rendered models looked visually correct (meaning that our test values are also correct).
+    #[test]
+    fn calculate_per_vertex_tangents_encountered_duplicate_data() {
+        let mut mesh_to_combine = BlenderMesh {
+            vertex_positions: concat_vecs!(
+                v(0),
+                vec![1.0, 0.0, 0.0],
+                vec![1.0, 1.0, 0.0],
+                vec![0., 1., 0.]
+            ),
+            vertex_normals: concat_vecs!(v(4), v(5), v(6), v(7)),
+            num_vertices_in_each_face: vec![4, 4, 4, 4],
+            vertex_position_indices: concat_vecs!(
+                vec![0, 1, 2, 3],
+                vec![0, 1, 2, 3],
+                vec![0, 1, 2, 3],
+                vec![0, 1, 2, 3]
+            ),
+            vertex_normal_indices: Some(concat_vecs!(
+                vec![0, 1, 2, 3],
+                vec![0, 1, 2, 3],
+                vec![0, 1, 2, 3],
+                vec![0, 1, 2, 3]
+            )),
+            vertex_uvs: Some(concat_vecs!(v2(0), vec![0.5, 0.0], v2(1), vec![0., 1.])),
+            vertex_uv_indices: Some(concat_vecs!(
+                vec![0, 1, 2, 3], // .
+                vec![0, 1, 2, 3], // .
+                vec![0, 1, 2, 3], // .
+                vec![0, 1, 2, 3]  // .
+            )),
+            ..BlenderMesh::default()
         };
 
         let expected_combined_mesh = BlenderMesh {
@@ -426,23 +565,26 @@ mod tests {
                 v2_x4(9, 9, 9, 9),
                 v2_x4(10, 10, 10, 10)
             )),
+            // 4 duplicate vertices, each with [2., 0., 0.] as the tangent
+            // When combined we get [8., 0., 0.]
+            per_vertex_tangents: Some(VertexAttribute::new(
+                vec![8.0, 0.0, 0.0, 8.0, 0.0, 0.0, 8.0, 0.0, 0.0, 8.0, 0.0, 0.0],
+                AttributeSize::Three,
+            )),
             ..BlenderMesh::default()
         };
 
-        CombineIndicesTest {
-            mesh_to_combine,
-            expected_combined_mesh,
-            create_single_idx_config: None,
-        }
-        .test();
-    }
+        let create_single_idx_config = CreateSingleIndexConfig {
+            bone_influences_per_vertex: None,
+            calculate_vertex_tangents: true,
+        };
 
-    /// Given a mesh, first calculate its face tangents.
-    /// Then, when we combine indices, calculate the per vertex tangents.
-    #[test]
-    fn calculate_per_vertex_tangents() {
-        // TODO:
-        assert_eq!(2, 2);
+        mesh_to_combine.combine_vertex_indices(&create_single_idx_config);
+
+        assert_eq!(
+            mesh_to_combine.per_vertex_tangents,
+            expected_combined_mesh.per_vertex_tangents
+        );
     }
 
     fn make_mesh_to_combine_without_uvs() -> BlenderMesh {

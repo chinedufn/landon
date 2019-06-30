@@ -25,7 +25,7 @@ pub use self::export::*;
 use crate::bone::BoneInfluencesPerVertex;
 use crate::bounding_box::BoundingBox;
 use crate::material::PrincipledBSDF;
-use crate::vertex_data::VertexData;
+use crate::vertex_data::{VertexAttribute, VertexData};
 pub use material::{Channel, MaterialInput};
 use serde_json;
 use serde_json::Error;
@@ -97,7 +97,7 @@ pub struct BlenderMesh {
     /// These get set during [`BlenderMesh.combine_indices`], if there are triangle_tangents.
     ///
     /// Useful for normal mapping.
-    per_vertex_tangents: Option<Vec<f32>>,
+    per_vertex_tangents: Option<VertexAttribute>,
     /// Tangent vector to the vertex, calculated using [`BlenderMesh.calculate_face_tangents`].
     ///
     /// [`BlenderMesh.calculate_face_tangents`]: struct.BlenderMesh.html#method.calculate_face_tangents

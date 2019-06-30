@@ -56,6 +56,26 @@ impl VertexAttribute {
         };
     }
 
+    /// Increment vertex data for an attribute with 3 components per vertex
+    ///
+    /// Useful for adding together two tangent vectors when preparing tangent data.
+    pub(crate) fn increment_three_components(
+        &mut self,
+        idx: usize,
+        comp1: f32,
+        comp2: f32,
+        comp3: f32,
+    ) {
+        match self.size {
+            AttributeSize::Three => {
+                self.data[idx * 3] += comp1;
+                self.data[idx * 3 + 1] += comp2;
+                self.data[idx * 3 + 2] += comp3;
+            }
+            _ => panic!("Does not have exactly three components"),
+        };
+    }
+
     /// Set vertex data for an attribute with 2 components per vertex
     pub(crate) fn set_two_components(&mut self, idx: usize, comp1: f32, comp2: f32) {
         match self.size {

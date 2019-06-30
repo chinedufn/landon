@@ -3,7 +3,11 @@ use crate::BlenderMesh;
 impl BlenderMesh {
     /// Get the tangent vector for each vertex
     pub fn vertex_tangents(&self) -> Option<&Vec<f32>> {
-        self.per_vertex_tangents.as_ref()
+        if let Some(tangents) = self.per_vertex_tangents.as_ref() {
+            return Some(tangents.data());
+        }
+
+        None
     }
 }
 
@@ -27,7 +31,7 @@ impl BlenderMesh {
     ///
     /// Then later in when combining indices we'll use these `.face_tangents` in order to
     /// generate `per_vertex_tangents`
-    pub fn calculate_face_tangents(&mut self) -> Result<(), TangentError> {
+    pub(crate) fn calculate_face_tangents(&mut self) -> Result<(), TangentError> {
         if self.vertex_uvs.is_none() {
             return Err(TangentError::NoVertexUvs)?;
         }
@@ -82,6 +86,20 @@ impl BlenderMesh {
         self.face_tangents = Some(face_tangents);
 
         Ok(())
+    }
+}
+
+impl BlenderMesh {
+    /// Given a face idx, get the corresponding tangent
+    pub(crate) fn face_tangent_at_idx(&self, face_idx: usize) -> (f32, f32, f32) {
+        let face_idx = face_idx as usize;
+        let face_tangents = self.face_tangents.as_ref().unwrap();
+
+        (
+            face_tangents[face_idx * 3],
+            face_tangents[face_idx * 3 + 1],
+            face_tangents[face_idx * 3 + 2],
+        )
     }
 }
 
@@ -175,4 +193,5 @@ mod tests {
             &vec![2., 0., 0.]
         )
     }
+
 }
