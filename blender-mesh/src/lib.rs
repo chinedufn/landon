@@ -21,6 +21,7 @@ extern crate failure;
 #[macro_use]
 extern crate serde_derive;
 
+pub use self::combine_indices::CreateSingleIndexConfig;
 pub use self::export::*;
 use crate::bone::BoneInfluencesPerVertex;
 use crate::bounding_box::BoundingBox;
@@ -117,7 +118,7 @@ impl BlenderMesh {
 ///
 /// Useful for generating fake vertex data for unit tests.
 ///
-/// ```
+/// ```ignore
 /// assert_eq!(
 ///     concat_vecs!(vec![1, 2, 3], vec![4,5]),
 ///     vec![1, 2, 3, 4, 5]

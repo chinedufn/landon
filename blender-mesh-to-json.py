@@ -46,7 +46,7 @@ class MeshToJSON(bpy.types.Operator):
             'armature_name': None,
             'vertex_group_indices': [],
             'vertex_group_weights': [],
-            'num_groups_for_each_vertex': [],
+            'bone_influences_per_vertex': None,
             'bounding_box': {
                 # [x, y, z]
                 'min_corner': [],
@@ -58,6 +58,11 @@ class MeshToJSON(bpy.types.Operator):
 
         if mesh.parent is not None and mesh.parent.type == 'ARMATURE':
             mesh_json['armature_name'] = mesh.parent.name
+
+        if mesh_json['armature_name'] is not None:
+            mesh_json['bone_influences_per_vertex'] = {
+                'NonUniform': []
+            }
 
         # TODO: Handle triangular polygons, not just quads
         # cube.data.polygons[1].vertices[0]. Check if length
@@ -103,7 +108,7 @@ class MeshToJSON(bpy.types.Operator):
                 # groupName = mesh.vertex_groups[group.group].name
 
             if mesh_json['armature_name'] is not None:
-                mesh_json['num_groups_for_each_vertex'].append(num_groups)
+                mesh_json['bone_influences_per_vertex']['NonUniform'].append(num_groups)
 
         if mesh.data.uv_layers:
             for loop in mesh.data.uv_layers.active.data:
@@ -113,7 +118,7 @@ class MeshToJSON(bpy.types.Operator):
         if mesh_json['armature_name'] == None:
             mesh_json['vertex_group_indices'] = None
             mesh_json['vertex_group_weights'] = None
-            mesh_json['num_groups_for_each_vertex'] = None
+            mesh_json['bone_influences_per_vertex'] = None
 
         if not mesh_json['vertex_uvs']:
             mesh_json['vertex_uvs'] = None

@@ -104,7 +104,7 @@ mod tests {
 
         let expected_mesh = BlenderMesh {
             vertex_group_indices: Some(vec![0, 0, 0, 2, 4, 3, 0, 1, 2]),
-            bone_influences_per_vertex: Some(vec![3, 3, 3].into()),
+            bone_influences_per_vertex: Some(BoneInfluencesPerVertex::Uniform(3)),
             vertex_group_weights: Some(vec![1.0, 0.0, 0.0, 0.5, 0.3, 0.2, 0.6, 0.15, 0.15]),
             ..BlenderMesh::default()
         };

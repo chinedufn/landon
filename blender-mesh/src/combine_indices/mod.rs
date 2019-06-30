@@ -1,4 +1,4 @@
-use self::create_single_index_config::CreateSingleIndexConfig;
+pub use self::create_single_index_config::CreateSingleIndexConfig;
 use crate::vertex_data::{AttributeSize, VertexAttribute};
 use crate::BlenderMesh;
 use std::collections::HashMap;
@@ -148,6 +148,8 @@ impl BlenderMesh {
                     largest_vert_id as u16,
                 );
             }
+
+            // TODO: All of this needs cleanup
 
             if face_idx + 1 < self.num_vertices_in_each_face.len() {
                 vertices_until_next_face -= 1;

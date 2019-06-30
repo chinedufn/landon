@@ -4,7 +4,7 @@
 use crate::state_wrapper::{Msg, StateWrapper};
 use bincode;
 use blender_armature::BlenderArmature;
-use blender_mesh::BlenderMesh;
+use blender_mesh::{BlenderMesh, CreateSingleIndexConfig};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -49,14 +49,13 @@ impl Assets {
             let meshes: HashMap<String, BlenderMesh> = bincode::deserialize(&mesh_bytes).unwrap();
 
             for (mesh_name, mut mesh) in meshes {
-                web_sys::console::log_1(&format!("{}", mesh_name).into());
-                mesh.combine_vertex_indices();
+                info!("{}", mesh_name);
+                mesh.combine_vertex_indices(&CreateSingleIndexConfig {
+                    calculate_vertex_tangents: false,
+                    bone_influences_per_vertex: None,
+                });
                 mesh.triangulate();
                 mesh.y_up();
-
-                if let Some(_) = mesh.armature_name {
-                    mesh.set_bone_influences_per_vertex(4);
-                }
 
                 meshes_clone
                     .borrow_mut()
