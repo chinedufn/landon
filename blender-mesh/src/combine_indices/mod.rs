@@ -27,7 +27,9 @@ impl BlenderMesh {
     /// from having three indices to having one. This usually requires some duplication of
     /// vertex data. We duplicate the minimum amount of vertex data necessary.
     ///
-    /// FIXME: Make this function set BlenderMesh.vertex_data = VertexData::SingleIndexVertexData
+    /// TODO: Need to continue refactoring
+    ///
+    /// TODO: Make this function set BlenderMesh.vertex_data = VertexData::SingleIndexVertexData
     pub fn combine_vertex_indices(&mut self, config: &CreateSingleIndexConfig) {
         if let Some(bone_influences_per_vertex) = config.bone_influences_per_vertex {
             self.set_bone_influences_per_vertex(bone_influences_per_vertex);
@@ -60,6 +62,7 @@ impl BlenderMesh {
 
         expanded_pos_indices.resize(self.vertex_position_indices.len(), 0);
 
+        // FIXME: Split this loop into a function
         for (elem_array_index, start_vert_id) in self.vertex_position_indices.iter().enumerate() {
             let start_vert_id = *start_vert_id;
             let normal_index = self.vertex_normal_indices.as_ref().unwrap()[elem_array_index];
@@ -71,18 +74,13 @@ impl BlenderMesh {
             let vert_id_to_reuse =
                 encountered_vert_data.get(&(start_vert_id, normal_index, uv_index));
 
-            // If we have a vertex that is already using the same indices that this current vertex is using
-            // OR we have never seen this vertex index we will either:
-            //  1. Re-use it
-            //  OR 2. Use this newly encountered index and add it to our encountered indices / data
-
             // If we've already seen this combination of vertex indices we'll re-use the index
             if vert_id_to_reuse.is_some() {
                 expanded_pos_indices[elem_array_index] = *vert_id_to_reuse.unwrap();
                 continue;
             }
 
-            // If this is our first time seeing this combination of vertex indices we'll insert
+            // If this is our first time seeing this vertex index of vertex indices we'll insert
             // the expanded data
             if !encountered_vert_ids.contains(&start_vert_id) {
                 encountered_vert_ids.insert(start_vert_id);
@@ -110,40 +108,17 @@ impl BlenderMesh {
 
             expanded_pos_indices[elem_array_index] = largest_vert_id as u16;
 
-            let (x, y, z) = self.vertex_pos_at_idx(start_vert_id);
-            expanded_positions.push(x);
-            expanded_positions.push(y);
-            expanded_positions.push(z);
-
-            let (x, y, z) = self.vertex_normal_at_idx(normal_index);
-            expanded_normals.push(x);
-            expanded_normals.push(y);
-            expanded_normals.push(z);
-
-            if has_uvs {
-                let uv_index = uv_index.unwrap();
-                let (u, v) = self.vertex_uv_at_idx(uv_index);
-                expanded_uvs.push(u);
-                expanded_uvs.push(v);
-            }
-
-            // If the mesh has bone influences append bone data to the end of the bone vectors
-            // to account for this newly generated vertex.
-            // TODO: BREADCRUMB -  Move this into its own function out of our way..
-            if let Some(bone_influences_per_vertex) = config.bone_influences_per_vertex {
-                let vert_idx = start_vert_id as usize;
-                // Where in our vector of group indices / weights does this vertex start?
-                let group_data_start_idx = vert_idx * bone_influences_per_vertex as usize;
-
-                for i in 0..bone_influences_per_vertex {
-                    let group_data_idx = group_data_start_idx + i as usize;
-                    let weight = new_group_weights.as_ref().unwrap()[group_data_idx];
-                    new_group_weights.as_mut().unwrap().push(weight);
-
-                    let index = new_group_indices.as_ref().unwrap()[group_data_idx];
-                    new_group_indices.as_mut().unwrap().push(index);
-                }
-            }
+            self.push_generated_vertex_data(
+                start_vert_id,
+                normal_index,
+                uv_index,
+                config.bone_influences_per_vertex,
+                new_group_indices.as_mut(),
+                new_group_weights.as_mut(),
+                &mut expanded_positions,
+                &mut expanded_normals,
+                &mut expanded_uvs,
+            );
 
             encountered_vert_data.insert(
                 (start_vert_id as u16, normal_index, uv_index),
@@ -202,6 +177,71 @@ impl BlenderMesh {
         let start_vert_id = start_vert_id as u16;
 
         encountered_vert_data.insert((start_vert_id, normal_index, uv_index), start_vert_id);
+    }
+
+    // TODO: Way too many parameters - just working on splitting things up into smaller functions..
+    fn push_generated_vertex_data(
+        &self,
+        pos_idx: u16,
+        normal_idx: u16,
+        uv_idx: Option<u16>,
+        bone_influences_per_vertex: Option<u8>,
+        new_group_indices: Option<&mut Vec<u8>>,
+        new_group_weights: Option<&mut Vec<f32>>,
+        expanded_positions: &mut VertexAttribute,
+        expanded_normals: &mut VertexAttribute,
+        expanded_uvs: &mut VertexAttribute,
+    ) {
+        let has_uvs = self.vertex_uvs.is_some();
+
+        let (x, y, z) = self.vertex_pos_at_idx(pos_idx);
+        expanded_positions.push(x);
+        expanded_positions.push(y);
+        expanded_positions.push(z);
+
+        let (x, y, z) = self.vertex_normal_at_idx(normal_idx);
+        expanded_normals.push(x);
+        expanded_normals.push(y);
+        expanded_normals.push(z);
+
+        if has_uvs {
+            let uv_index = uv_idx.unwrap();
+            let (u, v) = self.vertex_uv_at_idx(uv_index);
+            expanded_uvs.push(u);
+            expanded_uvs.push(v);
+        }
+
+        // If the mesh has bone influences append bone data to the end of the bone vectors
+        // to account for this newly generated vertex.
+        if let Some(bone_influences_per_vertex) = bone_influences_per_vertex {
+            self.push_bone_data_for_generated_vertex(
+                pos_idx as usize,
+                bone_influences_per_vertex,
+                new_group_indices.unwrap(),
+                new_group_weights.unwrap(),
+            );
+        }
+    }
+
+    // TODO: Way too many parameters - just working on splitting things up into smaller functions..
+    fn push_bone_data_for_generated_vertex(
+        &self,
+        vert_idx: usize,
+        bone_influences_per_vertex: u8,
+        new_group_indices: &mut Vec<u8>,
+        new_group_weights: &mut Vec<f32>,
+    ) {
+        // Where in our vector of group indices / weights does this vertex start?
+        let group_data_start_idx = vert_idx * bone_influences_per_vertex as usize;
+
+        for i in 0..bone_influences_per_vertex {
+            let group_data_idx = group_data_start_idx + i as usize;
+            let weight = new_group_weights[group_data_idx];
+            new_group_weights.push(weight);
+
+            let index = new_group_indices[group_data_idx];
+            new_group_indices.push(index);
+        }
     }
 }
 
