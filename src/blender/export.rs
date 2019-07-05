@@ -35,6 +35,7 @@ pub fn export_blender_data(blender_files: &Vec<String>) -> Result<String, String
 
     for blender_file in blender_files {
         blender_process
+            .arg("-noaudio")
             .args(&["--python-expr", &open_blender_file(blender_file)])
             .args(&["--python-expr", &EXPORT_BLENDER_DATA]);
     }
