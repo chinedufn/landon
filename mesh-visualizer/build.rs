@@ -44,6 +44,7 @@ fn main() {
     let mut blender_process = Command::new("blender");
     let blender_process = blender_process
         .arg("--background")
+        .arg("-noaudio")
         .args(&["--python", install_mesh2json_path])
         // TODO: An API in our root crate for writing the script to a tmp file and giving you
         // a link to it
