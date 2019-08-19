@@ -102,6 +102,12 @@ impl PrincipledBSDF {
     pub fn metallic(&self) -> &MaterialInput<f32, (String, Channel)> {
         &self.metallic
     }
+
+    /// The normal map
+    #[inline]
+    pub fn normal_map(&self) -> Option<&String> {
+        self.normal_map.as_ref()
+    }
 }
 
 impl BlenderMesh {
