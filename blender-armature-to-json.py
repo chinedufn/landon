@@ -2,7 +2,8 @@
 
 bl_info = {
     "name": "Export Armature to JSON",
-    "category": "Import-Export"
+    "category": "Import-Export",
+    "blender": (2, 80, 0)
 }
 
 # TODO: breadcrumb - refactor to use json dumps
@@ -30,13 +31,13 @@ class ExportArmatureToJSON(bpy.types.Operator):
 
             # Get the armature that is currently active. We will be parsing it's actions
             # TODO: Error message if the active object is not the armature
-            activeArmature = bpy.context.scene.objects.active
+            activeArmature = bpy.context.view_layer.objects.active
             # If the active object isn't an armature, we use the first armature that we find
             if activeArmature.type != 'ARMATURE':
                 for obj in bpy.context.scene.objects:
                     if obj.type == 'ARMATURE':
                         activeArmature = obj
-                        bpy.context.scene.objects.active = activeArmature
+                        bpy.context.view_layer.objects.active = activeArmature
                         break
 
             # Get all of the actions
@@ -104,7 +105,7 @@ class ExportArmatureToJSON(bpy.types.Operator):
                 poseBone = activeArmature.pose.bones[boneName]
 
                 # We make sure to account for the world offset of the armature since matrix_local is in armature space
-                boneBindMatrix = activeArmature.matrix_world * poseBone.bone.matrix_local
+                boneBindMatrix = activeArmature.matrix_world @ poseBone.bone.matrix_local
                 boneInverseBind = boneBindMatrix.copy().inverted()
 
                 armatureJSON['inverse_bind_poses'].append({'Matrix': matrixToArray(boneInverseBind)})

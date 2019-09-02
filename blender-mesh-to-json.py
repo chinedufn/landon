@@ -8,7 +8,8 @@ from mathutils import Vector
 
 bl_info = {
     "name": "Export Mesh to JSON",
-    "category": "Import-Export"
+    "category": "Import-Export",
+    "blender": (2, 80, 0)
 }
 
 # Write our JSON to stdout by default or to a file if specified.
@@ -81,7 +82,7 @@ class MeshToJSON(bpy.types.Operator):
                 # the same normals. Test this by making a cube with to faces
                 # that have the same normal
                 mesh_json['vertex_normal_indices'].append(index)
-                if mesh.data.uv_textures:
+                if mesh.data.uv_layers:
                     mesh_json['vertex_uv_indices'].append(face.loop_indices[i])
 
             # TODO: Don't append normals if we've already encountered them
@@ -148,7 +149,7 @@ class MeshToJSON(bpy.types.Operator):
             # instead of relative to the model's origin.
             # Modified from - https://blender.stackexchange.com/a/8470
             corner = Vector(corner)
-            corner = mesh.matrix_world * corner
+            corner = mesh.matrix_world @ corner
 
             # Min Corner
             min_corner[0] = min(min_corner[0], corner.x)

@@ -5,6 +5,7 @@
 extern crate blender_mesh;
 
 use crate::filesystem::rel_workspace_string;
+use crate::set_active_object_by_name;
 use blender_mesh::parse_meshes_from_blender_stdout;
 use std::env::current_dir;
 use std::fs::File;
@@ -60,17 +61,4 @@ fn parse_file_with_multiple_meshes() {
     let parsed_meshes = parse_meshes_from_blender_stdout(&stdout).unwrap();
     let parsed_meshes = blender_mesh::flatten_exported_meshes(&parsed_meshes).unwrap();
     assert_eq!(parsed_meshes.len(), 3);
-}
-
-fn set_active_object_by_name(name: &str) -> String {
-    format!(
-        r#"
-import bpy
-bpy.context.scene.objects.active = None
-for obj in bpy.context.scene.objects:
-    if obj.name == '{}':
-        bpy.context.scene.objects.active = obj
-"#,
-        name
-    )
 }

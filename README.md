@@ -71,6 +71,7 @@ Also feel free to open issues with any questions / thoughts that you have!
 
 ## To Install
 
+We currently support `Blender 2.80`
 
 ```
 cargo install -f landon

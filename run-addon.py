@@ -15,8 +15,8 @@ addonFilePath = dir + '/blender-mesh-to-json.py'
 
 # Install and enable the addon temporarily (since we aren't saving our user preferences)
 # We just want to have access to the addon during this blender session
-bpy.ops.wm.addon_install(filepath=addonFilePath)
-bpy.ops.wm.addon_enable(module='blender-mesh-to-json')
+bpy.ops.preferences.addon_install(filepath=addonFilePath)
+bpy.ops.preferences.addon_enable(module='blender-mesh-to-json')
 
 # Run our addon
 bpy.ops.import_export.mesh2json()

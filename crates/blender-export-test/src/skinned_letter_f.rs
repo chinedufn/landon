@@ -4,6 +4,7 @@ extern crate serde;
 extern crate serde_json;
 
 use crate::filesystem::rel_workspace_string;
+use crate::set_active_object_by_name;
 use blender_armature::parse_armatures_from_blender_stdout;
 use blender_armature::BlenderArmature;
 use blender_mesh::parse_meshes_from_blender_stdout;
@@ -113,19 +114,6 @@ fn parse_skinned_letter_f_armature_data() {
     )
 }
 
-fn set_active_object_by_name(name: &str) -> String {
-    format!(
-        r#"
-import bpy
-bpy.context.scene.objects.active = None
-for obj in bpy.context.scene.objects:
-    if obj.name == '{}':
-        bpy.context.scene.objects.active = obj
-"#,
-        name
-    )
-}
-
 fn expected_mesh_data() -> String {
     r#"
     {
@@ -175,5 +163,3 @@ fn expected_armature_data() -> String {
     }
     "#.to_string()
 }
-
-// bpy.ops.wm.open_mainfile( filepath = "/path/to/file.blend" )

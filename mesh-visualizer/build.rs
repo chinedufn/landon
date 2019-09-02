@@ -140,10 +140,10 @@ fn export_blender_data() -> String {
     r#"
 import bpy
 
-bpy.context.scene.objects.active = None
+bpy.context.view_layer.objects.active = None
 
 for obj in bpy.context.scene.objects:
-    bpy.context.scene.objects.active = obj
+    bpy.context.view_layer.objects.active = obj
 
     if obj.type == 'MESH':
       bpy.ops.import_export.mesh2json()
