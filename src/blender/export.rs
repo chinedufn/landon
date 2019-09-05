@@ -1,9 +1,5 @@
 use std::process::Command;
 
-// TODO: Rename all of the joints that now have duplicated names before exporting
-// So that you don't end up with Bone.001 when you really expected Bone
-//
-// Or reallt the `iktofk` script should handle that
 static EXPORT_BLENDER_DATA: &'static str = r#"
 import bpy
 bpy.context.scene.objects.active = None
@@ -11,7 +7,7 @@ bpy.context.scene.objects.active = None
 # generate such as ik-to-fk converted rigs
 objects = list(bpy.context.scene.objects)
 for obj in objects:
-    bpy.context.scene.objects.active = obj
+    bpy.context.view_layer.objects.active = obj
     if obj.type == 'MESH':
       bpy.ops.import_export.mesh2json()
     if obj.type == 'ARMATURE':
@@ -29,6 +25,8 @@ for obj in objects:
 /// ```
 ///
 /// to parse the exported data into the data structures that you need.
+///
+/// TODO: Integration test this
 pub fn export_blender_data(blender_files: &Vec<String>) -> Result<String, String> {
     let mut blender_process = Command::new("blender");
     let blender_process = blender_process.arg("--background");
