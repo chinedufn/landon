@@ -1,6 +1,6 @@
 [package]
 name = "landon"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Chinedu Francis Nwafili <frankie.nwafili@gmail.com>"]
 publish = true
 description = "A collection of tools, data structures and methods for exporting Blender data (such as meshes and armatures) and preparing it for your rendering pipeline."

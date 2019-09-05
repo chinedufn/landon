@@ -2,7 +2,9 @@ use std::process::Command;
 
 static EXPORT_BLENDER_DATA: &'static str = r#"
 import bpy
-bpy.context.scene.objects.active = None
+
+bpy.context.view_layer.objects.active = None
+
 # Get the objects at the beginning so that we don't iterate over new ones that we
 # generate such as ik-to-fk converted rigs
 objects = list(bpy.context.scene.objects)
