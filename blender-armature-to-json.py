@@ -83,7 +83,7 @@ class ExportArmatureToJSON(bpy.types.Operator):
                     armatureJSON['actions'][actionInfo.name].append({
                         'bones': [],
                         'frame_time_secs': None
-                    });
+                    })
                     for bone in getBonePosesAtKeyframe(frame, activeArmature, allBoneNames):
                         armatureJSON['actions'][actionInfo.name][index]['bones'].append({'Matrix': matrixToArray(bone.matrix)})
                         armatureJSON['actions'][actionInfo.name][index]['frame_time_secs'] = timeOfKeyframe

@@ -57,8 +57,18 @@ class MeshToJSON(bpy.types.Operator):
             }
         }
 
+        # We maintain a list of all of the parent armature's bone names so that when exporting bone indices / weights
+        # we use the same order that our armature use.
+        # i.e. vertex group 12 that we export is the same as the 12th bone in the parent armature.
+        # Without this the 12th vertex group on the mesh might actually be referring the 8th bone in the armature.
+        # This would be a problem since our export format is currently based on the order of the bones in the armature.
+        allBoneNames = []
+
         if mesh.parent is not None and mesh.parent.type == 'ARMATURE':
-            mesh_json['armature_name'] = mesh.parent.name
+            parentArmature = mesh.parent
+            mesh_json['armature_name'] = parentArmature.name
+            for poseBone in parentArmature.pose.bones:
+                allBoneNames.append(poseBone.name)
 
         if mesh_json['armature_name'] is not None:
             mesh_json['bone_influences_per_vertex'] = {
@@ -92,9 +102,6 @@ class MeshToJSON(bpy.types.Operator):
 
             index += 1
 
-        # TODO: Breadcrumb - iterate over the vertices and add them to mesh_json
-        # TODO: Option for # of decimal places to round positions / normals / etc to.
-        # Potentially just one option or a separate option for each
         for vert in mesh.data.vertices:
             mesh_json['vertex_positions'].append(vert.co.x)
             mesh_json['vertex_positions'].append(vert.co.y)
@@ -104,9 +111,11 @@ class MeshToJSON(bpy.types.Operator):
             # number of groups (bones) per vertex probably doesn't matter...?
             num_groups = len(list(vert.groups))
             for group in vert.groups:
-                mesh_json['vertex_group_indices'].append(group.group)
+                boneName = mesh.vertex_groups[group.group].name
+                boneIndex = allBoneNames.index(boneName)
+
+                mesh_json['vertex_group_indices'].append(boneIndex)
                 mesh_json['vertex_group_weights'].append(group.weight)
-                # groupName = mesh.vertex_groups[group.group].name
 
             if mesh_json['armature_name'] is not None:
                 mesh_json['bone_influences_per_vertex']['NonUniform'].append(num_groups)
