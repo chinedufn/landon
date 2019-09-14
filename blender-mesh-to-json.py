@@ -35,7 +35,8 @@ class MeshToJSON(bpy.types.Operator):
     def execute(self, context):
         bpy.ops.object.mode_set(mode='OBJECT')
 
-        mesh = bpy.context.active_object
+        mesh = bpy.context.view_layer.objects.active
+
         mesh_json = {
             'vertex_positions': [],
             'num_vertices_in_each_face': [],
