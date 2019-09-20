@@ -7,7 +7,7 @@ use std::process::Command;
 ///
 /// This gives you access to `bpy.ops.import_export.mesh2json()` from Blender
 pub fn install_mesh_to_json() -> std::io::Result<()> {
-    // Write our addon to a tmp file. Our INSTALL_MESH_TO_JSON will look for this tmp file
+    // Write our addon to a tmp file. Our `install_mesh_to_json_script` will look for this tmp file
     // when installing the addon.
     let addon_file_path = temp_dir().join("blender-mesh-to-json.py");
     let mesh_to_json_addon = include_str!("../../blender-mesh-to-json.py");
@@ -48,7 +48,7 @@ bpy.ops.wm.save_userpref()
 ///
 /// This gives you access to `bpy.ops.import_export.armature2json()` from Blender
 pub fn install_armature_to_json() -> std::io::Result<()> {
-    // Write our addon to a tmp file. Our INSTALL_MESH_TO_JSON will look for this tmp file
+    // Write our addon to a tmp file. Our `install_armature_to_json_script` will look for this tmp file
     // when installing the addon.
     let addon_file_path = temp_dir().join("blender-armature-to-json.py");
     let armature_to_json = include_str!("../../blender-armature-to-json.py");
