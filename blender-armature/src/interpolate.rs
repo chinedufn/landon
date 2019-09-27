@@ -31,7 +31,7 @@
 use crate::BlenderArmature;
 use crate::Bone;
 use crate::Keyframe;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 /// Settings for how to interpolate your BlenderArmature's bone data. These can be used to do
 /// things such as:
@@ -140,7 +140,7 @@ impl BlenderArmature {
     ///
     /// - [ ] Return Result<HashMap<u8, Bone>, InterpolationError>
     /// - [ ] error if clock time is negative
-    pub fn interpolate_bones(&self, opts: &InterpolationSettings) -> HashMap<u8, Bone> {
+    pub fn interpolate_bones(&self, opts: &InterpolationSettings) -> BTreeMap<u8, Bone> {
         let mut interpolated_bones = self.interpolate_action(&opts, &opts.current_action);
 
         if let Some(ref previous_action) = opts.previous_action {
@@ -159,6 +159,8 @@ impl BlenderArmature {
                 .zip(previous_bones.iter())
                 .map(
                     |((cur_joint_idx, cur_action_bone), (prev_joint_idx, prev_action_bone))| {
+                        // TODO: We were using a hashmap where the iteration order isn't guaranteed and hence we would hit this condition.
+                        // Really just need to refactor all of landon now that we're much more experienced with Rust.
                         if prev_joint_idx != cur_joint_idx {
                             panic!("We do not currently support the current action having different joints than the previous action");
                         }
@@ -197,8 +199,8 @@ impl BlenderArmature {
         &self,
         opts: &InterpolationSettings,
         action: &ActionSettings,
-    ) -> HashMap<u8, Bone> {
-        let mut interpolated_bones = HashMap::new();
+    ) -> BTreeMap<u8, Bone> {
+        let mut interpolated_bones = BTreeMap::new();
 
         let keyframes = self.actions.get(action.action_name).unwrap();
 
