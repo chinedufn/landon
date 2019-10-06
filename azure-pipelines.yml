@@ -1,0 +1,16 @@
+trigger:
+  branches:
+    include:
+      - '*'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+container: chinedufn/blender-rustlang:latest
+
+steps:
+
+- script: |
+    rustup default nightly # Currently needed for the mesh-visualizer - need to look into getting it working on stable
+    cargo test --all
+  displayName: 'Run all tests'
