@@ -61,8 +61,7 @@ pub enum BlenderError {
 }
 
 /// All of the data about a Blender mesh
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(test, derive(Default))]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
 #[serde(deny_unknown_fields)]
 pub struct BlenderMesh {
     /// All of the mesh's vertices. Three items in the vector make one vertex.

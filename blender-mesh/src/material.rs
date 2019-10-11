@@ -10,8 +10,7 @@ use std::ops::Deref;
 /// node editor for the material
 ///
 /// https://docs.blender.org/manual/en/latest/render/cycles/nodes/types/shaders/principled.html
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(test, derive(Default))]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
 pub struct PrincipledBSDF {
     /// [r, g, b]
     base_color: MaterialInput<[f32; 3], String>,
