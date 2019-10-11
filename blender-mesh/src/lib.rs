@@ -26,7 +26,7 @@ extern crate log;
 pub use self::combine_indices::CreateSingleIndexConfig;
 pub use self::export::*;
 use crate::bone::BoneInfluencesPerVertex;
-use crate::bounding_box::BoundingBox;
+pub use crate::bounding_box::BoundingBox;
 use crate::material::PrincipledBSDF;
 use crate::vertex_data::{VertexAttribute, VertexData};
 pub use material::{Channel, MaterialInput};
