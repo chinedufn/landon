@@ -22,7 +22,7 @@ static SELECT_MESH_3_SCRIPT: &'static str = "/tmp/select-mesh-3.py";
 #[test]
 fn parse_file_with_multiple_meshes() {
     let multiple_meshes_blend =
-        &rel_workspace_string(&"crates/blender-export-test/src/multiple_meshes.blend");
+        &rel_workspace_string(&"crates/blender-export-test/src/tests/multiple_meshes.blend");
     let run_addon = &rel_workspace_string(&"./run-addon.py");
 
     // TODO: Move the CLI spawning and parsing into `lib.rs`. In our test just verify

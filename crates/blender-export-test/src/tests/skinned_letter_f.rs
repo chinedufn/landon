@@ -23,7 +23,7 @@ static SELECT_LETTERFARMATURE_SCRIPT: &'static str = "/tmp/select-letter-f-armat
 #[test]
 fn parse_skinned_letter_f_mesh_data() {
     let skinned_letter_f_blend =
-        &rel_workspace_string(&"crates/blender-export-test/src/skinned_letter_f.blend");
+        &rel_workspace_string(&"crates/blender-export-test/src/tests/skinned_letter_f.blend");
     let run_addon = &rel_workspace_string(&"./run-addon.py");
 
     // TODO: Move the CLI spawning and parsing into `lib.rs`. In our test just verify
@@ -67,7 +67,7 @@ fn parse_skinned_letter_f_mesh_data() {
 #[test]
 fn parse_skinned_letter_f_armature_data() {
     let skinned_letter_f_blend =
-        &rel_workspace_string(&"crates/blender-export-test/src/skinned_letter_f.blend");
+        &rel_workspace_string(&"crates/blender-export-test/src/tests/skinned_letter_f.blend");
     let _install_addon = &rel_workspace_string(&"./blender-armature/install-armature-to-json.py");
     let run_addon = &rel_workspace_string(&"./blender-armature/run-armature-to-json.py");
 

@@ -11,16 +11,13 @@ use std::process::Command;
 
 #[test]
 fn parse_data() {
-    let basic_cube_blend =
-        &rel_workspace_string(&"crates/blender-export-test/src/basic_cube.blend");
-    let _install_addon = &rel_workspace_string(&"install-addon.py");
+    let principled_material_single_channel_blend = &rel_workspace_string(
+        &"crates/blender-export-test/src/tests/principled_material_normal_map.blend",
+    );
     let run_addon = &rel_workspace_string(&"run-addon.py");
 
-    // TODO: Move the CLI spawning and parsing into `lib.rs`? In our test just verify
-    // the returned mesh data?
-
     let blender_output = Command::new("blender")
-        .arg(basic_cube_blend)
+        .arg(principled_material_single_channel_blend)
         .arg("--background")
         .args(&["--python", run_addon])
         .arg("-noaudio")
@@ -42,6 +39,8 @@ fn parse_data() {
     let expected_mesh = &expected_mesh_data();
     let expected_mesh: BlenderMesh = serde_json::from_str(expected_mesh).unwrap();
 
+    assert_eq!(mesh.materials(), expected_mesh.materials());
+
     assert_eq!(mesh, &expected_mesh)
 }
 
@@ -54,10 +53,19 @@ fn expected_mesh_data() -> String {
             "vertex_normal_indices": [ 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5 ],
             "armature_name": null,
             "bounding_box": {
-                "min_corner": [-1.7881393432617188e-07, -2.980232238769531e-07, 0.0],
-                "max_corner": [1.000000238418579, 1.000000238418579, 1.0]
+                "min_corner": [-1.0000004, -1.0000006, -1.0],
+                "max_corner": [1.0000005, 1.0000004, 1.0]
             },
-            "materials": {}
+            "materials": {
+                "Material": {
+                    "base_color": {
+                      "Uniform": [0.800000011920929, 0.800000011920929, 0.800000011920929]
+                    },
+                    "metallic": {"Uniform": 0.0},
+                    "roughness": {"Uniform": 0.5},
+                    "normal_map": "1x1-green-pixel.png"
+                }
+            }
         }
     "#.to_string()
 }

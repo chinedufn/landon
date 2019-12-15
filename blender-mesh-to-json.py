@@ -55,7 +55,8 @@ class MeshToJSON(bpy.types.Operator):
                 'max_corner': []
             },
             'materials': {
-            }
+            },
+            'custom_properties': None
         }
 
         # We maintain a list of all of the parent armature's bone names so that when exporting bone indices / weights
@@ -277,6 +278,26 @@ class MeshToJSON(bpy.types.Operator):
                         'metallic': metallic,
                         'normal_map': normalMap
                     }
+
+        for property in mesh.keys():
+            # Not sure what this is but it gets automatically added into the properties. So we ignore it
+            if property == '_RNA_UI':
+                continue
+
+
+            # Some properties such as 'cycles_visibility' are automatically inserted by Blender, but can't be
+            # serialized.
+            # Here we test if a property can be serialized, and if it can't we just skip it
+            try:
+                value = mesh.get(property)
+                json.dumps(value)
+
+                if mesh_json['custom_properties'] == None:
+                    mesh_json['custom_properties'] = {}
+
+                mesh_json['custom_properties'][property] = value
+            except:
+                pass
 
         # START_MESH_JSON $BLENDER_FILEPATH $MESH_NAME
         # ... mesh json ...

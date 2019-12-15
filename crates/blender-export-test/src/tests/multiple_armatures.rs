@@ -22,7 +22,7 @@ static SELECT_ARMATURE_3_SCRIPT: &'static str = "/tmp/select-armature-3.py";
 #[test]
 fn parse_file_with_multiple_armatures() {
     let multiple_armatures_blend =
-        &rel_workspace_string(&"crates/blender-export-test/src/multiple_armatures.blend");
+        &rel_workspace_string(&"crates/blender-export-test/src/tests/multiple_armatures.blend");
     let run_addon = &rel_workspace_string(&"./blender-armature/run-armature-to-json.py");
 
     // TODO: Move the CLI spawning and parsing into `lib.rs`. In our test just verify

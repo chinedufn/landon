@@ -11,13 +11,13 @@ use std::process::Command;
 
 #[test]
 fn parse_data() {
-    let principled_material_single_channel_blend = &rel_workspace_string(
-        &"crates/blender-export-test/src/principled_material_single_channel_input.blend",
+    let principled_material_texture_inputs_blend = &rel_workspace_string(
+        &"crates/blender-export-test/src/tests/principled_material_texture_inputs.blend",
     );
     let run_addon = &rel_workspace_string(&"run-addon.py");
 
     let blender_output = Command::new("blender")
-        .arg(principled_material_single_channel_blend)
+        .arg(principled_material_texture_inputs_blend)
         .arg("--background")
         .args(&["--python", run_addon])
         .arg("-noaudio")
@@ -34,7 +34,7 @@ fn parse_data() {
 
     let (_filename, mesh) = parsed_meshes.iter().next().unwrap();
 
-    let mesh = mesh.get("Cube").unwrap();
+    let mesh = mesh.get("CubeWithTextureInputs").unwrap();
 
     let expected_mesh = &expected_mesh_data();
     let expected_mesh: BlenderMesh = serde_json::from_str(expected_mesh).unwrap();
@@ -51,18 +51,18 @@ fn expected_mesh_data() -> String {
             "num_vertices_in_each_face": [ 4, 4, 4, 4, 4, 4 ],
             "vertex_normals": [ 0.0, 0.0, -1.0, 0.0, -0.0, 1.0, 1.0, -0.00000028312206, 0.000000044703413, -0.00000028312206, -1.0, -0.00000010430819, -1.0, 0.00000022351745, -0.00000013411044, 0.00000023841858, 1.0, 0.00000020861626 ],
             "vertex_normal_indices": [ 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5 ],
+            "vertex_uvs": [0.000100158795, 0.52753544, 0.00009998002, 0.27758548, 0.25005, 0.27758533, 0.25005004, 0.5275353, 0.74995005, 0.52753514, 0.5, 0.5275352, 0.49999994, 0.27758527, 0.7499499, 0.27758518, 0.99990004, 0.5275351, 0.74995005, 0.52753514, 0.7499499, 0.27758518, 0.9998998, 0.27758515, 0.25004995, 0.52773535, 0.2500499, 0.7776853, 0.00009998002, 0.7776853, 0.00009998002, 0.52773535, 0.25005, 0.27758533, 0.49999994, 0.27758527, 0.5, 0.5275352, 0.25005004, 0.5275353, 0.5001999, 0.52773535, 0.5001999, 0.7776853, 0.25024998, 0.7776853, 0.2502499, 0.5277354],
+            "vertex_uv_indices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
             "armature_name": null,
             "bounding_box": {
                 "min_corner": [-1.0000004, -1.0000006, -1.0],
                 "max_corner": [1.0000005, 1.0000004, 1.0]
             },
             "materials": {
-                "Material": {
-                    "base_color": {
-                      "Uniform": [0.800000011920929, 0.800000011920929, 0.800000011920929]
-                    },
-                    "metallic": {"ImageTexture": ["1x1-green-pixel.png", "G"]},
-                    "roughness": {"ImageTexture": ["1x1-green-pixel.png", "R"]}
+                "Metal": {
+                    "base_color": {"ImageTexture": "metal-material.jpg"},
+                    "metallic": {"ImageTexture": ["metal-material.jpg", "G"]},
+                    "roughness": {"ImageTexture": ["metal-material.jpg", "R"]}
                 }
             }
         }

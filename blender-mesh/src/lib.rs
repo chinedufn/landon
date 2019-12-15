@@ -104,10 +104,14 @@ pub struct BlenderMesh {
     ///
     /// [`BlenderMesh.calculate_face_tangents`]: struct.BlenderMesh.html#method.calculate_face_tangents
     face_tangents: Option<Vec<f32>>,
-    // FIXME: Temporary move all of the vertex data above into VertexData
+    // FIXME: Default is temporary until we move all of the vertex data above into VertexData
     // Then we no longer need default .. it'll be required
     #[serde(default)]
     vertex_data: VertexData,
+    /// Custom properties for this mesh
+    ///
+    /// i.e. the properties from `bpy.context.view_layer.objects.active.keys()`
+    custom_properties: Option<HashMap<String, f32>>,
 }
 
 impl BlenderMesh {

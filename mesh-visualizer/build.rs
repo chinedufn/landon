@@ -111,11 +111,11 @@ fn main() {
 
 fn copy_texture_to_dist() {
     println!(
-        "cargo:rerun-if-changed=../crates/blender-export-test/src/textured_cube-uv-layout.png"
+        "cargo:rerun-if-changed=../crates/blender-export-test/src/tests/textured_cube-uv-layout.png"
     );
 
     fs::copy(
-        "../crates/blender-export-test/src/textured_cube-uv-layout.png",
+        "../crates/blender-export-test/src/tests/textured_cube-uv-layout.png",
         "./dist/textured_cube-uv-layout.png",
     )
     .unwrap();

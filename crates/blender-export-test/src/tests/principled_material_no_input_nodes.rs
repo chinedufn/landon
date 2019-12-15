@@ -11,13 +11,13 @@ use std::process::Command;
 
 #[test]
 fn parse_data() {
-    let principled_material_single_channel_blend = &rel_workspace_string(
-        &"crates/blender-export-test/src/principled_material_normal_map.blend",
+    let principled_material_no_input_nodes_blend = &rel_workspace_string(
+        &"crates/blender-export-test/src/tests/principled_material_no_input_nodes.blend",
     );
     let run_addon = &rel_workspace_string(&"run-addon.py");
 
     let blender_output = Command::new("blender")
-        .arg(principled_material_single_channel_blend)
+        .arg(principled_material_no_input_nodes_blend)
         .arg("--background")
         .args(&["--python", run_addon])
         .arg("-noaudio")
@@ -34,7 +34,7 @@ fn parse_data() {
 
     let (_filename, mesh) = parsed_meshes.iter().next().unwrap();
 
-    let mesh = mesh.get("Cube").unwrap();
+    let mesh = mesh.get("GoldCube").unwrap();
 
     let expected_mesh = &expected_mesh_data();
     let expected_mesh: BlenderMesh = serde_json::from_str(expected_mesh).unwrap();
@@ -57,13 +57,12 @@ fn expected_mesh_data() -> String {
                 "max_corner": [1.0000005, 1.0000004, 1.0]
             },
             "materials": {
-                "Material": {
+                "Gold": {
                     "base_color": {
-                      "Uniform": [0.800000011920929, 0.800000011920929, 0.800000011920929]
+                      "Uniform": [0.800000011920929, 0.5519999861717224, 0.017000000923871994]
                     },
-                    "metallic": {"Uniform": 0.0},
-                    "roughness": {"Uniform": 0.5},
-                    "normal_map": "1x1-green-pixel.png"
+                    "metallic": {"Uniform": 1.0},
+                    "roughness": {"Uniform": 0.75}
                 }
             }
         }

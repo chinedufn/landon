@@ -11,13 +11,16 @@ use std::process::Command;
 
 #[test]
 fn parse_data() {
-    let principled_material_uniform_input_nodes_blend = &rel_workspace_string(
-        &"crates/blender-export-test/src/principled_material_uniform_input_nodes.blend",
-    );
+    let basic_cube_blend =
+        &rel_workspace_string(&"crates/blender-export-test/src/tests/basic_cube.blend");
+    let _install_addon = &rel_workspace_string(&"install-addon.py");
     let run_addon = &rel_workspace_string(&"run-addon.py");
 
+    // TODO: Move the CLI spawning and parsing into `lib.rs`? In our test just verify
+    // the returned mesh data?
+
     let blender_output = Command::new("blender")
-        .arg(principled_material_uniform_input_nodes_blend)
+        .arg(basic_cube_blend)
         .arg("--background")
         .args(&["--python", run_addon])
         .arg("-noaudio")
@@ -34,12 +37,10 @@ fn parse_data() {
 
     let (_filename, mesh) = parsed_meshes.iter().next().unwrap();
 
-    let mesh = mesh.get("CubeWithInputs").unwrap();
+    let mesh = mesh.get("Cube").unwrap();
 
     let expected_mesh = &expected_mesh_data();
     let expected_mesh: BlenderMesh = serde_json::from_str(expected_mesh).unwrap();
-
-    assert_eq!(mesh.materials(), expected_mesh.materials());
 
     assert_eq!(mesh, &expected_mesh)
 }
@@ -53,16 +54,10 @@ fn expected_mesh_data() -> String {
             "vertex_normal_indices": [ 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5 ],
             "armature_name": null,
             "bounding_box": {
-                "min_corner": [-1.0000004, -1.0000006, -1.0],
-                "max_corner": [1.0000005, 1.0000004, 1.0]
+                "min_corner": [-1.7881393432617188e-07, -2.980232238769531e-07, 0.0],
+                "max_corner": [1.000000238418579, 1.000000238418579, 1.0]
             },
-            "materials": {
-                "Gold": {
-                    "base_color": {"Uniform": [0.4, 0.5, 0.6]},
-                    "metallic": {"Uniform": 0.2},
-                    "roughness": {"Uniform": 0.3}
-                }
-            }
+            "materials": {}
         }
     "#.to_string()
 }
