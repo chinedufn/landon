@@ -47,6 +47,37 @@ pub fn parse_meshes_from_blender_stdout(
 /// meshes across all of the files into one HashMap.
 ///
 /// This will error if there are two meshes with the same name across two or more files.
+pub fn flatten_exported_meshes_owned(
+    meshes_by_filename: MeshesByFilename,
+) -> Result<HashMap<String, BlenderMesh>, FlattenMeshError> {
+    let mut flattened_meshes = HashMap::new();
+
+    let mut duplicate_meshes: HashMap<String, Vec<String>> = HashMap::new();
+
+    for (source_filename, meshes) in meshes_by_filename.into_iter() {
+        for (mesh_name, mesh) in meshes.into_iter() {
+            match duplicate_meshes.entry(mesh_name.to_string()) {
+                Entry::Occupied(mut duplicates) => {
+                    duplicates.get_mut().push(source_filename.to_string());
+                }
+                Entry::Vacant(filenames) => {
+                    filenames.insert(vec![source_filename.to_string()]);
+                }
+            };
+
+            flattened_meshes.insert(mesh_name, mesh);
+        }
+    }
+
+    validate_no_duplicates(duplicate_meshes)?;
+
+    Ok(flattened_meshes)
+}
+
+/// Convert MesheshByFilename into a HashMap<MeshName, &BlenderMesh> that flattens all of the
+/// meshes across all of the files into one HashMap.
+///
+/// This will error if there are two meshes with the same name across two or more files.
 pub fn flatten_exported_meshes(
     meshes_by_filename: &MeshesByFilename,
 ) -> Result<HashMap<&str, &BlenderMesh>, FlattenMeshError> {
@@ -69,6 +100,14 @@ pub fn flatten_exported_meshes(
         }
     }
 
+    validate_no_duplicates(duplicate_meshes)?;
+
+    Ok(flattened_meshes)
+}
+
+fn validate_no_duplicates(
+    duplicate_meshes: HashMap<String, Vec<String>>,
+) -> Result<(), FlattenMeshError> {
     let duplicate_meshes: HashMap<String, Vec<String>> = duplicate_meshes
         .into_iter()
         .filter(|(_mesh_name, filenames)| filenames.len() > 1)
@@ -80,7 +119,7 @@ pub fn flatten_exported_meshes(
         });
     }
 
-    Ok(flattened_meshes)
+    Ok(())
 }
 
 /// An error when trying to flatten your exported data across multiple files into one HashMap of
