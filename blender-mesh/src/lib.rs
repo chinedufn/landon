@@ -37,6 +37,7 @@ use std::collections::HashMap;
 mod bone;
 mod bounding_box;
 mod combine_indices;
+mod custom_properties;
 mod export;
 mod individual_vertex;
 mod material;
