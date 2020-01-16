@@ -45,22 +45,6 @@ pub enum BlenderError {
     Stderr(String),
 }
 
-/// A bone in an armature. Can either be a dual quaternion or a matrix. When you export bones
-/// from Blender they come as matrices - BlenderArmature lets you convert them into dual
-/// quaternions which are usually more favorable for when implementing skeletal animation.
-///
-/// TODO: Maybe? Use nalgebra::Matrix4 instead of our arrays. We'd want a custom serializer /
-/// deserializer so that we don't need to litter our JSON with `Matrix4` object declarations
-/// when we output it from Blender.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(test, derive(Clone))]
-pub enum Bone {
-    // FIXME: Revisit these data types. Either arrays or nalgebra types.. i.e.
-    // [Quaternion, Quaternion]
-    Matrix([f32; 16]),
-    DualQuat([f32; 8]),
-}
-
 /// All of the data about a Blender armature that we've exported from Blender.
 /// A BlenderArmature should have all of the data that you need to implement skeletal
 /// animation.
@@ -70,8 +54,8 @@ pub enum Bone {
 /// (I plan to support this specific example in the future)
 ///
 /// TODO: BlenderArmature.y_up() fixes the actions to be y up instead of z up
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(test, derive(Default, Clone))]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
+#[cfg_attr(test, derive(Clone))]
 pub struct BlenderArmature {
     pub joint_index: HashMap<String, u8>,
     pub inverse_bind_poses: Vec<Bone>,
@@ -79,8 +63,17 @@ pub struct BlenderArmature {
     // for your action names ... ?
     // TODO: Inner HashMap should have a float key not a string since it is a time in seconds
     // but you can't have floats as keys so need a workaround.
-    // TODO: &str for action name instead of String?
     pub actions: HashMap<String, Vec<Keyframe>>,
+}
+
+/// A bone in an armature. Can either be a dual quaternion or a matrix. When you export bones
+/// from Blender they come as matrices - BlenderArmature lets you convert them into dual
+/// quaternions which are usually more favorable for when implementing skeletal animation.
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(test, derive(Clone))]
+pub enum Bone {
+    Matrix([f32; 16]),
+    DualQuat([f32; 8]),
 }
 
 /// The pose bones at an individual keyframe time
