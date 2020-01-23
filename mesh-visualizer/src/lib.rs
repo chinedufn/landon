@@ -63,7 +63,7 @@ impl App {
         }
         .render();
 
-        let mut dom_updater = DomUpdater::new_append_to_mount(view, &body);
+        let dom_updater = DomUpdater::new_append_to_mount(view, &body);
 
         let canvas = document
             .get_element_by_id("mesh-visualizer")

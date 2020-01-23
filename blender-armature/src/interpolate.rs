@@ -31,7 +31,7 @@
 use crate::BlenderArmature;
 use crate::Bone;
 use crate::Keyframe;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap};
 
 /// Settings for how to interpolate your BlenderArmature's bone data. These can be used to do
 /// things such as:

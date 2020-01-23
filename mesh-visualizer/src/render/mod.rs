@@ -4,13 +4,13 @@ use crate::shader::ShaderKind;
 use crate::shader::ShaderKind::NonSkinnedNonTextured;
 use crate::shader::ShaderSystem;
 use crate::state_wrapper::State;
-use blender_armature::BlenderArmature;
+
 use blender_mesh::{BlenderMesh, MaterialInput};
 use js_sys::WebAssembly;
-use nalgebra::Perspective3;
-use nalgebra::{Isometry3, Point3, Vector3};
+
+use nalgebra::{Isometry3, Vector3};
 use std::cell::RefCell;
-use std::f32::consts::PI;
+
 use std::rc::Rc;
 use wasm_bindgen::JsCast;
 use web_sys::WebGlRenderingContext as GL;
@@ -308,7 +308,7 @@ impl GpuBufferer {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
 
     #[test]
     fn fo() {}

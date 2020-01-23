@@ -18,7 +18,7 @@
 
 #[macro_use]
 extern crate failure;
-use serde;
+
 #[macro_use]
 extern crate serde_derive;
 

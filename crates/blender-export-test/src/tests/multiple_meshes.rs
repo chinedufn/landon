@@ -7,10 +7,10 @@ extern crate blender_mesh;
 use crate::filesystem::rel_workspace_string;
 use crate::set_active_object_by_name;
 use blender_mesh::parse_meshes_from_blender_stdout;
-use std::env::current_dir;
+
 use std::fs::File;
 use std::io::Write;
-use std::path::Path;
+
 use std::process::Command;
 
 // --python-expr wasn't working in travis-ci on linux so writing the scripts to disk

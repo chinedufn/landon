@@ -1,6 +1,6 @@
 use crate::BlenderMesh;
 use std::collections::HashMap;
-use std::ops::Deref;
+
 
 /// Material data for a mesh
 ///

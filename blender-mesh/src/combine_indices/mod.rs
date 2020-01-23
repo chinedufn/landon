@@ -75,7 +75,7 @@ impl BlenderMesh {
         expanded_tangents.resize((largest_vert_id + 1) * 3, EASILY_RECOGNIZABLE_NUMBER);
         let mut expanded_tangents = VertexAttribute::new(expanded_tangents, AttributeSize::Three);
 
-        let total_indices: usize = self
+        let _total_indices: usize = self
             .num_vertices_in_each_face
             .iter()
             .map(|x| *x as usize)
@@ -526,7 +526,7 @@ mod tests {
     /// that the rendered models looked visually correct (meaning that our test values are also correct).
     #[test]
     fn calculate_per_vertex_tangents_encountered_duplicate_data() {
-        let mut mesh_to_combine = BlenderMesh {
+        let mesh_to_combine = BlenderMesh {
             vertex_positions: concat_vecs!(
                 v(0),
                 vec![1.0, 0.0, 0.0],
