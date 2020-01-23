@@ -41,7 +41,7 @@ impl Assets {
     }
 
     pub fn load_meshes(&mut self, state_wrap: Rc<RefCell<StateWrapper>>) {
-        let request_url = "/dist/meshes.bytes";
+        let _request_url = "/dist/meshes.bytes";
 
         let meshes_clone = Rc::clone(&self.meshes);
 
@@ -69,7 +69,7 @@ impl Assets {
                 .msg(Msg::SetCurrentMesh(current_model));
         };
 
-        let closure = Closure::wrap(Box::new(deserialize_meshes) as Box<FnMut(_)>);
+        let closure = Closure::wrap(Box::new(deserialize_meshes) as Box<dyn FnMut(_)>);
 
         let callback = closure.as_ref().unchecked_ref();
         WasmHelpers::fetch_u8_array("/dist/meshes.bytes", callback);
@@ -78,7 +78,7 @@ impl Assets {
     }
 
     // TODO: Temporarily commented out while I refactor
-    pub fn load_armature(&mut self, armature_name: &str) {
+    pub fn load_armature(&mut self, _armature_name: &str) {
         //        let armatures_clone = Rc::clone(&self.armatures);
         //
         //        let deserialize_armatures = move |armatures_json: &[u8]| {

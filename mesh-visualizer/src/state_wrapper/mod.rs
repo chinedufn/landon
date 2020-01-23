@@ -1,6 +1,6 @@
 use crate::assets::Assets;
 pub use crate::state_wrapper::msg::Msg;
-use crate::state_wrapper::msg::Msg::SetRoughness;
+
 pub use crate::state_wrapper::state::State;
 use blender_mesh::MaterialInput;
 use std::cell::RefCell;

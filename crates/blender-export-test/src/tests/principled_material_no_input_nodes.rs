@@ -5,8 +5,8 @@ extern crate serde_json;
 use crate::filesystem::rel_workspace_string;
 use blender_mesh::parse_meshes_from_blender_stdout;
 use blender_mesh::BlenderMesh;
-use std::env::current_dir;
-use std::path::Path;
+
+
 use std::process::Command;
 
 #[test]

@@ -1,9 +1,9 @@
-use crate::state_wrapper::{Msg, State, StateWrapper};
+use crate::state_wrapper::{StateWrapper};
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::str::FromStr;
+
 use virtual_dom_rs::prelude::*;
-use wasm_bindgen::JsCast;
+
 
 pub struct ControlsView<'a> {
     pub wrapper: &'a Rc<RefCell<StateWrapper>>,
