@@ -1,23 +1,27 @@
 # Introduction
 
-`landon` is a collection of heavily unit and integration tested tooling, data structures and methods for exporting data (such as meshes and armatures) from 3d modeling software and preparing it for your rendering pipeline.
+`landon` is a collection of heavily unit and integration tested tooling, data structures and methods for
+exporting data (such as meshes and armatures) from blender preparing it for your rendering pipeline.
 
-You'll typically spawn a Blender process, run a `landon` Blender python script (optionally supplemented with your own script(s)) that prints the data that you need to `stdout`
-and then parse this data into one of `landon`'s types such as `BlenderMesh` or `BlenderArmature`.
+A typical `landon` workflow involves running the mesh/armature data export scripts
+(optionally supplemented with your own Python scripts) from Blender via the CLI or Rust API.
 
-While `landon`'s exporters are focuses on `Blender` at this time, if you'd like to help exporting data from other software feel free to open an issue.
+All export scripts write json `stdout`.
 
-```
-// ...
+`landon` provides APIs to parse this data from stdout into Rust structs - but you can also read the JSON
+output yourself if you don't use Rust.
+
+```rust
+// Parsing exported landon data via the Rust API.
+// Rust is not required - you can read the exported JSON data with any programming language.
 let meshes = blender_mesh::parse_meshes_from_blender_stdout(&blender_stdout).unwrap();
 let armatures = blender_armature::parse_armatures_from_blender_stdout(&blender_stdout).unwrap();
-// ...
 ```
 
 ## Goals
 
-- Make it as easy as possible to take something from Blender and render it in your application without compromising on flexibility.
-  - We favor unopinionated APIs supplemented guides on best practices so that you have the flexibility to do what you need to do if our best practices don't fit your use case.
+- Make it as easy as possible to take something from Blender and render it in your application without straying from the raw Blender data
+  - We favor exporting the data from Blender as is and then providing APIs to transform it in the different ways that you might like.
 
 ## Example Use Cases
 
