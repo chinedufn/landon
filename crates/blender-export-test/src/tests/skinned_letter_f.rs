@@ -159,7 +159,8 @@ fn expected_armature_data() -> String {
         ],
         "joint_index": {
             "Lower.Body": 0,"Upper.Body": 1,"Upper.Arm": 2,"Lower.Arm": 3
-        }
+        },
+        "bone_groups": {}
     }
     "#.to_string()
 }

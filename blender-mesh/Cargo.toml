@@ -19,4 +19,4 @@ nalgebra = {version = "0.16", features = ["serde-serialize"]}
 log = "0.4.6"
 
 [dev-dependencies]
-blender-armature = { version = "0.1.9", path = "../blender-armature" }
+blender-armature = { version = "0.2.0", path = "../blender-armature" }

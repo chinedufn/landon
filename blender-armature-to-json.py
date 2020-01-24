@@ -26,7 +26,8 @@ class ExportArmatureToJSON(bpy.types.Operator):
             armatureJSON = {
                 'actions': {},
                 'inverse_bind_poses': [],
-                'joint_index': {}
+                'joint_index': {},
+                'bone_groups': {}
             }
 
             # Get the armature that is currently active. We will be parsing it's actions
@@ -112,8 +113,31 @@ class ExportArmatureToJSON(bpy.types.Operator):
 
             # Now we create the JSON for the joint name indices. The bind poses and keyframe poses are
             # arrays of index 0...numBones - 1. To look up a bone in this array you use its joint name index
-            for index, boneName in enumerate(allBoneNames):
-                armatureJSON['joint_index'][boneName] = index
+            for boneIndex, boneName in enumerate(allBoneNames):
+                armatureJSON['joint_index'][boneName] = boneIndex
+
+            # Exporting bone groups
+            #
+            # 1. Deselect all bones in the armature
+            # 2. Iterate through each bone group and select the bones in the group
+            # 3. Add the selected bones to that bone group
+            bone_groups_names = activeArmature.pose.bone_groups.keys()
+
+            for poseBone in activeArmature.pose.bones:
+                poseBone.bone.select = False
+
+            for bone_group_index, bone_group_name in enumerate(bone_groups_names):
+                armatureJSON['bone_groups'][bone_group_name] = []
+
+                activeArmature.pose.bone_groups.active_index = bone_group_index
+
+                bpy.ops.pose.group_select()
+
+                for poseBone in bpy.context.selected_pose_bones:
+                    bone_index = armatureJSON['joint_index'][poseBone.bone.name]
+                    armatureJSON['bone_groups'][bone_group_name].append(bone_index)
+
+                bpy.ops.pose.group_deselect()
 
             # START_ARMATURE_JSON $BLENDER_FILEPATH $ARMATURE_NAME
             # ... mesh json ...

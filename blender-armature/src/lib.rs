@@ -64,6 +64,61 @@ pub struct BlenderArmature {
     // TODO: Inner HashMap should have a float key not a string since it is a time in seconds
     // but you can't have floats as keys so need a workaround.
     pub actions: HashMap<String, Vec<Keyframe>>,
+    bone_groups: HashMap<String, Vec<u8>>,
+}
+
+impl BlenderArmature {
+    /// Blender [bone groups]
+    ///
+    /// Maps bone group name to a vector of the bones indices that are in that bone group.
+    ///
+    /// ```rust
+    /// # use blender_armature::{BlenderArmature, InterpolationSettings, ActionSettings};
+    ///
+    /// let armature = create_blender_armature();
+    ///
+    /// let joint_indices = armature.bone_groups().get("My bone group").unwrap();
+    ///
+    /// let interpolate_opts = InterpolationSettings {
+    ///            current_time: 1.0,
+    ///            // FIXME: Base joint_indices on a property of `SkinnedMesh`
+    ///            joint_indices,
+    ///            blend_fn: None,
+    ///            current_action: get_action(),
+    ///            previous_action: None,
+    ///
+    /// };
+    ///
+    /// let _bones = armature.interpolate_bones(&interpolate_opts);
+    ///
+    /// # fn create_blender_armature() -> BlenderArmature {
+    /// #   let mut  b = BlenderArmature::default();
+    /// #   b.actions.insert("SomeAction".to_string(), vec![]);
+    /// #   b.bone_groups_mut().insert("My bone group".to_string(), vec![]);
+    /// #   b
+    /// # }
+    ///
+    /// # fn get_action() -> ActionSettings<'static> {
+    /// #   ActionSettings {
+    /// #       action_name: "SomeAction",
+    /// #       start_time: 0.0,
+    /// #       should_loop: false
+    /// #   }
+    /// # }
+    /// ```
+    ///
+    /// [bone groups]: https://docs.blender.org/manual/en/latest/animation/armatures/properties/bone_groups.html
+    pub fn bone_groups(&self) -> &HashMap<String, Vec<u8>> {
+        &self.bone_groups
+    }
+
+    /// See [bone_groups] docs
+    ///
+    /// [bone_groups]: struct.BlenderArmature.method#bone_groups
+    #[doc(hidden)]
+    pub fn bone_groups_mut(&mut self) -> &mut HashMap<String, Vec<u8>> {
+        &mut self.bone_groups
+    }
 }
 
 /// A bone in an armature. Can either be a dual quaternion or a matrix. When you export bones
