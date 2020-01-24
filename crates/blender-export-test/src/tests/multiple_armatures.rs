@@ -17,7 +17,6 @@ use std::process::Command;
 // and using using --python instead
 static SELECT_ARMATURE_1_SCRIPT: &'static str = "/tmp/select-armature-1.py";
 static SELECT_ARMATURE_2_SCRIPT: &'static str = "/tmp/select-armature-2.py";
-static SELECT_ARMATURE_3_SCRIPT: &'static str = "/tmp/select-armature-3.py";
 
 #[test]
 fn parse_file_with_multiple_armatures() {

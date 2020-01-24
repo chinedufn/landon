@@ -31,7 +31,7 @@
 use crate::BlenderArmature;
 use crate::Bone;
 use crate::Keyframe;
-use std::collections::{BTreeMap};
+use std::collections::BTreeMap;
 
 /// Settings for how to interpolate your BlenderArmature's bone data. These can be used to do
 /// things such as:
@@ -59,7 +59,7 @@ pub struct InterpolationSettings<'a> {
     /// body. You'll typically get this vector via:
     ///   `blender_armature.bone_groups.get('lower_body').unwrap()`
     /// assuming that you've created a `lower_body` bone group in Blender.
-    pub joint_indices: Vec<u8>,
+    pub joint_indices: &'a [u8],
     /// Your blend_fn returns a number between `0.0` and `1.0`. This is used to control how
     /// quickly your previous_action blends into your current_action.
     ///
@@ -235,7 +235,7 @@ impl BlenderArmature {
                 / (action_upper_keyframe.frame_time_secs - action_lower_keyframe.frame_time_secs)
         };
 
-        for joint_index in &opts.joint_indices {
+        for joint_index in opts.joint_indices.iter() {
             let joint_index = *joint_index;
 
             let lower_bone = &action_lower_keyframe.bones[joint_index as usize];
@@ -347,6 +347,7 @@ fn dot_product(a: &[f32], b: &[f32]) -> f32 {
 mod tests {
     use super::*;
     use crate::Keyframe;
+    use std::collections::HashMap;
 
     struct DualQuatTestCase<'a> {
         description: String,
@@ -378,7 +379,7 @@ mod tests {
             interp_settings: InterpolationSettings {
                 current_time: 1.5,
                 // TODO: armature.get_group_indices(BlenderArmature::BONE_GROUPS_ALL)
-                joint_indices: vec![0],
+                joint_indices: &vec![0][..],
                 blend_fn: None,
                 current_action: ActionSettings::new("test", 0.0, true),
                 previous_action: None,
@@ -405,7 +406,7 @@ mod tests {
             expected_bone: [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
             interp_settings: InterpolationSettings {
                 current_time: 4.0,
-                joint_indices: vec![0],
+                joint_indices: &vec![0][..],
                 blend_fn: None,
                 current_action: ActionSettings::new("test", 0.0, true),
                 previous_action: None,
@@ -436,7 +437,7 @@ mod tests {
             expected_bone: [4.0, 4.0, 4.0, 4.0, 0.0, 0.0, 0.0, 0.0],
             interp_settings: InterpolationSettings {
                 current_time: 2.5,
-                joint_indices: vec![0],
+                joint_indices: &vec![0][..],
                 blend_fn: None,
                 current_action: ActionSettings::new("test", 0.0, true),
                 previous_action: None,
@@ -463,7 +464,7 @@ mod tests {
             expected_bone: [3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0],
             interp_settings: InterpolationSettings {
                 current_time: 7.0,
-                joint_indices: vec![0],
+                joint_indices: &vec![0][..],
                 blend_fn: None,
                 current_action: ActionSettings::new("test", 0.0, false),
                 previous_action: None,
@@ -497,7 +498,7 @@ mod tests {
             expected_bone: [1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
             interp_settings: InterpolationSettings {
                 current_time: 10.0,
-                joint_indices: vec![0],
+                joint_indices: &vec![0][..],
                 blend_fn: None,
                 current_action: ActionSettings::new("test", 10.0, true),
                 previous_action: Some(ActionSettings::new("test", 0.0, false)),
@@ -531,7 +532,7 @@ mod tests {
             expected_bone: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
             interp_settings: InterpolationSettings {
                 current_time: 10.0,
-                joint_indices: vec![0],
+                joint_indices: &vec![0][..],
                 blend_fn: Some(two_second_blend_func),
                 current_action: ActionSettings::new("test", 9.0, true),
                 previous_action: Some(ActionSettings::new("test", 5.0, false)),
@@ -553,7 +554,8 @@ mod tests {
             ]
           },
           "inverse_bind_poses": [],
-          "joint_index": {}
+          "joint_index": {},
+          "bone_groups": {}
         }
     "#;
         let mut armature: BlenderArmature = serde_json::from_str(armature).unwrap();
@@ -562,7 +564,7 @@ mod tests {
         let interp_opts = InterpolationSettings {
             current_time: 209.109,
             // TODO: self.get_bone_group(BlenderArmature::ALL_BONES)
-            joint_indices: vec![0],
+            joint_indices: &vec![0][..],
             blend_fn: None,
             current_action: ActionSettings::new("Twist", 0.0, true),
             previous_action: None,
@@ -591,7 +593,7 @@ mod tests {
             interp_settings: InterpolationSettings {
                 current_time: 0.0,
                 // TODO: armature.get_group_indices(BlenderArmature::BONE_GROUPS_ALL)
-                joint_indices: vec![0],
+                joint_indices: &vec![0][..],
                 blend_fn: None,
                 current_action: ActionSettings::new("test", 0.0, true),
                 previous_action: None,

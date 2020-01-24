@@ -11,3 +11,6 @@ blender-mesh = {path = "../../blender-mesh"}
 blender-armature = {path = "../../blender-armature"}
 serde = "1"
 serde_json = "1"
+
+[dev-dependencies]
+anyhow = "1"
