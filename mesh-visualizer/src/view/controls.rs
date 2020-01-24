@@ -1,9 +1,8 @@
-use crate::state_wrapper::{StateWrapper};
+use crate::state_wrapper::StateWrapper;
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use virtual_dom_rs::prelude::*;
-
 
 pub struct ControlsView<'a> {
     pub wrapper: &'a Rc<RefCell<StateWrapper>>,

@@ -83,5 +83,4 @@ mod tests {
 
         assert_eq!(triangulated_mesh, expected_mesh);
     }
-
 }

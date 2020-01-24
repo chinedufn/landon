@@ -308,7 +308,6 @@ impl GpuBufferer {
 
 #[cfg(test)]
 mod tests {
-    
 
     #[test]
     fn fo() {}

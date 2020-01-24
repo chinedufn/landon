@@ -14,7 +14,8 @@ pub fn install_mesh_to_json() -> std::io::Result<()> {
     let mut addon_file = File::create(&addon_file_path)?;
     addon_file.write_all(mesh_to_json_addon.as_bytes()).unwrap();
 
-    let install_mesh_to_json_script = format!(r#"
+    let install_mesh_to_json_script = format!(
+        r#"
 # Install the addon and save the user's preferences
 import bpy
 import os
@@ -29,7 +30,8 @@ bpy.ops.preferences.addon_install(filepath=addonFilePath)
 bpy.ops.preferences.addon_enable(module='blender-mesh-to-json')
 bpy.ops.wm.save_userpref()
     "#,
-    addon_file_path.display());
+        addon_file_path.display()
+    );
 
     // TODO: Support an environment variable to override the path to the executable
     let blender_executable = "blender";
@@ -55,7 +57,8 @@ pub fn install_armature_to_json() -> std::io::Result<()> {
     let mut addon_file = File::create(&addon_file_path)?;
     addon_file.write_all(armature_to_json.as_bytes()).unwrap();
 
-    let install_armature_to_json_script = format!(r#"
+    let install_armature_to_json_script = format!(
+        r#"
 import bpy
 
 addonFilePath = '{}'
@@ -66,7 +69,8 @@ bpy.ops.preferences.addon_install(filepath=addonFilePath)
 bpy.ops.preferences.addon_enable(module='blender-armature-to-json')
 bpy.ops.wm.save_userpref()
     "#,
-    addon_file_path.display());
+        addon_file_path.display()
+    );
 
     // TODO: Support an environment variable to override the path to the executable
     let blender_executable = "blender";

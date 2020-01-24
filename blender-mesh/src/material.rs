@@ -1,7 +1,6 @@
 use crate::BlenderMesh;
 use std::collections::HashMap;
 
-
 /// Material data for a mesh
 ///
 /// # Blender
