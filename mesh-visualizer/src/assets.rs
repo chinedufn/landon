@@ -4,15 +4,30 @@
 use crate::state_wrapper::{Msg, StateWrapper};
 use bincode;
 use blender_armature::BlenderArmature;
-use blender_mesh::{BlenderMesh, CreateSingleIndexConfig};
+use blender_mesh::{BlenderMesh, CreateSingleIndexConfig, SingleIndexVertexAttributes};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use wasm_bindgen::convert::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+use wasm_bindgen::__rt::core::ops::Deref;
 
-type Meshes = Rc<RefCell<HashMap<String, BlenderMesh>>>;
+/// TODO: Just temporary as we refactor things - need to delete and re-write the mesh visualizer
+/// at this point
+pub struct MeshAndAttributes {
+    pub mesh: BlenderMesh,
+    pub attributes: SingleIndexVertexAttributes,
+}
+
+impl Deref for MeshAndAttributes {
+    type Target = BlenderMesh;
+
+    fn deref(&self) -> &Self::Target {
+        &self.mesh
+    }
+}
+
+type Meshes = Rc<RefCell<HashMap<String, MeshAndAttributes>>>;
 type Armatures = Rc<RefCell<HashMap<String, BlenderArmature>>>;
 
 #[wasm_bindgen]
@@ -50,16 +65,17 @@ impl Assets {
 
             for (mesh_name, mut mesh) in meshes {
                 info!("{}", mesh_name);
-                mesh.combine_vertex_indices(&CreateSingleIndexConfig {
+                let attributes = mesh.combine_vertex_indices(&CreateSingleIndexConfig {
                     calculate_vertex_tangents: false,
                     bone_influences_per_vertex: None,
                 });
                 mesh.triangulate();
                 mesh.y_up();
 
-                meshes_clone
-                    .borrow_mut()
-                    .insert(mesh_name.to_string(), mesh);
+                meshes_clone.borrow_mut().insert(
+                    mesh_name.to_string(),
+                    MeshAndAttributes { mesh, attributes },
+                );
             }
 
             // Refresh material params now that we've loaded our mesh

@@ -28,7 +28,7 @@ fn exports_bone_groups() -> Result<(), anyhow::Error> {
 
     let armature = parsed_armatures.get("BoneGroupsTest").unwrap();
 
-    let mut bone_groups = armature.bone_groups();
+    let bone_groups = armature.bone_groups();
 
     assert_eq!(bone_groups.len(), 2);
     assert_eq!(bone_groups.get("LowerBody").unwrap(), &vec![0, 1]);

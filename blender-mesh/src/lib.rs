@@ -20,30 +20,24 @@
 extern crate failure;
 #[macro_use]
 extern crate serde_derive;
-#[macro_use]
-extern crate log;
 
 pub use self::combine_indices::CreateSingleIndexConfig;
 pub use self::export::*;
-use crate::bone::BoneInfluencesPerVertex;
 pub use crate::bounding_box::BoundingBox;
 use crate::material::PrincipledBSDF;
-use crate::vertex_data::{VertexAttribute, VertexData};
+pub use crate::vertex_attributes::{MultiIndexedVertexAttributes, SingleIndexVertexAttributes};
 pub use material::{Channel, MaterialInput};
-use serde_json;
-use serde_json::Error;
 use std::collections::HashMap;
 
 mod bone;
 mod bounding_box;
 mod combine_indices;
-mod custom_properties;
 mod export;
-mod individual_vertex;
+mod interleave;
 mod material;
 mod tangent;
 mod triangulate;
-mod vertex_data;
+mod vertex_attributes;
 mod y_up;
 
 #[cfg(test)]
@@ -61,64 +55,43 @@ pub enum BlenderError {
     Stderr(String),
 }
 
-/// All of the data about a Blender mesh
+/// All of the data about a mesh
+///
+/// TODO: Rename crate to `MeshIr`
 #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
 #[serde(deny_unknown_fields)]
 pub struct BlenderMesh {
-    /// All of the mesh's vertices. Three items in the vector make one vertex.
-    /// So indices 0, 1 and 2 are a vertex, 3, 4 and 5 are a vertex.. etc.
-    /// [v1x, v1y, v1z, v2x, v2y, v2z, ...]
-    pub vertex_positions: Vec<f32>,
-    /// The indices within vertex positions that make up each triangle in our mesh.
-    /// Three vertex position indices correspond to one triangle
-    /// [0, 1, 2, 0, 2, 3, ...]
-    pub vertex_position_indices: Vec<u16>,
-    /// TODO: enum..? if they're all equal we replace the MyEnum::PerVertex(Vec<u8>) with MyEnum::Equal(4)
-    pub num_vertices_in_each_face: Vec<u8>,
-    pub vertex_normals: Vec<f32>,
-    pub vertex_normal_indices: Option<Vec<u16>>,
-    /// If your mesh is textured these will be all of the mesh's vertices' uv coordinates.
-    /// Every vertex has two UV coordinates.
-    /// [v1s, v1t, v2s, v2t, v3s, v3t]
-    /// TODO: Combine vertex_uvs, vertex_uv_indices, texture_name into texture_info
-    pub vertex_uvs: Option<Vec<f32>>,
-    pub vertex_uv_indices: Option<Vec<u16>>,
-    pub armature_name: Option<String>,
-    /// TODO: When we move to single index triangulate and add new vertices give those vertices the same group indices / weights
-    /// TODO: A function that trims this down to `n` weights and indices per vertex. Similar to our
-    /// triangulate function
-    /// TODO: Make sure that when we combine vertex indices we expand our group weights
-    pub vertex_group_indices: Option<Vec<u8>>,
-    pub vertex_group_weights: Option<Vec<f32>>,
-    /// TODO: enum..? if they're all equal we replace the MyEnum::PerVertex(Vec<u8>) with MyEnum::Equal(4)
-    bone_influences_per_vertex: Option<BoneInfluencesPerVertex>,
-    pub bounding_box: BoundingBox,
-    /// A map of material name (in Blender) to the material's data
-    materials: HashMap<String, PrincipledBSDF>,
-    /// Tangent vectors per vertex, useful for normal mapping.
-    ///
-    /// These get set during [`BlenderMesh.combine_indices`], if there are triangle_tangents.
-    ///
-    /// Useful for normal mapping.
-    per_vertex_tangents: Option<VertexAttribute>,
-    /// Tangent vector to the vertex, calculated using [`BlenderMesh.calculate_face_tangents`].
-    ///
-    /// [`BlenderMesh.calculate_face_tangents`]: struct.BlenderMesh.html#method.calculate_face_tangents
-    face_tangents: Option<Vec<f32>>,
-    // FIXME: Default is temporary until we move all of the vertex data above into VertexData
-    // Then we no longer need default .. it'll be required
+    armature_name: Option<String>,
+    bounding_box: BoundingBox,
+    #[serde(alias = "attribs")]
+    multi_indexed_vertex_attributes: MultiIndexedVertexAttributes,
     #[serde(default)]
-    vertex_data: VertexData,
-    /// Custom properties for this mesh
-    ///
-    /// i.e. the properties from `bpy.context.view_layer.objects.active.keys()`
-    custom_properties: Option<HashMap<String, f32>>,
+    materials: HashMap<String, PrincipledBSDF>,
+    #[serde(default)]
+    custom_properties: HashMap<String, f32>,
 }
 
 impl BlenderMesh {
-    // TODO: Delete this.. let the consumer worry about serializing / deserializing
-    pub fn from_json(json_str: &str) -> Result<BlenderMesh, Error> {
-        serde_json::from_str(json_str)
+    /// The name of this mesh's parent armature
+    pub fn parent_armature_name(&self) -> Option<&String> {
+        self.armature_name.as_ref()
+    }
+
+    /// A map of material name to the material's data
+    pub fn materials(&self) -> &HashMap<String, PrincipledBSDF> {
+        &self.materials
+    }
+
+    /// Custom properties for this mesh
+    ///
+    /// i.e. in Blender this might be found with `bpy.context.view_layer.objects.active.keys()`
+    pub fn custom_properties(&self) -> &HashMap<String, f32> {
+        &self.custom_properties
+    }
+
+    /// The smallest box that contains the entire mesh
+    pub fn bounding_box(&self) -> BoundingBox {
+        self.bounding_box
     }
 }
 
@@ -144,5 +117,15 @@ macro_rules! concat_vecs {
             )*
             concatenated_vec
         }
+    }
+}
+
+#[cfg(test)]
+fn indexed(
+    attribute: crate::vertex_attributes::VertexAttribute<f32>,
+) -> crate::vertex_attributes::IndexedAttribute {
+    crate::vertex_attributes::IndexedAttribute {
+        indices: vec![],
+        attribute,
     }
 }

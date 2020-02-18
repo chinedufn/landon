@@ -5,7 +5,7 @@ use nalgebra::Point3;
 ///
 /// If your mesh is parented to an armature then this is the bounding box of your mesh in its
 /// bind pose.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Copy, Clone)]
 pub struct BoundingBox {
     /// The corner with the lowest x, y and z values
     pub min_corner: Point3<f32>,

@@ -38,25 +38,45 @@ class MeshToJSON(bpy.types.Operator):
         mesh = bpy.context.view_layer.objects.active
 
         mesh_json = {
-            'vertex_positions': [],
-            'num_vertices_in_each_face': [],
-            'vertex_position_indices': [],
-            'vertex_normals': [],
-            'vertex_normal_indices': [],
-            'vertex_uvs': [],
-            'vertex_uv_indices': [],
+            'attribs': {
+                'vertices_in_each_face': [],
+                'positions': {
+                    'indices': [],
+                    'attribute': {
+                        'data': [],
+                        'attribute_size': 3
+                    }
+                },
+                'normals': {
+                    'indices': [],
+                    'attribute': {
+                        'data': [],
+                        'attribute_size': 3
+                    }
+                },
+                'uvs': {
+                    'indices': [],
+                    'attribute': {
+                        'data': [],
+                        'attribute_size': 2
+                    }
+                },
+                'bone_influences': {
+                    'bones_per_vertex': {
+                        'NonUniform': []
+                    },
+                    'bone_indices': [],
+                    'bone_weights': []
+                }
+            },
             'armature_name': None,
-            'vertex_group_indices': [],
-            'vertex_group_weights': [],
-            'bone_influences_per_vertex': None,
             'bounding_box': {
                 # [x, y, z]
                 'min_corner': [],
                 'max_corner': []
             },
-            'materials': {
-            },
-            'custom_properties': None
+            'materials': {},
+            'custom_properties': {}
         }
 
         # We maintain a list of all of the parent armature's bone names so that when exporting bone indices / weights
@@ -72,69 +92,59 @@ class MeshToJSON(bpy.types.Operator):
             for poseBone in parentArmature.pose.bones:
                 allBoneNames.append(poseBone.name)
 
-        if mesh_json['armature_name'] is not None:
-            mesh_json['bone_influences_per_vertex'] = {
-                'NonUniform': []
-            }
-
         # TODO: Handle triangular polygons, not just quads
         # cube.data.polygons[1].vertices[0]. Check if length
         # of face is 4... Use a triangular face in Blender to unit test.
         index = 0
         for face in mesh.data.polygons:
             num_vertices_in_face = len(face.vertices)
-            mesh_json['num_vertices_in_each_face'].append(num_vertices_in_face)
+            mesh_json['attribs']['vertices_in_each_face'].append(num_vertices_in_face)
 
             for i in range(num_vertices_in_face):
-                mesh_json['vertex_position_indices'].append(face.vertices[i])
+                mesh_json['attribs']['positions']['indices'].append(face.vertices[i])
                 # TODO: Maintain a dictionary with (x, y, z) => normal index
                 # for normals that we've already run into.
                 # Re-use an existing normal index wherever possible.
                 # Especially important for smoothed models that mostly re-use
                 # the same normals. Test this by making a cube with to faces
                 # that have the same normal
-                mesh_json['vertex_normal_indices'].append(index)
+                mesh_json['attribs']['normals']['indices'].append(index)
                 if mesh.data.uv_layers:
-                    mesh_json['vertex_uv_indices'].append(face.loop_indices[i])
+                    mesh_json['attribs']['uvs']['indices'].append(face.loop_indices[i])
 
             # TODO: Don't append normals if we've already encountered them
-            mesh_json['vertex_normals'].append(face.normal.x)
-            mesh_json['vertex_normals'].append(face.normal.y)
-            mesh_json['vertex_normals'].append(face.normal.z)
+            mesh_json['attribs']['normals']['attribute']['data'].append(face.normal.x)
+            mesh_json['attribs']['normals']['attribute']['data'].append(face.normal.y)
+            mesh_json['attribs']['normals']['attribute']['data'].append(face.normal.z)
 
             index += 1
 
         for vert in mesh.data.vertices:
-            mesh_json['vertex_positions'].append(vert.co.x)
-            mesh_json['vertex_positions'].append(vert.co.y)
-            mesh_json['vertex_positions'].append(vert.co.z)
+            mesh_json['attribs']['positions']['attribute']['data'].append(vert.co.x)
+            mesh_json['attribs']['positions']['attribute']['data'].append(vert.co.y)
+            mesh_json['attribs']['positions']['attribute']['data'].append(vert.co.z)
 
-            # TODO: Only include num groups if there is a parent armature. Otherwise the
-            # number of groups (bones) per vertex probably doesn't matter...?
             num_groups = len(list(vert.groups))
             for group in vert.groups:
                 boneName = mesh.vertex_groups[group.group].name
                 boneIndex = allBoneNames.index(boneName)
 
-                mesh_json['vertex_group_indices'].append(boneIndex)
-                mesh_json['vertex_group_weights'].append(group.weight)
+                mesh_json['attribs']['bone_influences']['bone_indices'].append(boneIndex)
+                mesh_json['attribs']['bone_influences']['bone_weights'].append(group.weight)
 
             if mesh_json['armature_name'] is not None:
-                mesh_json['bone_influences_per_vertex']['NonUniform'].append(num_groups)
+                mesh_json['attribs']['bone_influences']['bones_per_vertex']['NonUniform'].append(num_groups)
 
         if mesh.data.uv_layers:
             for loop in mesh.data.uv_layers.active.data:
-                mesh_json['vertex_uvs'].append(loop.uv.x)
-                mesh_json['vertex_uvs'].append(loop.uv.y)
+                mesh_json['attribs']['uvs']['attribute']['data'].append(loop.uv.x)
+                mesh_json['attribs']['uvs']['attribute']['data'].append(loop.uv.y)
 
-        if mesh_json['armature_name'] == None:
-            mesh_json['vertex_group_indices'] = None
-            mesh_json['vertex_group_weights'] = None
-            mesh_json['bone_influences_per_vertex'] = None
+        if not mesh_json['armature_name']:
+            mesh_json['attribs']['bone_influences'] = None
 
-        if not mesh_json['vertex_uvs']:
-            mesh_json['vertex_uvs'] = None
-            mesh_json['vertex_uv_indices'] = None
+        if not mesh_json['attribs']['uvs']['indices']:
+            mesh_json['attribs']['uvs'] = None
 
         # TODO: Add unit test for no mesh currently selected
         # if mesh == None or mesh.type != 'MESH':
@@ -291,9 +301,6 @@ class MeshToJSON(bpy.types.Operator):
             try:
                 value = mesh.get(property)
                 json.dumps(value)
-
-                if mesh_json['custom_properties'] == None:
-                    mesh_json['custom_properties'] = {}
 
                 mesh_json['custom_properties'][property] = value
             except:

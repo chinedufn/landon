@@ -1,3 +1,5 @@
+//! Need to re-write this crate. Wrote it when I was a Rust noob and it's beyond repair
+
 #![feature(proc_macro_hygiene)]
 
 #[macro_use]
@@ -143,5 +145,15 @@ impl App {
         gl.viewport(0, 0, 500, 500);
 
         Ok(gl)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn delete_me() {
+        unimplemented!()
     }
 }

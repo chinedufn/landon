@@ -1,3 +1,4 @@
+use crate::vertex_attributes::{VertexAttribute, VertexAttributes};
 use crate::BlenderMesh;
 
 static Y: usize = 1;
@@ -13,22 +14,32 @@ impl BlenderMesh {
     /// into here.
     /// https://github.com/chinedufn/change-mat4-coordinate-system/blob/master/change-mat4-coordinate-system.js
     pub fn y_up(&mut self) {
-        for vert_num in 0..(self.vertex_positions.len() / 3) {
+        let vertex_attribs = &mut self.multi_indexed_vertex_attributes;
+
+        let positions = &mut vertex_attribs.positions.attribute.data;
+
+        let mut normals = match &mut vertex_attribs.normals {
+            None => None,
+            Some(normals) => Some(&mut normals.attribute.data),
+        };
+
+        let convert = |vert_num: usize, data: &mut Vec<f32>| {
             let y_index = vert_num * 3 + 1;
             let z_index = y_index + 1;
 
-            let new_z = -self.vertex_positions[y_index];
-            self.vertex_positions[y_index] = self.vertex_positions[z_index];
-            self.vertex_positions[z_index] = new_z;
+            let new_z = -data[y_index];
+            data[y_index] = data[z_index];
+            data[z_index] = new_z;
+        };
+
+        for vert_num in 0..positions.len() / 3 {
+            convert(vert_num, positions);
         }
 
-        for vert_num in 0..(self.vertex_normals.len() / 3) {
-            let y_index = vert_num * 3 + 1;
-            let z_index = y_index + 1;
-
-            let new_z = -self.vertex_normals[y_index];
-            self.vertex_normals[y_index] = self.vertex_normals[z_index];
-            self.vertex_normals[z_index] = new_z;
+        if let Some(normals) = normals.as_mut() {
+            for vert_num in 0..normals.len() / 3 {
+                convert(vert_num, normals);
+            }
         }
 
         let new_z = -self.bounding_box.min_corner[Y];
@@ -45,13 +56,20 @@ impl BlenderMesh {
 mod tests {
     use super::*;
     use crate::bounding_box::BoundingBox;
+    use crate::indexed;
+    use crate::vertex_attributes::{
+        MultiIndexedVertexAttributes, SingleIndexVertexAttributes, VertexAttributes,
+    };
     use nalgebra::Point3;
 
     #[test]
     fn z_up_to_y_up() {
         let mut start_mesh = BlenderMesh {
-            vertex_positions: vec![0.0, 1.0, 2.0, 0.0, 1.0, 2.0],
-            vertex_normals: vec![0.0, 1.0, 2.0],
+            multi_indexed_vertex_attributes: MultiIndexedVertexAttributes {
+                positions: indexed((vec![0.0, 1.0, 2.0, 0.0, 1.0, 2.0], 3).into()),
+                normals: Some(indexed((vec![0.0, 1.0, 2.0], 3).into())),
+                ..MultiIndexedVertexAttributes::default()
+            },
             bounding_box: BoundingBox {
                 min_corner: Point3::new(1.0, 2.0, 3.0),
                 max_corner: Point3::new(5.0, 6.0, 7.0),
@@ -63,8 +81,11 @@ mod tests {
         let y_up_mesh = start_mesh;
 
         let expected_mesh = BlenderMesh {
-            vertex_positions: vec![0.0, 2.0, -1.0, 0.0, 2.0, -1.0],
-            vertex_normals: vec![0.0, 2.0, -1.0],
+            multi_indexed_vertex_attributes: MultiIndexedVertexAttributes {
+                positions: indexed((vec![0.0, 2.0, -1.0, 0.0, 2.0, -1.0], 3).into()),
+                normals: Some(indexed((vec![0.0, 2.0, -1.0], 3).into())),
+                ..MultiIndexedVertexAttributes::default()
+            },
             bounding_box: BoundingBox {
                 min_corner: Point3::new(1.0, 3.0, -2.0),
                 max_corner: Point3::new(5.0, 7.0, -6.0),

@@ -107,10 +107,3 @@ impl PrincipledBSDF {
         self.normal_map.as_ref()
     }
 }
-
-impl BlenderMesh {
-    /// Get the materials for this mesh, indexed by their name
-    pub fn materials(&self) -> &HashMap<String, PrincipledBSDF> {
-        &self.materials
-    }
-}

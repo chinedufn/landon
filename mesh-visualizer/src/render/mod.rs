@@ -1,11 +1,11 @@
-use crate::assets::Assets;
+use crate::assets::{Assets, MeshAndAttributes};
 use crate::shader::Shader;
 use crate::shader::ShaderKind;
 use crate::shader::ShaderKind::NonSkinnedNonTextured;
 use crate::shader::ShaderSystem;
 use crate::state_wrapper::State;
 
-use blender_mesh::{BlenderMesh, MaterialInput};
+use blender_mesh::{BlenderMesh, CreateSingleIndexConfig, MaterialInput};
 use js_sys::WebAssembly;
 
 use nalgebra::{Isometry3, Vector3};
@@ -61,7 +61,7 @@ struct Uniform<T>(T);
 
 // TODO: These types can probably be automatically generated based on the shader
 struct NonSkinnedMesh<'a> {
-    blender_mesh: &'a BlenderMesh,
+    blender_mesh: &'a MeshAndAttributes,
     name: String,
 }
 
