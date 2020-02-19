@@ -1,4 +1,3 @@
-use crate::vertex_attributes::{VertexAttribute, VertexAttributes};
 use crate::BlenderMesh;
 
 static Y: usize = 1;
@@ -42,6 +41,8 @@ impl BlenderMesh {
             }
         }
 
+        // TODO: Do we need to convert the tangent?
+
         let new_z = -self.bounding_box.min_corner[Y];
         self.bounding_box.min_corner[Y] = self.bounding_box.min_corner[Z];
         self.bounding_box.min_corner[Z] = new_z;
@@ -58,7 +59,7 @@ mod tests {
     use crate::bounding_box::BoundingBox;
     use crate::indexed;
     use crate::vertex_attributes::{
-        MultiIndexedVertexAttributes, SingleIndexVertexAttributes, VertexAttributes,
+        MultiIndexedVertexAttributes, SingleIndexedVertexAttributes, VertexAttributes,
     };
     use nalgebra::Point3;
 

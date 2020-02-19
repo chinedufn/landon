@@ -4,7 +4,7 @@
 use crate::state_wrapper::{Msg, StateWrapper};
 use bincode;
 use blender_armature::BlenderArmature;
-use blender_mesh::{BlenderMesh, CreateSingleIndexConfig, SingleIndexVertexAttributes};
+use blender_mesh::{BlenderMesh, CreateSingleIndexConfig, SingleIndexedVertexAttributes};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -16,7 +16,7 @@ use wasm_bindgen::__rt::core::ops::Deref;
 /// at this point
 pub struct MeshAndAttributes {
     pub mesh: BlenderMesh,
-    pub attributes: SingleIndexVertexAttributes,
+    pub attributes: SingleIndexedVertexAttributes,
 }
 
 impl Deref for MeshAndAttributes {

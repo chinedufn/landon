@@ -25,7 +25,7 @@ pub use self::combine_indices::CreateSingleIndexConfig;
 pub use self::export::*;
 pub use crate::bounding_box::BoundingBox;
 use crate::material::PrincipledBSDF;
-pub use crate::vertex_attributes::{MultiIndexedVertexAttributes, SingleIndexVertexAttributes};
+pub use crate::vertex_attributes::{MultiIndexedVertexAttributes, SingleIndexedVertexAttributes};
 pub use material::{Channel, MaterialInput};
 use std::collections::HashMap;
 

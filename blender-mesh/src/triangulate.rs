@@ -1,5 +1,4 @@
 use crate::BlenderMesh;
-
 impl BlenderMesh {
     /// When exporting a mesh from Blender, faces will usually have 4 vertices (quad) but some
     /// faces might have 3 (triangle).
@@ -13,27 +12,29 @@ impl BlenderMesh {
     ///
     /// Panics if a face has more than 4 vertices. In the future we might support 5+ vertices,
     /// but I haven't run into that yet. Not even sure if Blender can have faces with 5 vertices..
-    pub fn triangulate(&mut self) {
+    pub(crate) fn triangulate(&mut self, indices: &Vec<u16>) -> Vec<u16> {
         let mut triangulated_position_indices = vec![];
         let mut triangulated_face_vertex_counts = vec![];
 
         let mut face_pointer = 0;
 
-        let multi = &mut self.multi_indexed_vertex_attributes;
-
-        for num_verts_in_face in multi.vertices_in_each_face.iter() {
-            triangulated_position_indices.push(multi.positions.indices[face_pointer]);
-            triangulated_position_indices.push(multi.positions.indices[face_pointer + 1]);
-            triangulated_position_indices.push(multi.positions.indices[face_pointer + 2]);
+        for num_verts_in_face in self
+            .multi_indexed_vertex_attributes
+            .vertices_in_each_face
+            .iter()
+        {
+            triangulated_position_indices.push(indices[face_pointer]);
+            triangulated_position_indices.push(indices[face_pointer + 1]);
+            triangulated_position_indices.push(indices[face_pointer + 2]);
 
             triangulated_face_vertex_counts.push(3);
 
             match num_verts_in_face {
                 &3 => {}
                 &4 => {
-                    triangulated_position_indices.push(multi.positions.indices[face_pointer]);
-                    triangulated_position_indices.push(multi.positions.indices[face_pointer + 2]);
-                    triangulated_position_indices.push(multi.positions.indices[face_pointer + 3]);
+                    triangulated_position_indices.push(indices[face_pointer]);
+                    triangulated_position_indices.push(indices[face_pointer + 2]);
+                    triangulated_position_indices.push(indices[face_pointer + 3]);
 
                     triangulated_face_vertex_counts.push(3);
                 }
@@ -45,8 +46,10 @@ impl BlenderMesh {
             face_pointer += *num_verts_in_face as usize;
         }
 
-        multi.positions.indices = triangulated_position_indices;
-        multi.vertices_in_each_face = triangulated_face_vertex_counts;
+        // TODO: Set to Uniform(3)
+        // multi.vertices_in_each_face = triangulated_face_vertex_counts;
+
+        return triangulated_position_indices;
     }
 }
 

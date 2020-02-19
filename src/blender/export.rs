@@ -1,6 +1,8 @@
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
-static EXPORT_BLENDER_DATA: &'static str = r#"
+/// A script used to export meshes and armatures from Blender to stdout
+pub static EXPORT_BLENDER_DATA: &'static str = r#"
 import bpy
 
 bpy.context.view_layer.objects.active = None
@@ -8,6 +10,7 @@ bpy.context.view_layer.objects.active = None
 # Get the objects at the beginning so that we don't iterate over new ones that we
 # generate such as ik-to-fk converted rigs
 objects = list(bpy.context.scene.objects)
+
 for obj in objects:
     bpy.context.view_layer.objects.active = obj
     if obj.type == 'MESH':
@@ -29,7 +32,7 @@ for obj in objects:
 /// to parse the exported data into the data structures that you need.
 ///
 /// TODO: Integration test this
-pub fn export_blender_data(blender_files: &Vec<String>) -> Result<String, String> {
+pub fn export_blender_data(blender_files: &[PathBuf]) -> Result<String, String> {
     let mut blender_process = Command::new("blender");
     let blender_process = blender_process.arg("--background");
 
@@ -49,12 +52,12 @@ pub fn export_blender_data(blender_files: &Vec<String>) -> Result<String, String
     Ok(String::from_utf8(output.stdout).expect("Blender stdout"))
 }
 
-fn open_blender_file(file: &str) -> String {
+fn open_blender_file(file: &AsRef<Path>) -> String {
     format!(
         r#"
 import bpy
 bpy.ops.wm.open_mainfile(filepath="{}")
 "#,
-        file
+        file.as_ref().to_str().unwrap()
     )
 }

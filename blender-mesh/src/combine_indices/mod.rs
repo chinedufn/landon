@@ -1,7 +1,7 @@
 pub use self::create_single_index_config::CreateSingleIndexConfig;
 use crate::tangent::face_tangent_at_idx;
 use crate::vertex_attributes::{
-    BoneAttributes, BoneInfluences, SingleIndexVertexAttributes, VertexAttribute,
+    BoneAttributes, BoneInfluences, SingleIndexedVertexAttributes, VertexAttribute,
 };
 use crate::BlenderMesh;
 use std::collections::HashMap;
@@ -41,17 +41,25 @@ impl BlenderMesh {
     ///
     /// TODO: Don't work on additionally functionality until we've broken up these tests
     /// and implementation into smaller, specific pieces.
+    ///
+    /// TODO: There are unexpected (based on the method's name) mutations in here such as
+    /// triangulation. Lot's to refactor in this crate.
     pub fn combine_vertex_indices(
         &mut self,
         config: &CreateSingleIndexConfig,
-    ) -> SingleIndexVertexAttributes {
+    ) -> SingleIndexedVertexAttributes {
         let mut face_tangents = None;
 
-        let multi = &self.multi_indexed_vertex_attributes;
+        if let Some(bone_influences_per_vertex) = config.bone_influences_per_vertex {
+            self.multi_indexed_vertex_attributes
+                .set_bone_influences_per_vertex(bone_influences_per_vertex);
+        }
 
         if config.calculate_vertex_tangents {
             face_tangents = Some(self.calculate_face_tangents().unwrap());
         }
+
+        let multi = &self.multi_indexed_vertex_attributes;
 
         let mut largest_vert_id = *multi.positions.indices.iter().max().unwrap() as usize;
 
@@ -201,24 +209,40 @@ impl BlenderMesh {
             true => Some(expanded_uvs),
         };
 
-        let bones = match config.bone_influences_per_vertex {
-            Some(b) => Some(BoneAttributes {
-                bone_influencers: VertexAttribute::new(new_group_indices.unwrap(), b).unwrap(),
-                bone_weights: VertexAttribute::new(new_group_weights.unwrap(), b).unwrap(),
+        let bones = match (
+            &self.multi_indexed_vertex_attributes.bone_influences,
+            config.bone_influences_per_vertex,
+        ) {
+            (Some(_bone_attributes), Some(bone_influences_per_vertex)) => Some(BoneAttributes {
+                bone_influencers: VertexAttribute::new(
+                    new_group_indices.unwrap(),
+                    bone_influences_per_vertex,
+                )
+                .unwrap(),
+                bone_weights: VertexAttribute::new(
+                    new_group_weights.unwrap(),
+                    bone_influences_per_vertex,
+                )
+                .unwrap(),
             }),
-            None => None,
+            _ => None,
         };
 
         let tangents = face_tangents.map(|_| expanded_tangents);
 
-        SingleIndexVertexAttributes {
+        let mut single_indexed_vertex_attributes = SingleIndexedVertexAttributes {
             indices: expanded_pos_indices,
             positions: expanded_positions,
             normals,
             tangents,
             uvs,
             bones,
-        }
+        };
+
+        let indices = self.triangulate(&single_indexed_vertex_attributes.indices);
+        single_indexed_vertex_attributes.indices = indices;
+
+        single_indexed_vertex_attributes
     }
 
     // TODO: Way too many parameters - just working on splitting things up into smaller functions..
@@ -406,7 +430,7 @@ pub mod tests {
 
     struct CombineIndicesTest {
         mesh_to_combine: BlenderMesh,
-        expected_combined_mesh: SingleIndexVertexAttributes,
+        expected_combined_mesh: SingleIndexedVertexAttributes,
         create_single_idx_config: Option<CreateSingleIndexConfig>,
     }
 
@@ -580,7 +604,7 @@ pub mod tests {
         }
     }
 
-    fn expected_mesh_to_combine_pos_norm_uv_indices() -> SingleIndexVertexAttributes {
+    fn expected_mesh_to_combine_pos_norm_uv_indices() -> SingleIndexedVertexAttributes {
         TodoDeleteMeSingleConverter {
             vertex_positions: concat_vecs!(v3_x4(0, 1, 2, 3), v3_x4(0, 1, 2, 3), v3_x4(0, 1, 2, 3)),
             vertex_position_indices: concat_vecs![
@@ -709,7 +733,7 @@ pub mod tests {
         }
     }
 
-    fn make_expected_combined_mesh() -> SingleIndexVertexAttributes {
+    fn make_expected_combined_mesh() -> SingleIndexedVertexAttributes {
         let end_positions = concat_vecs!(v(0), v(1), v(2), v(3), v(0), v(1), v(2), v(3));
         let end_normals = concat_vecs!(v(4), v(5), v(4), v(5), v(6), v(6), v(6), v(6));
 
@@ -804,8 +828,8 @@ pub mod tests {
         pub vertex_group_weights: Option<Vec<f32>>,
     }
 
-    impl Into<SingleIndexVertexAttributes> for TodoDeleteMeSingleConverter {
-        fn into(self) -> SingleIndexVertexAttributes {
+    impl Into<SingleIndexedVertexAttributes> for TodoDeleteMeSingleConverter {
+        fn into(self) -> SingleIndexedVertexAttributes {
             let bones = match self.bone_influences_per_vertex.as_ref() {
                 None => None,
                 Some(b) => {
@@ -821,7 +845,7 @@ pub mod tests {
                 }
             };
 
-            SingleIndexVertexAttributes {
+            SingleIndexedVertexAttributes {
                 indices: self.vertex_position_indices,
                 positions: (self.vertex_positions, 3).into(),
                 normals: Some((self.vertex_normals, 3).into()),

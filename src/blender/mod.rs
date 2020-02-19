@@ -5,6 +5,7 @@ pub use self::install::*;
 
 mod export;
 pub use self::export::*;
+use std::path::PathBuf;
 
 /// Process `landon blender *` subcommands
 ///
@@ -17,8 +18,13 @@ pub fn process_blender_subcommand(matches: &ArgMatches) {
             install_armature_to_json().unwrap();
         }
     } else if let Some(matches) = matches.subcommand_matches("export") {
-        let files: Vec<String> = matches.values_of_lossy("file").unwrap();
+        let files: Vec<PathBuf> = matches
+            .values_of_lossy("file")
+            .unwrap()
+            .into_iter()
+            .map(|f| PathBuf::from(f))
+            .collect();
 
-        println!("{}", export_blender_data(&files).unwrap());
+        println!("{}", export_blender_data(&files[..]).unwrap());
     }
 }
