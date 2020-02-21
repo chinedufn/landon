@@ -19,7 +19,7 @@ pub struct SingleIndexedVertexAttributes {
     pub(crate) indices: Vec<u16>,
     pub(crate) positions: VertexAttribute<f32>,
     pub(crate) normals: Option<VertexAttribute<f32>>,
-    pub(crate) tangents: Option<VertexAttribute<f32>>,
+    pub(crate) face_tangents: Option<VertexAttribute<f32>>,
     pub(crate) uvs: Option<VertexAttribute<f32>>,
     pub(crate) bones: Option<BoneAttributes>,
 }
@@ -44,7 +44,7 @@ impl SingleIndexedVertexAttributes {
 
     /// Every 3 floats corresponds to one tangent vector - useful for normal mapping.
     pub fn face_tangents(&self) -> Option<&VertexAttribute<f32>> {
-        self.tangents.as_ref()
+        self.face_tangents.as_ref()
     }
 
     /// Every 2 floats corresponds to one vertex's uv.

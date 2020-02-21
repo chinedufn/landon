@@ -1,5 +1,4 @@
 use crate::vertex_attributes::{BoneInfluences, MultiIndexedVertexAttributes};
-use crate::BlenderMesh;
 
 /// The number of bones that influence each uniform.
 ///
@@ -109,6 +108,7 @@ impl MultiIndexedVertexAttributes {
 mod tests {
     use super::*;
     use crate::combine_indices::tests::TodoDeleteMeMultiConverter;
+    use crate::BlenderMesh;
 
     #[test]
     fn set_joints_per_vert() {

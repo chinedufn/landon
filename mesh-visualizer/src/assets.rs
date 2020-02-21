@@ -66,7 +66,7 @@ impl Assets {
             for (mesh_name, mut mesh) in meshes {
                 info!("{}", mesh_name);
                 let attributes = mesh.combine_vertex_indices(&CreateSingleIndexConfig {
-                    calculate_vertex_tangents: false,
+                    calculate_face_tangents: false,
                     bone_influences_per_vertex: None,
                 });
                 mesh.triangulate();

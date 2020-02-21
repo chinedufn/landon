@@ -8,5 +8,6 @@ pub struct CreateSingleIndexConfig {
     /// Whether or not to calculate the tangents for each vertex.
     ///
     /// You'll want to do this when you plan to use normal mapping in your rendering pipeline.
-    pub calculate_vertex_tangents: bool,
+    pub calculate_face_tangents: bool,
+  
 }

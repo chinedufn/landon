@@ -1,14 +1,13 @@
 pub use self::create_single_index_config::CreateSingleIndexConfig;
 use crate::tangent::face_tangent_at_idx;
-use crate::vertex_attributes::{
-    BoneAttributes, BoneInfluences, SingleIndexedVertexAttributes, VertexAttribute,
-};
+use crate::vertex_attributes::{BoneAttributes, SingleIndexedVertexAttributes, VertexAttribute};
 use crate::BlenderMesh;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
 
 mod create_single_index_config;
+mod weighted_normals;
 
 /// Used to set temporary data that should get overwritten.
 ///
@@ -55,7 +54,8 @@ impl BlenderMesh {
                 .set_bone_influences_per_vertex(bone_influences_per_vertex);
         }
 
-        if config.calculate_vertex_tangents {
+        // Important to calculate face tangents before we modify / weight the normals
+        if config.calculate_face_tangents {
             face_tangents = Some(self.calculate_face_tangents().unwrap());
         }
 
@@ -128,6 +128,9 @@ impl BlenderMesh {
                 if let Some(face_tangents) = &face_tangents {
                     if face_tangents.len() > 0 {
                         let (x, y, z) = face_tangent_at_idx(face_tangents, face_idx);
+                        // TODO: Should we weight these based on the surface area of the face /
+                        // the angle of the vertex and it's two edges on the face? Do some research
+                        // on what other people do.
                         expanded_tangents.increment_three_components(
                             *vert_id_to_reuse.unwrap() as usize,
                             x,
@@ -234,7 +237,7 @@ impl BlenderMesh {
             indices: expanded_pos_indices,
             positions: expanded_positions,
             normals,
-            tangents,
+            face_tangents: tangents,
             uvs,
             bones,
         };
@@ -453,7 +456,8 @@ pub mod tests {
 
         let create_single_idx_config = Some(CreateSingleIndexConfig {
             bone_influences_per_vertex: Some(3),
-            calculate_vertex_tangents: false,
+            calculate_face_tangents: false,
+            ..CreateSingleIndexConfig::default()
         });
 
         CombineIndicesTest {
@@ -695,7 +699,8 @@ pub mod tests {
 
         let create_single_idx_config = Some(CreateSingleIndexConfig {
             bone_influences_per_vertex: None,
-            calculate_vertex_tangents: true,
+            calculate_face_tangents: true,
+            ..CreateSingleIndexConfig::default()
         });
 
         CombineIndicesTest {
@@ -849,7 +854,7 @@ pub mod tests {
                 indices: self.vertex_position_indices,
                 positions: (self.vertex_positions, 3).into(),
                 normals: Some((self.vertex_normals, 3).into()),
-                tangents: self.tangents.map(|f| (f, 3).into()),
+                face_tangents: self.tangents.map(|f| (f, 3).into()),
                 uvs: self.vertex_uvs.map(|uvs| (uvs, 2).into()),
                 bones,
             }
