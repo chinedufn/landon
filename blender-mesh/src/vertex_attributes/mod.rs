@@ -26,7 +26,7 @@ pub use self::single_indexed::*;
 /// Say our `VertexIndices` and `vertex_uvs` look like the following:
 ///
 /// ```rust,no_run
-/// let vertex_indices: VertedIndices = vec![0, 1, 2, 0, 2, 3];
+/// let vertex_indices = vec![0, 1, 2, 0, 2, 3];
 /// let vertex_positions = vec![
 ///     0., 0.,
 ///     1., 0.,

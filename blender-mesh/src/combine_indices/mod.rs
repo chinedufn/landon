@@ -1,5 +1,5 @@
 pub use self::create_single_index_config::CreateSingleIndexConfig;
-use crate::tangent::face_tangent_at_idx;
+use crate::face_tangents::face_tangent_at_idx;
 use crate::vertex_attributes::{BoneAttributes, SingleIndexedVertexAttributes, VertexAttribute};
 use crate::BlenderMesh;
 use std::collections::HashMap;
@@ -613,13 +613,13 @@ pub mod tests {
             vertex_positions: concat_vecs!(v3_x4(0, 1, 2, 3), v3_x4(0, 1, 2, 3), v3_x4(0, 1, 2, 3)),
             vertex_position_indices: concat_vecs![
                 // First Triangle
-                vec![0, 1, 2, 3,],
+                vec![0, 1, 2, 0, 2, 3,],
                 // Second Triangle
-                vec![4, 5, 6, 7],
+                vec![4, 5, 6, 4, 6, 7],
                 // Third Triangle
-                vec![8, 9, 10, 11],
+                vec![8, 9, 10, 8, 10, 11],
                 // Fourth Triangle
-                vec![8, 9, 10, 11]
+                vec![8, 9, 10, 8, 10, 11]
             ],
             num_vertices_in_each_face: vec![4, 4, 4, 4],
             vertex_normals: concat_vecs!(v3_x4(4, 5, 4, 5), v3_x4(6, 6, 6, 6), v3_x4(6, 6, 6, 6)),
@@ -683,8 +683,9 @@ pub mod tests {
 
         let expected_combined_mesh = TodoDeleteMeSingleConverter {
             vertex_positions: vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0],
-
-            vertex_position_indices: vec![0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3],
+            vertex_position_indices: vec![
+                0, 1, 2, 0, 2, 3, 0, 1, 2, 0, 2, 3, 0, 1, 2, 0, 2, 3, 0, 1, 2, 0, 2, 3,
+            ],
             num_vertices_in_each_face: vec![4, 4, 4, 4],
             vertex_normals: vec![4.0, 4.0, 4.0, 5.0, 5.0, 5.0, 6.0, 6.0, 6.0, 7.0, 7.0, 7.0],
             vertex_uvs: Some(vec![0.0, 0.0, 0.5, 0.0, 1.0, 1.0, 0.0, 1.0]),
@@ -744,7 +745,7 @@ pub mod tests {
 
         TodoDeleteMeSingleConverter {
             vertex_positions: end_positions,
-            vertex_position_indices: vec![0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7],
+            vertex_position_indices: vec![0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 4, 5, 6, 4, 6, 7],
             num_vertices_in_each_face: vec![4, 4, 4],
             vertex_normals: end_normals,
             bone_influences_per_vertex: Some(BoneInfluencesPerVertex::Uniform(3)),
