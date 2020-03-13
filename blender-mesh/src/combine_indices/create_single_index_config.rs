@@ -9,5 +9,4 @@ pub struct CreateSingleIndexConfig {
     ///
     /// You'll want to do this when you plan to use normal mapping in your rendering pipeline.
     pub calculate_face_tangents: bool,
-  
 }

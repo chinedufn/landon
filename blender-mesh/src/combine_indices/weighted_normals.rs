@@ -226,17 +226,6 @@ mod tests {
         assert_eq!(&actual_normals[12..15], &expected_weighted_norm);
     }
 
-    /// If there are no normals we return an error
-    #[test]
-    fn error_if_no_normals() {
-        unimplemented!()
-    }
-
-    #[test]
-    fn todo() {
-        unimplemented!("refactor / make DRY");
-    }
-
     fn get_expected_weighted_norm() -> [f32; 3] {
         let angle = PI / 2.;
 

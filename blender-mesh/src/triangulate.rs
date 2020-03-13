@@ -12,7 +12,7 @@ impl BlenderMesh {
     ///
     /// Panics if a face has more than 4 vertices. In the future we might support 5+ vertices,
     /// but I haven't run into that yet. Not even sure if Blender can have faces with 5 vertices..
-    pub(crate) fn triangulate(&mut self, indices: &Vec<u16>) -> Vec<u16> {
+    pub(crate) fn triangulate(&self, indices: &Vec<u16>) -> Vec<u16> {
         let mut triangulated_position_indices = vec![];
         let mut triangulated_face_vertex_counts = vec![];
 
@@ -46,7 +46,7 @@ impl BlenderMesh {
             face_pointer += *num_verts_in_face as usize;
         }
 
-        // TODO: Set to Uniform(3)
+        // TODO: ? Set to Uniform(3)
         // multi.vertices_in_each_face = triangulated_face_vertex_counts;
 
         return triangulated_position_indices;
@@ -75,22 +75,10 @@ mod tests {
             ..BlenderMesh::default()
         };
 
-        start_mesh.triangulate(&vec![0, 1, 2, 3, 4, 5, 6, 7]);
-        let triangulated_mesh = start_mesh;
-
-        let expected_mesh = BlenderMesh {
-            multi_indexed_vertex_attributes: MultiIndexedVertexAttributes {
-                positions: IndexedAttribute {
-                    indices: vec![0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7],
-                    attribute: VertexAttribute::default(),
-                },
-                vertices_in_each_face: vec![3, 3, 3, 3],
-                ..MultiIndexedVertexAttributes::default()
-            }
-            .into(),
-            ..BlenderMesh::default()
-        };
-
-        assert_eq!(triangulated_mesh, expected_mesh);
+        let triangulated_indices = start_mesh.triangulate(&vec![0, 1, 2, 3, 4, 5, 6, 7]);
+        assert_eq!(
+            triangulated_indices,
+            vec![0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7]
+        );
     }
 }

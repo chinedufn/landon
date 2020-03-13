@@ -33,9 +33,9 @@ mod bone;
 mod bounding_box;
 mod combine_indices;
 mod export;
+mod face_tangents;
 mod interleave;
 mod material;
-mod tangent;
 mod triangulate;
 mod vertex_attributes;
 mod y_up;
@@ -73,8 +73,13 @@ pub struct BlenderMesh {
 
 impl BlenderMesh {
     /// The name of this mesh's parent armature
-    pub fn parent_armature_name(&self) -> Option<&String> {
+    pub fn armature_name(&self) -> Option<&String> {
         self.armature_name.as_ref()
+    }
+
+    /// Set the name of this mesh's parent armature
+    pub fn set_armature_name(&mut self, armature_name: Option<String>) {
+        self.armature_name = armature_name;
     }
 
     /// A map of material name to the material's data
@@ -92,6 +97,11 @@ impl BlenderMesh {
     /// The smallest box that contains the entire mesh
     pub fn bounding_box(&self) -> BoundingBox {
         self.bounding_box
+    }
+
+    /// Set the mesh's bounding box.
+    pub fn set_bounding_box(&mut self, bounding_box: BoundingBox) {
+        self.bounding_box = bounding_box;
     }
 }
 
