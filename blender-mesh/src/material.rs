@@ -9,7 +9,7 @@ use std::collections::HashMap;
 /// node editor for the material
 ///
 /// https://docs.blender.org/manual/en/latest/render/cycles/nodes/types/shaders/principled.html
-#[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Default, Clone)]
 pub struct PrincipledBSDF {
     /// [r, g, b]
     base_color: MaterialInput<[f32; 3], String>,
@@ -25,7 +25,7 @@ pub struct PrincipledBSDF {
 ///
 /// This can either be some uniform value that will get used across all vertices / fragments
 /// in your shader, or a texture.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum MaterialInput<U, I> {
     /// Some value that is uniform across all vertices / fragments in your mesh.
     Uniform(U),
@@ -57,7 +57,7 @@ pub enum MaterialInput<U, I> {
 
 /// An individual channel within an image.
 /// Red, Green, or Blue.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Copy, Clone)]
 pub enum Channel {
     #[serde(rename = "R")]
     Red,
