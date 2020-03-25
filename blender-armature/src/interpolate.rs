@@ -76,6 +76,11 @@ pub struct InterpolationSettings<'a> {
     /// // Blend previous_action into current_action linearly over 5 seconds
     /// let blend_fn = |delta_seconds: f32| 0.2 * delta_seconds;
     /// ```
+    ///
+    /// TODO: Use Duration as input instead of f32
+    ///
+    /// TODO: Publicly expose a function linear_blend_over_200_milliseconds to be optuonally used
+    ///       by consumers as a good starter funcrtion.
     pub blend_fn: Option<fn(f32) -> f32>,
     /// Settings for the current action (animation) of this armature.
     pub current_action: ActionSettings<'a>,
