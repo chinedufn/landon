@@ -84,17 +84,17 @@ impl BlenderArmature {
     ///            // FIXME: Base joint_indices on a property of `SkinnedMesh`
     ///            joint_indices,
     ///            blend_fn: None,
-    ///            current_action: get_action(),
+    ///            current_action: &get_action(),
     ///            previous_action: None,
     ///
     /// };
     ///
-    /// let _bones = armature.interpolate_bones(&interpolate_opts);
+    /// let _bones = armature.interpolate_bones(interpolate_opts);
     ///
     /// # fn create_blender_armature() -> BlenderArmature {
     /// #   let mut  b = BlenderArmature::default();
     /// #   b.actions.insert("SomeAction".to_string(), vec![]);
-    /// #   b.bone_groups_mut().insert("My bone group".to_string(), vec![]);
+    /// #   b.create_bone_group("My bone group".to_string(), vec![]);
     /// #   b
     /// # }
     ///
@@ -112,12 +112,9 @@ impl BlenderArmature {
         &self.bone_groups
     }
 
-    /// See [bone_groups] docs
-    ///
-    /// [bone_groups]: struct.BlenderArmature.method#bone_groups
-    #[doc(hidden)]
-    pub fn bone_groups_mut(&mut self) -> &mut HashMap<String, Vec<u8>> {
-        &mut self.bone_groups
+    /// Create a new bone group
+    pub fn create_bone_group(&mut self, name: String, joint_indices: Vec<u8>) {
+        self.bone_groups.insert(name, joint_indices);
     }
 }
 
