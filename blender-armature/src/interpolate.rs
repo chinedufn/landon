@@ -83,10 +83,10 @@ pub struct InterpolationSettings<'a> {
     ///       by consumers as a good starter funcrtion.
     pub blend_fn: Option<fn(f32) -> f32>,
     /// Settings for the current action (animation) of this armature.
-    pub current_action: ActionSettings<'a>,
+    pub current_action: &'a ActionSettings<'a>,
     /// Optional settings for the previous action of this armature. This is useful for blending
     /// the last animation that you were playing into the current one.
-    pub previous_action: Option<ActionSettings<'a>>,
+    pub previous_action: Option<&'a ActionSettings<'a>>,
 }
 
 /// Settings for your armature's current action and (optionally) it's previous action.
@@ -145,7 +145,7 @@ impl BlenderArmature {
     ///
     /// - [ ] Return Result<HashMap<u8, Bone>, InterpolationError>
     /// - [ ] error if clock time is negative
-    pub fn interpolate_bones(&self, opts: &InterpolationSettings) -> BTreeMap<u8, Bone> {
+    pub fn interpolate_bones(&self, opts: InterpolationSettings) -> BTreeMap<u8, Bone> {
         let mut interpolated_bones = self.interpolate_action(&opts, &opts.current_action);
 
         if let Some(ref previous_action) = opts.previous_action {
@@ -390,7 +390,7 @@ mod tests {
                 // TODO: armature.get_group_indices(BlenderArmature::BONE_GROUPS_ALL)
                 joint_indices: &vec![0][..],
                 blend_fn: None,
-                current_action: ActionSettings::new("test", 0.0, true),
+                current_action: &ActionSettings::new("test", 0.0, true),
                 previous_action: None,
             },
         }
@@ -417,7 +417,7 @@ mod tests {
                 current_time: 4.0,
                 joint_indices: &vec![0][..],
                 blend_fn: None,
-                current_action: ActionSettings::new("test", 0.0, true),
+                current_action: &ActionSettings::new("test", 0.0, true),
                 previous_action: None,
             },
         }
@@ -448,7 +448,7 @@ mod tests {
                 current_time: 2.5,
                 joint_indices: &vec![0][..],
                 blend_fn: None,
-                current_action: ActionSettings::new("test", 0.0, true),
+                current_action: &ActionSettings::new("test", 0.0, true),
                 previous_action: None,
             },
         }
@@ -475,7 +475,7 @@ mod tests {
                 current_time: 7.0,
                 joint_indices: &vec![0][..],
                 blend_fn: None,
-                current_action: ActionSettings::new("test", 0.0, false),
+                current_action: &ActionSettings::new("test", 0.0, false),
                 previous_action: None,
             },
         }
@@ -509,8 +509,8 @@ mod tests {
                 current_time: 10.0,
                 joint_indices: &vec![0][..],
                 blend_fn: None,
-                current_action: ActionSettings::new("test", 10.0, true),
-                previous_action: Some(ActionSettings::new("test", 0.0, false)),
+                current_action: &ActionSettings::new("test", 10.0, true),
+                previous_action: Some(&ActionSettings::new("test", 0.0, false)),
             },
         }
         .test();
@@ -543,8 +543,8 @@ mod tests {
                 current_time: 10.0,
                 joint_indices: &vec![0][..],
                 blend_fn: Some(two_second_blend_func),
-                current_action: ActionSettings::new("test", 9.0, true),
-                previous_action: Some(ActionSettings::new("test", 5.0, false)),
+                current_action: &ActionSettings::new("test", 9.0, true),
+                previous_action: Some(&ActionSettings::new("test", 5.0, false)),
             },
         }
         .test();
@@ -575,11 +575,11 @@ mod tests {
             // TODO: self.get_bone_group(BlenderArmature::ALL_BONES)
             joint_indices: &vec![0][..],
             blend_fn: None,
-            current_action: ActionSettings::new("Twist", 0.0, true),
+            current_action: &ActionSettings::new("Twist", 0.0, true),
             previous_action: None,
         };
         // Just making sure that this no longer panics..
-        armature.interpolate_bones(&interp_opts);
+        armature.interpolate_bones(interp_opts);
     }
 
     #[test]
@@ -604,7 +604,7 @@ mod tests {
                 // TODO: armature.get_group_indices(BlenderArmature::BONE_GROUPS_ALL)
                 joint_indices: &vec![0][..],
                 blend_fn: None,
-                current_action: ActionSettings::new("test", 0.0, true),
+                current_action: &ActionSettings::new("test", 0.0, true),
                 previous_action: None,
             },
         }
@@ -612,7 +612,7 @@ mod tests {
     }
 
     impl<'a> DualQuatTestCase<'a> {
-        fn test(&mut self) {
+        fn test(self) {
             let mut actions = HashMap::new();
             let mut keyframes = vec![];
 
@@ -630,7 +630,7 @@ mod tests {
                 ..BlenderArmature::default()
             };
 
-            let interpolated_bones = armature.interpolate_bones(&self.interp_settings);
+            let interpolated_bones = armature.interpolate_bones(self.interp_settings);
             let interpolated_bone = interpolated_bones.get(&0).unwrap();
 
             assert_eq!(
