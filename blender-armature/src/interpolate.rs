@@ -568,7 +568,7 @@ mod tests {
         }
     "#;
         let mut armature: BlenderArmature = serde_json::from_str(armature).unwrap();
-        armature.actions_to_dual_quats();
+        armature.matrices_to_dual_quats();
 
         let interp_opts = InterpolationSettings {
             current_time: 209.109,

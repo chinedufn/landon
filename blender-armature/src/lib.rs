@@ -196,13 +196,17 @@ impl BlenderArmature {
 impl BlenderArmature {
     /// Convert your action matrices into dual quaternions so that you can implement
     /// dual quaternion linear blending.
-    pub fn actions_to_dual_quats(&mut self) {
+    pub fn matrices_to_dual_quats(&mut self) {
         for (_, keyframes) in self.actions.iter_mut() {
             for keyframe in keyframes.iter_mut() {
                 for bone in keyframe.bones.iter_mut() {
                     *bone = BlenderArmature::matrix_to_dual_quat(bone);
                 }
             }
+        }
+
+        for bone in self.inverse_bind_poses.iter_mut() {
+            *bone = BlenderArmature::matrix_to_dual_quat(bone);
         }
     }
 }
@@ -316,7 +320,7 @@ mod tests {
             ..BlenderArmature::default()
         };
 
-        start_armature.actions_to_dual_quats();
+        start_armature.matrices_to_dual_quats();
 
         let mut end_actions = HashMap::new();
         let mut keyframes = vec![];
