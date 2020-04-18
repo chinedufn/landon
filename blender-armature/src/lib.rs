@@ -24,12 +24,15 @@ extern crate serde_derive;
 
 use std::collections::HashMap;
 
+pub use self::coordinate_system::*;
 pub use self::export::*;
+use crate::coordinate_system::CoordinateSystem;
 pub use crate::interpolate::ActionSettings;
 pub use crate::interpolate::InterpolationSettings;
 use nalgebra::Matrix4;
 
 mod convert;
+mod coordinate_system;
 mod export;
 mod interpolate;
 
@@ -54,6 +57,9 @@ pub enum BlenderError {
 /// (I plan to support this specific example in the future)
 ///
 /// TODO: BlenderArmature.y_up() fixes the actions to be y up instead of z up
+///
+/// TODO: Replace String's with generics so that you can have type safety across different
+///       armature properties
 #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
 #[cfg_attr(test, derive(Clone))]
 pub struct BlenderArmature {
@@ -65,6 +71,8 @@ pub struct BlenderArmature {
     // but you can't have floats as keys so need a workaround.
     pub actions: HashMap<String, Vec<Keyframe>>,
     bone_groups: HashMap<String, Vec<u8>>,
+    #[serde(default)]
+    coordinate_system: CoordinateSystem,
 }
 
 impl BlenderArmature {
@@ -134,6 +142,26 @@ pub enum Bone {
 pub struct Keyframe {
     frame_time_secs: f32,
     bones: Vec<Bone>,
+}
+
+impl Keyframe {
+    #[allow(missing_docs)]
+    pub fn new(frame_time_secs: f32, bones: Vec<Bone>) -> Self {
+        Keyframe {
+            frame_time_secs,
+            bones,
+        }
+    }
+
+    /// All of the bones for this keyframe.
+    pub fn bones(&self) -> &Vec<Bone> {
+        &self.bones
+    }
+
+    /// All of the bones for this keyframe.
+    pub fn bones_mut(&mut self) -> &mut Vec<Bone> {
+        &mut self.bones
+    }
 }
 
 // TODO: These methods can be abstracted into calling a method that takes a callback

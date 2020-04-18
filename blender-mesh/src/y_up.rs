@@ -41,8 +41,6 @@ impl BlenderMesh {
             }
         }
 
-        // TODO: Do we need to convert the tangent?
-
         let new_z = -self.bounding_box.min_corner[Y];
         self.bounding_box.min_corner[Y] = self.bounding_box.min_corner[Z];
         self.bounding_box.min_corner[Z] = new_z;
