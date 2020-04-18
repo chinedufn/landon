@@ -26,7 +26,6 @@ use std::collections::HashMap;
 
 pub use self::coordinate_system::*;
 pub use self::export::*;
-use crate::coordinate_system::CoordinateSystem;
 pub use crate::interpolate::ActionSettings;
 pub use crate::interpolate::InterpolationSettings;
 use nalgebra::Matrix4;
