@@ -85,11 +85,11 @@ fn dual_quat_z_up_right_to_y_up_right(bone: &mut Bone) {
     match bone {
         Bone::Matrix(_) => unimplemented!(),
         Bone::DualQuat(dual_quat) => {
-            dual_quat.swap(1, 2);
-            dual_quat[2] = -dual_quat[2];
+            dual_quat.swap(2, 3);
+            dual_quat[3] = -dual_quat[3];
 
-            dual_quat.swap(5, 6);
-            dual_quat[6] = -dual_quat[6];
+            dual_quat.swap(6, 7);
+            dual_quat[7] = -dual_quat[7];
         }
     };
 }
@@ -106,7 +106,7 @@ mod tests {
     fn convert_dual_quaternions_z_up_right_to_y_up_right() {
         let mut arm = BlenderArmature::default();
 
-        let expected_bone = [0., 2., -1., 3., 4., 6., -5., 7.];
+        let expected_bone = [0., 1., 3., -2., 4., 5., 7., -6.];
 
         let bone = Bone::DualQuat([0., 1., 2., 3., 4., 5., 6., 7.]);
         arm.inverse_bind_poses = vec![bone.clone()];

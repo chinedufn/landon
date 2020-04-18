@@ -132,6 +132,8 @@ impl BlenderArmature {
 #[cfg_attr(test, derive(Clone))]
 pub enum Bone {
     Matrix([f32; 16]),
+    /// Rptation:     [w, x, y, z]
+    /// Translation:  [w, x, y, z]
     DualQuat([f32; 8]),
 }
 
