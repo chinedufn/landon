@@ -22,7 +22,7 @@ import os
 
 # Get the absolute path to the addon
 dir = os.path.dirname(__file__)
-addonFilePath = '{}'
+addonFilePath = r'{}'
 
 # Install the addon, enable it and save the user's preferences so that it
 # is available whenever Blender is opened in the future
@@ -61,7 +61,7 @@ pub fn install_armature_to_json() -> std::io::Result<()> {
         r#"
 import bpy
 
-addonFilePath = '{}'
+addonFilePath = r'{}'
 
 # Install the addon, enable it and save the user's preferences so that it
 # is available whenever Blender is opened in the future
