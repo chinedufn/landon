@@ -43,9 +43,21 @@ fn before_after_test_case_leg() {
 #[test]
 fn before_after_test_case_bezier() {
     BeforeAfterTestCase {
-        blend_file: bezier_curve_bone_hooks_deform_off_blend(),
+        blend_file: bezier_curve_bone_hooks_deform_set_to_false_blend(),
         frame_to_render: 19,
         max_error: 0.0179,
+    }
+    .test();
+}
+
+/// If an armature layer is turned off the bones in that layer won't be converted.
+/// This test verifies that we work around this (we just turn all layers on before converting).
+#[test]
+fn armature_layers_turned_off() {
+    BeforeAfterTestCase {
+        blend_file: tests_dir().join("armature-layer-turned-off.blend"),
+        frame_to_render: 1,
+        max_error: 0.,
     }
     .test();
 }
@@ -135,13 +147,12 @@ impl BeforeAfterTestCase {
         let after_img = after_img.path();
 
         // Render before converting to IK
-        let mut before = Command::new("blender")
+        let before = Command::new("blender")
             .arg(&self.blend_file)
             .arg("--background")
             // Rendering a frame in Eevee isn't working headless in Blender 2.80 when
             // you don't have a display as of October 2019 (i.e. in CI)
             .args(&["-E", "CYCLES"])
-            .args(&["--python", run_addon_py().to_str().unwrap()])
             .args(&["--render-output", before_img.to_str().unwrap()])
             .args(&[
                 "--render-frame",
@@ -153,12 +164,13 @@ impl BeforeAfterTestCase {
             .unwrap();
 
         // Render after converting to IK
-        let mut after = Command::new("blender")
+        let after = Command::new("blender")
             .arg(&self.blend_file)
             .arg("--background")
             // Rendering a frame in Eevee isn't working headless in Blender 2.80 when
             // you don't have a display as of October 2019 (i.e. in CI)
             .args(&["-E", "CYCLES"])
+            .args(&["--python", run_addon_py().to_str().unwrap()])
             .args(&["--render-output", after_img.to_str().unwrap()])
             .args(&[
                 "--render-frame",
@@ -169,19 +181,25 @@ impl BeforeAfterTestCase {
             .spawn()
             .unwrap();
 
-        before.wait().unwrap();
-        after.wait().unwrap();
+        let before_output = before.wait_with_output().unwrap();
+        let after_output = after.wait_with_output().unwrap();
+
+        assert_eq!(
+            String::from_utf8(before_output.stderr).unwrap().as_str(),
+            ""
+        );
+        assert_eq!(String::from_utf8(after_output.stderr).unwrap().as_str(), "");
 
         let output = Command::new("compare")
             .arg("-metric")
             .arg("RMSE")
             .arg(&format!(
-                "{}00{}.png",
+                "{}{:04}.png",
                 before_img.to_str().unwrap(),
                 self.frame_to_render
             ))
             .arg(&format!(
-                "{}00{}.png",
+                "{}{:04}.png",
                 after_img.to_str().unwrap(),
                 self.frame_to_render
             ))
@@ -204,7 +222,7 @@ impl BeforeAfterTestCase {
         let root_mean_square_error = root_mean_square_error.parse::<f32>().unwrap();
 
         assert!(
-            root_mean_square_error < self.max_error,
+            root_mean_square_error <= self.max_error,
             "Root square mean error between old and new armature {}. {:?}",
             root_mean_square_error,
             &self.blend_file
@@ -240,9 +258,9 @@ fn unselected_blend() -> PathBuf {
 /// We noticed that if there are bone hooks on a bezier curve that is being used to control a spline IK modifier
 /// the ik-to-fk process would only work if those bone hooks had `Deform` set to true in Blender.
 ///
-/// However, these aren't actually deformation bones - so this file ensures that we've fixed this and that
-/// things work when `Deform` is false.
-fn bezier_curve_bone_hooks_deform_off_blend() -> PathBuf {
+/// However, these aren't actually deformation bones - so this file ensures that we've fixed this
+/// and that things work when `Deform` is false.
+fn bezier_curve_bone_hooks_deform_set_to_false_blend() -> PathBuf {
     tests_dir().join("bone-hooks.blend")
 }
 

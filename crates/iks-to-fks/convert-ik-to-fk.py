@@ -99,6 +99,9 @@ class ConvertIKToFK(bpy.types.Operator):
         fkArmature.select_set(state=True)
         bpy.context.view_layer.objects.active = fkArmature
 
+        # Enable all armature layers. Without this bones on disabled layers wouldn't get keyed.
+        bpy.ops.armature.armature_layers(layers=(True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True))
+
         # Loop through all pose bones and make sure they are selected. Some of our commands require that the bones be selected
         bpy.ops.object.mode_set(mode = 'POSE')
         for poseBone in fkArmature.pose.bones:
