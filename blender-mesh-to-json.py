@@ -127,10 +127,11 @@ class MeshToJSON(bpy.types.Operator):
             num_groups = len(list(vert.groups))
             for group in vert.groups:
                 boneName = mesh.vertex_groups[group.group].name
-                boneIndex = allBoneNames.index(boneName)
+                if boneName in allBoneNames:
+                    boneIndex = allBoneNames.index(boneName)
 
-                mesh_json['attribs']['bone_influences']['bone_indices'].append(boneIndex)
-                mesh_json['attribs']['bone_influences']['bone_weights'].append(group.weight)
+                    mesh_json['attribs']['bone_influences']['bone_indices'].append(boneIndex)
+                    mesh_json['attribs']['bone_influences']['bone_weights'].append(group.weight)
 
             if mesh_json['armature_name'] is not None:
                 mesh_json['attribs']['bone_influences']['bones_per_vertex']['NonUniform'].append(num_groups)

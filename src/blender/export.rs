@@ -52,7 +52,7 @@ pub fn export_blender_data(blender_files: &[PathBuf]) -> Result<String, String> 
     Ok(String::from_utf8(output.stdout).expect("Blender stdout"))
 }
 
-fn open_blender_file(file: &AsRef<Path>) -> String {
+fn open_blender_file(file: &dyn AsRef<Path>) -> String {
     format!(
         r#"
 import bpy
