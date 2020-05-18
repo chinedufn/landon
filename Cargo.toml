@@ -25,6 +25,7 @@ members = [
   "blender-armature",
   "blender-mesh",
   "crates/blender-export-test",
+  "crates/iks-to-fks",
   "mesh-visualizer"
 ]
 

@@ -1,0 +1,48 @@
+{
+  "name": "blender-iks-to-fks",
+  "version": "2.0.3",
+  "description": "A Blender script that takes a mesh and armature that use IKs and other non-deformation bones and creates a new mesh and armature that uses only FK bones",
+  "main": "bin/ik2fk.js",
+  "bin": {
+    "ik2fk": "./bin/ik2fk.js"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "standard",
+    "fix": "standard --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chinedufn/blender-iks-to-fks.git"
+  },
+  "keywords": [
+    "blender",
+    "ik",
+    "fk",
+    "inverse",
+    "forward",
+    "kinematic",
+    "convert",
+    "export",
+    "bone",
+    "joint",
+    "rig",
+    "armature",
+    "mesh"
+  ],
+  "author": "Chinedu Francis Nwafili <frankie.nwafili@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chinedufn/blender-iks-to-fks/issues"
+  },
+  "homepage": "https://github.com/chinedufn/blender-iks-to-fks#readme",
+  "devDependencies": {
+    "standard": "^10.0.3",
+    "tape": "^4.8.0"
+  },
+  "dependencies": {
+    "minimist": "^1.2.0"
+  }
+}

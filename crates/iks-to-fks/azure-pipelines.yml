@@ -1,0 +1,15 @@
+trigger:
+  branches:
+    include:
+      - '*'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+container: chinedufn/blender-rustlang:latest
+
+steps:
+- script: |
+    # TODO: Our tests that try to render aren't working in our docker image but pass locally
+    xvfb-run cargo test --all
+  displayName: 'cargo test --all'
