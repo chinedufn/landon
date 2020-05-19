@@ -34,6 +34,7 @@ class ConvertIKToFK(bpy.types.Operator):
         # and paste the contents of this execute function into the Blender python
         # console and have it work
         import bpy
+        import sys
         import math
 
         originalArmature = None
@@ -73,9 +74,9 @@ class ConvertIKToFK(bpy.types.Operator):
             if mesh.type == 'MESH':
               mesh.select_set(True)
 
-        # Make sure that we have two objects selected (our mesh and armature)
-        if (len(list(bpy.context.selected_objects)) != 2):
-            print('It doesn\'t seem like your file has a mesh with a parent armature')
+        # Make sure that we have at least two objects selected (our armature and its child meshes)
+        if (len(list(bpy.context.selected_objects)) < 2):
+            print('Error: File' + bpy.path.basename(bpy.context.blend_data.filepath) + ' does not have a mesh with a parent armature', file=sys.stderr)
 
         originalActionsList = list(bpy.data.actions)
 
