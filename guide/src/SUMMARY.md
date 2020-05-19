@@ -14,4 +14,4 @@
 
 - [Blender Iks to Fks](./blender-iks-to-fks/README.md)
   - [Troubleshooting](./blender-iks-to-fks/troubleshooting/README.md)
-    - [Rigify](./blender-iks-to-fks/rigify/README.md)
+    - [Rigify](./blender-iks-to-fks/troubleshooting/rigify/README.md)

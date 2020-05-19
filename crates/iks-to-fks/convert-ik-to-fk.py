@@ -100,7 +100,6 @@ class ConvertIKToFK(bpy.types.Operator):
         fkArmature.select_set(state=True)
         bpy.context.view_layer.objects.active = fkArmature
 
-
         # Enable all armature layers. Without this bones on disabled layers wouldn't get keyed.
         bpy.ops.object.mode_set(mode = 'EDIT')
         bpy.ops.armature.armature_layers(layers=(True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True))
@@ -123,8 +122,7 @@ class ConvertIKToFK(bpy.types.Operator):
                 bpy.data.armatures[fkArmature.name].edit_bones.remove(fkEditBone)
 
         # Iterate through every action so that we can bake all keyframes across all actions
-        actionsList = list(bpy.data.actions)
-        for actionInfo in actionsList:
+        for actionInfo in originalActionsList:
             # Next we make our FK bones copy the transforms of their IK rig counterparts
             # So bone1 in FK rig would copy transforms of bone1 in IK rig, and so on
             # We do this for every action since we clear our transforms while baking
@@ -136,7 +134,6 @@ class ConvertIKToFK(bpy.types.Operator):
                 # the name of the bone in our original armature is the same as the name of our
                 # fkArmature bone the armature was duplicated. Therefore we us `fkBone.name`
                 copyTransforms.subtarget = fkBone.name
-
 
             # Now that our FK rig is copying our IK rigs transforms, we insert visual keyframes
             # for every keyframe. This gives our FK rigs the IK rigs transforms, after
