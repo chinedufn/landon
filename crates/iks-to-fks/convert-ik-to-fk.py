@@ -37,7 +37,7 @@ class ConvertIKToFK(bpy.types.Operator):
         import sys
         import math
 
-        originalArmature = None
+        ikArmature = None
         originalMesh = None
 
         # We first check if any of the already selected objects is a mesh that has a parent armature.
@@ -45,7 +45,7 @@ class ConvertIKToFK(bpy.types.Operator):
         for obj in bpy.context.selected_objects:
             if obj.type == 'MESH' and obj.parent and obj.parent.type == 'ARMATURE':
                 originalMesh = obj
-                originalArmature = obj.parent
+                ikArmature = obj.parent
                 break
 
         # If no mesh is selected, we look for the first object that we can find that has an armature as a parent
@@ -53,24 +53,24 @@ class ConvertIKToFK(bpy.types.Operator):
             for obj in bpy.data.objects:
                 if obj.type == 'MESH' and obj.parent and obj.parent.type == 'ARMATURE':
                     originalMesh = obj
-                    originalArmature = obj.parent
+                    ikArmature = obj.parent
                     break
 
         # Deselect all objects and then select ONLY our armature and all of its children
         for obj in bpy.context.selected_objects:
             obj.select_set(state = False)
 
-        if originalMesh != None and originalArmature != None:
+        if originalMesh != None and ikArmature != None:
             originalMesh.select_set(state=True)
-            originalArmature.select_set(state=True)
+            ikArmature.select_set(state=True)
 
-        if originalArmature != None:
+        if ikArmature != None:
           # An active object is required in order to change into object mode
-          bpy.context.view_layer.objects.active = originalArmature
+          bpy.context.view_layer.objects.active = ikArmature
 
           bpy.ops.object.mode_set(mode = 'OBJECT')
           # Select our mesh and armature so that we can duplicate them later
-          for mesh in originalArmature.children:
+          for mesh in ikArmature.children:
             if mesh.type == 'MESH':
               mesh.select_set(True)
 
@@ -88,10 +88,7 @@ class ConvertIKToFK(bpy.types.Operator):
         # boke hooks for a bezier curve. Trying to duplicate all of this onto a new armature would be difficult since
         # we'd need to also duplicate these bezier curves / bone hook data.
         bpy.ops.object.duplicate()
-        duplicateOfOriginalArmature = bpy.context.view_layer.objects.active
-
-        ikArmature = originalArmature
-        fkArmature = duplicateOfOriginalArmature
+        fkArmature = bpy.context.view_layer.objects.active
 
         # Deselect all objects and then select ONLY our soon-to-be fkArmature
         for obj in bpy.context.selected_objects:
@@ -114,14 +111,13 @@ class ConvertIKToFK(bpy.types.Operator):
             for constraint in bone.constraints:
                 bone.constraints.remove(constraint)
 
-        # Now we remove all non deform bones from our FK armature,
-        # leaving only our FK bones
+        # Now we remove all non deform bones from our FK armature
         bpy.ops.object.mode_set(mode = 'EDIT')
         for fkEditBone in bpy.data.armatures[fkArmature.name].edit_bones:
             if fkEditBone.use_deform == False:
                 bpy.data.armatures[fkArmature.name].edit_bones.remove(fkEditBone)
 
-        # Iterate through every action so that we can bake all keyframes across all actions
+         # Iterate through every action so that we can bake all keyframes across all actions
         for actionInfo in originalActionsList:
             # Next we make our FK bones copy the transforms of their IK rig counterparts
             # So bone1 in FK rig would copy transforms of bone1 in IK rig, and so on

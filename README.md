@@ -11,6 +11,8 @@ Landon [![Build Status](https://dev.azure.com/frankienwafili/landon/_apis/build/
 
 - [landon API / CLI docs](https://docs.rs/landon/badge.svg)
 
+- [Convert Ik to FK](/crates/iks-to-fks)
+
 ## Initial Background / Motivation
 
 Before this module I would export blender mesh / armature data to COLLADA using blender's collada exporter,

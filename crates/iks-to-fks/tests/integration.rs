@@ -1,8 +1,5 @@
-extern crate tempfile;
-
 use std::path::PathBuf;
 use std::process::Command;
-use tempfile::NamedTempFile;
 
 /// Our test blender file has 3 objects - a camera, mesh and armature
 /// Here we ensure that after we run the script there are 5 objects,
@@ -56,8 +53,26 @@ fn before_after_test_case_bezier() {
 fn armature_layers_turned_off() {
     BeforeAfterTestCase {
         blend_file: tests_dir().join("armature-layer-turned-off.blend"),
-        frame_to_render: 1,
-        max_error: 0.,
+        frame_to_render: 4,
+        max_error: 0.01,
+    }
+    .test();
+}
+
+/// Verify that we properly convert a rigify rig
+///
+/// The solution ended up being to:
+///
+/// ```text
+/// fkArmature.animation_data_clear()
+/// fkArmature.data.animation_data_clear()
+/// ```
+#[test]
+fn rigify() {
+    BeforeAfterTestCase {
+        blend_file: tests_dir().join("rigify.blend"),
+        frame_to_render: 12,
+        max_error: 0.002,
     }
     .test();
 }
@@ -140,11 +155,16 @@ struct BeforeAfterTestCase {
 
 impl BeforeAfterTestCase {
     fn test(self) {
-        let before_img = NamedTempFile::new().unwrap();
-        let before_img = before_img.path();
+        let file_stem = self
+            .blend_file
+            .file_stem()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
 
-        let after_img = NamedTempFile::new().unwrap();
-        let after_img = after_img.path();
+        let before_img = outdir().join(format!("{}-before-", file_stem));
+        let after_img = outdir().join(format!("{}-after-", file_stem));
 
         // Render before converting to IK
         let before = Command::new("blender")
@@ -274,4 +294,9 @@ fn multiple_meshes_for_armature() -> PathBuf {
 /// Used to run our blender-iks-to-fks addon
 fn run_addon_py() -> PathBuf {
     tests_dir().join("../run-addon.py")
+}
+
+/// Output dir where blender renders go
+fn outdir() -> PathBuf {
+    tests_dir().join("output")
 }
