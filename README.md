@@ -37,39 +37,10 @@ The goal is that getting data out of Blender and into your rendering pipeline be
 
 `landon` is in need of more documentation and hand holding around how to integrate it into your pipeline.
 
-For example, all of the tooling uses `Rust` right now, so if you want to run any of the existing pre-processing functions such
-as `triangulating` your mesh you need `Rust` installed.
+As well as examples of integrating the tooling into your non-Rust application via foreign function interface (C api)... WebAssembly... etc.
 
-So we need a binary with a CLI that you can use to interface with the API without needing Rust. As well as examples of integrating
-the tooling into your non-Rust application via foreign function interface... WebAssembly... etc.
-
-But for now.. Take a look at the [mesh-visualizer](/mesh-visualizer) directory to see a full working example of implementing skeletal
+For now.. Take a look at the [mesh-visualizer](/mesh-visualizer) directory to see a full working example of implementing skeletal
 animation with models that were exported using `landon`.
-
-## Running the mesh visualizer locally
-
-```
-# Install a static server that sets the application/wasm mime type
-npm install -g http-server
-# Watcher
-cargo install watchexec
-
-git clone https://github.com/chinedufn/landon
-
-watchexec -r -w mesh-visualizer --ignore mesh-visualizer/out ./mesh-visualizer/build.sh
-
-http-server ./mesh-visualizer/out --open
-```
-
-Your web browser should open up with an application that allows you to visualize all of the model's in our test suite.
-
-![Mesh visualizer demo site](/images/mesh-visualizer-example.gif)
-
-## Contributing
-
-Please open issues explaining your intended use case and let's see if we should or shouldn't make `landon` support it.
-
-Also feel free to open issues with any questions / thoughts that you have!
 
 ## To Install
 
@@ -100,6 +71,31 @@ landon -h
 # Exporting data
 landon blender export -h
 ```
+
+## Running the mesh visualizer locally
+
+```
+# Install a static server that sets the application/wasm mime type
+npm install -g http-server
+# Watcher
+cargo install watchexec
+
+git clone https://github.com/chinedufn/landon
+
+watchexec -r -w mesh-visualizer --ignore mesh-visualizer/out ./mesh-visualizer/build.sh
+
+http-server ./mesh-visualizer/out --open
+```
+
+Your web browser should open up with an application that allows you to visualize all of the model's in our test suite.
+
+![Mesh visualizer demo site](/images/mesh-visualizer-example.gif)
+
+## Contributing
+
+Please open issues explaining your intended use case and let's see if we should or shouldn't make `landon` support it.
+
+Also feel free to open issues with any questions / thoughts that you have!
 
 ## To test
 
