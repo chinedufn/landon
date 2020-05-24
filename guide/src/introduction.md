@@ -19,7 +19,7 @@ let armatures = blender_armature::parse_armatures_from_blender_stdout(&blender_s
 ```
 
 `landon` can export data that most other exporters typically don't, such as [custom mesh properties][custom-properties]
-and pose markers.
+and bone groups.
 
 ## Goals
 
