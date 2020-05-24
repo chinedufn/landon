@@ -52,7 +52,7 @@ fn parse_skinned_letter_f_mesh_data() {
         stderr, stdout
     );
 
-    let parsed_meshes = parse_meshes_from_blender_stdout(&stdout).unwrap();
+    let parsed_meshes = parse_meshes_from_blender_stdout(&stdout);
 
     let (_filename, mesh) = parsed_meshes.iter().next().unwrap();
 
@@ -98,7 +98,7 @@ fn parse_skinned_letter_f_armature_data() {
         stderr, stdout
     );
 
-    let parsed_armatures = parse_armatures_from_blender_stdout(&stdout).unwrap();
+    let parsed_armatures = parse_armatures_from_blender_stdout(&stdout);
 
     let (_filename, armature) = parsed_armatures.iter().next().unwrap();
 

@@ -44,14 +44,24 @@ animation with models that were exported using `landon`.
 
 ## Quick Start
 
+Here's an example where we'll download a Blender file, export the meshes to JSON and then extract each bounding box from
+the JSON using the [jq](https://stedolan.github.io/jq/) CLI.
+
 ```
+# Install landon
 cargo install -f landon
 landon install --mesh-to-json --armature-to-json
 
+# 
 BLEND_FILE='https://github.com/chinedufn/landon/blob/master/crates/blender-export-test/src/tests/multiple_meshes.blend?raw=true'
 curl -L $BLEND_FILE > /tmp/multiple-meshes.blend
 
-landon export -f /tmp/multiple-meshes.blend | landon parse
+# Write every meshname along with that meshes bounding box to stdout
+landon export -f /tmp/multiple-meshes.blend | landon parse | jq -r '.meshes | to_entries[] | .value | to_entries[] | "\(.key), \(.value | .bounding_box)"'
+
+# Second_Mesh, {"min_corner":[-1.3121787,0.44901967,0.67399526],"max_corner":[0.7619256,2.523124,2.7480996]}
+# AMesh, {"min_corner":[-3.2487504,-3.3098261,1.2566323],"max_corner":[-1.2487504,-1.3098261,3.2566323]}
+# Mesh3, {"min_corner":[-1.2058887,-2.4149196,-1.8447866],"max_corner":[0.86821556,-0.3408153,0.22931767]}
 ```
 
 ## To Install
@@ -61,32 +71,29 @@ We currently support `Blender 2.80`
 ```
 cargo install -f landon
 
-# Install blender mesh json exporter
-landon install --mesh-to-json
+landon install --mesh-to-json --armature-to-json
+# FIXME: landon install --ik-to-fk
+npm install -g ik2fk && ik2fk --install
 
-# Install blender armature json addon
-landon install --armature-to-json
-
-# Moree info
+# More info
 landon install --help
 ```
 
 ## API
 
+Landon provides a Rust API for exporting data programatically. 
+
 [landon](https://docs.rs/landon)
+
+In the future we will also provide C and Wasm APIs as light wrappers around the Rust API in order
+to enable interop with other languages.
+
 
 ## CLI Usage
 
 ```sh
 # Help on all of the subcommands
 landon --help
-```
-
-```sh
-landon export -f /path/to/file.blend -f /path/to/another-file.blend
-
-# More info
-landon export --help
 ```
 
 ## Running the mesh visualizer locally

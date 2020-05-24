@@ -13,6 +13,9 @@
 #[macro_use]
 extern crate structopt;
 
+#[macro_use]
+extern crate serde;
+
 use structopt::StructOpt;
 
 mod blender;
@@ -20,6 +23,7 @@ mod blender;
 pub use self::blender::*;
 use crate::subcommands::export::ExportCmd;
 use crate::subcommands::install::InstallCmd;
+use crate::subcommands::parse::ParseCmd;
 
 mod subcommands;
 
@@ -34,6 +38,7 @@ impl Subcommand for Landon {
         let cmd: &dyn Subcommand = match self {
             Landon::Export(cmd) => cmd,
             Landon::Install(cmd) => cmd,
+            Landon::Parse(cmd) => cmd,
         };
         cmd.run()
     }
@@ -47,6 +52,8 @@ pub enum Landon {
     Export(ExportCmd),
     /// Install various Blender addons
     Install(InstallCmd),
+    /// Parse exported Blender data from stdin or a file.
+    Parse(ParseCmd),
 }
 
 trait Subcommand {

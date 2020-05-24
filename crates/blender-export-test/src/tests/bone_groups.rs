@@ -23,7 +23,7 @@ fn exports_bone_groups() -> Result<(), anyhow::Error> {
 
     assert_eq!(stderr.as_str(), "");
 
-    let parsed_armatures = parse_armatures_from_blender_stdout(&stdout).unwrap();
+    let parsed_armatures = parse_armatures_from_blender_stdout(&stdout);
     let parsed_armatures = blender_armature::flatten_exported_armatures(&parsed_armatures).unwrap();
 
     let armature = parsed_armatures.get("BoneGroupsTest").unwrap();

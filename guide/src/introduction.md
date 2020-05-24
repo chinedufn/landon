@@ -14,8 +14,8 @@ output yourself if you don't use Rust.
 ```rust
 // Parsing exported landon data via the Rust API.
 // Rust is not required - you can read the exported JSON data with any programming language.
-let meshes = blender_mesh::parse_meshes_from_blender_stdout(&blender_stdout).unwrap();
-let armatures = blender_armature::parse_armatures_from_blender_stdout(&blender_stdout).unwrap();
+let meshes = blender_mesh::parse_meshes_from_blender_stdout(&blender_stdout);
+let armatures = blender_armature::parse_armatures_from_blender_stdout(&blender_stdout);
 ```
 
 ## Goals

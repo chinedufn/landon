@@ -51,7 +51,7 @@ fn parse_file_with_multiple_armatures() {
 
     let stdout = String::from_utf8(blender_output.stdout).unwrap();
 
-    let parsed_armatures = parse_armatures_from_blender_stdout(&stdout).unwrap();
+    let parsed_armatures = parse_armatures_from_blender_stdout(&stdout);
     let parsed_armatures = blender_armature::flatten_exported_armatures(&parsed_armatures).unwrap();
     assert_eq!(parsed_armatures.len(), 2);
 }

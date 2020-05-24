@@ -76,8 +76,8 @@ fn main() {
         panic!("{}", blender_stderr);
     }
 
-    let meshes = blender_mesh::parse_meshes_from_blender_stdout(&blender_stdout).unwrap();
-    let armatures = blender_armature::parse_armatures_from_blender_stdout(&blender_stdout).unwrap();
+    let meshes = blender_mesh::parse_meshes_from_blender_stdout(&blender_stdout);
+    let armatures = blender_armature::parse_armatures_from_blender_stdout(&blender_stdout);
 
     let mut mesh_names_to_models = HashMap::new();
 

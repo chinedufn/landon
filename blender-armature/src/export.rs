@@ -16,9 +16,7 @@ pub type ArmaturesByArmatureName = HashMap<String, BlenderArmature>;
 /// END_ARMATURE_JSON /path/to/file.blend my_armature_name
 ///
 /// @see blender-armature-to-json.py - This is where we write to stdout
-pub fn parse_armatures_from_blender_stdout(
-    blender_stdout: &str,
-) -> Result<ArmaturesByFilename, failure::Error> {
+pub fn parse_armatures_from_blender_stdout(blender_stdout: &str) -> ArmaturesByFilename {
     let mut filenames_to_armatures = HashMap::new();
 
     let mut index = 0;
@@ -39,7 +37,7 @@ pub fn parse_armatures_from_blender_stdout(
         index = next_start_index;
     }
 
-    Ok(filenames_to_armatures)
+    filenames_to_armatures
 }
 
 /// Convert ArmatureeshByFilename into a HashMap<ArmatureName, BlenderArmature> that flattens all of the

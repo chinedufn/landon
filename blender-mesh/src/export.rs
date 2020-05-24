@@ -16,9 +16,7 @@ pub type MeshesByMeshName = HashMap<String, BlenderMesh>;
 /// END_MESH_JSON /path/to/file.blend my_mesh_name
 ///
 /// @see blender-mesh-to-json.py - This is where we write to stdout
-pub fn parse_meshes_from_blender_stdout(
-    blender_stdout: &str,
-) -> Result<MeshesByFilename, failure::Error> {
+pub fn parse_meshes_from_blender_stdout(blender_stdout: &str) -> MeshesByFilename {
     let mut filenames_to_meshes = HashMap::new();
 
     let mut index = 0;
@@ -40,7 +38,7 @@ pub fn parse_meshes_from_blender_stdout(
         index = next_start_index;
     }
 
-    Ok(filenames_to_meshes)
+    filenames_to_meshes
 }
 
 /// Convert MesheshByFilename into a HashMap<MeshName, BlenderMesh> that flattens all of the

@@ -32,7 +32,7 @@ fn exports_custom_properties() {
 
     assert_eq!(stderr, "");
 
-    let parsed_meshes = parse_meshes_from_blender_stdout(&stdout).unwrap();
+    let parsed_meshes = parse_meshes_from_blender_stdout(&stdout);
 
     let (_filename, mesh) = parsed_meshes.iter().next().unwrap();
 

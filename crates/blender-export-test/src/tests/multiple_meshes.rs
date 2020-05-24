@@ -30,12 +30,12 @@ fn parse_file_with_multiple_meshes() {
 
     let mut select_mesh1 = File::create(SELECT_MESH_1_SCRIPT).unwrap();
     select_mesh1
-        .write_all(set_active_object_by_name("Mesh1").as_bytes())
+        .write_all(set_active_object_by_name("A-Mesh").as_bytes())
         .unwrap();
 
     let mut select_mesh2 = File::create(SELECT_MESH_2_SCRIPT).unwrap();
     select_mesh2
-        .write_all(set_active_object_by_name("Mesh2").as_bytes())
+        .write_all(set_active_object_by_name("Second_Mesh").as_bytes())
         .unwrap();
 
     let mut select_mesh3 = File::create(SELECT_MESH_3_SCRIPT).unwrap();
@@ -58,7 +58,7 @@ fn parse_file_with_multiple_meshes() {
         .expect("Failed to execute Blender process");
 
     let stdout = String::from_utf8(blender_output.stdout).unwrap();
-    let parsed_meshes = parse_meshes_from_blender_stdout(&stdout).unwrap();
+    let parsed_meshes = parse_meshes_from_blender_stdout(&stdout);
     let parsed_meshes = blender_mesh::flatten_exported_meshes(&parsed_meshes).unwrap();
     assert_eq!(parsed_meshes.len(), 3);
 }
