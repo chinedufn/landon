@@ -45,6 +45,7 @@ impl Subcommand for Landon {
 }
 
 /// The Landon CLI
+/// documentation: https://chinedufn.github.io/landon/landon-cli/index.html
 #[derive(Debug, StructOpt)]
 #[structopt(name = "landon", rename_all = "kebab-case")]
 pub enum Landon {

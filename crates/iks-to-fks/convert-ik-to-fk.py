@@ -74,9 +74,9 @@ class ConvertIKToFK(bpy.types.Operator):
             if mesh.type == 'MESH':
               mesh.select_set(True)
 
-        # Make sure that we have at least two objects selected (our armature and its child meshes)
-        if (len(list(bpy.context.selected_objects)) < 2):
-            print('Error: File' + bpy.path.basename(bpy.context.blend_data.filepath) + ' does not have a mesh with a parent armature', file=sys.stderr)
+        # Make sure that we have an armature selected
+        if (len(list(bpy.context.selected_objects)) == 0):
+            print('Error: File' + bpy.path.basename(bpy.context.blend_data.filepath) + ' does not have any armatures.', file=sys.stderr)
 
         originalActionsList = list(bpy.data.actions)
 

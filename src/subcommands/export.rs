@@ -16,8 +16,9 @@ impl Subcommand for ExportCmd {
     }
 }
 
-const USAGE: &'static str = r#"# Prints mesh and armature data to stdout. You'll typically parse that output using:
+const USAGE: &'static str = r#"# Prints mesh and armature data to stdout.
 landon export -f /path/to/file1.blend -f /path/to/file2.blend
-landon export -f /path/to/fil3.blend | landon parse --mode filename
+landon export -f /path/to/fil3.blend | landon parse
+# Full help documentation
 landon export --help
 "#;

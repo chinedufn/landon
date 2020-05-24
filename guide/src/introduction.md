@@ -18,6 +18,9 @@ let meshes = blender_mesh::parse_meshes_from_blender_stdout(&blender_stdout);
 let armatures = blender_armature::parse_armatures_from_blender_stdout(&blender_stdout);
 ```
 
+`landon` can export data that most other exporters typically don't, such as [custom mesh properties][custom-properties]
+and pose markers.
+
 ## Goals
 
 - Make it as easy as possible to take something from Blender and render it in your application without straying from the raw Blender data
@@ -30,3 +33,5 @@ Some examples of things that `landon` might help you do include:
 - Export all of the meshes in a `.blend` file into a collection of `BlenderMesh`'s and call methods to get the vertex data such as positions, uvs and normals from that `BlenderMesh`.
 
 - Export all of the armatures in a `.blend` file and call methods to get the interpolated joint data at a certain keyframe to power your skeletal animation.
+
+[custom-properties]: https://docs.rs/blender-mesh/latest/blender_mesh/struct.BlenderMesh.html#method.custom_properties
