@@ -35,11 +35,10 @@ The goal is that getting data out of Blender and into your rendering pipeline be
 
 ## Getting Started
 
-`landon` is in need of more documentation and hand holding around how to integrate it into your pipeline.
+[The Landon Book](https://chinedufn.github.io/landon/) is a work in progress guide with examples on how to use the libraries
+in `landon`.
 
-As well as examples of integrating the tooling into your non-Rust application via foreign function interface (C api)... WebAssembly... etc.
-
-For now.. Take a look at the [mesh-visualizer](/mesh-visualizer) directory to see a full working example of implementing skeletal
+Take a look at the [mesh-visualizer](/mesh-visualizer) directory to see a full working example of implementing skeletal
 animation with models that were exported using `landon`.
 
 ## Quick Start
