@@ -10,29 +10,46 @@
 
 #![deny(missing_docs)]
 
-use clap::load_yaml;
-use clap::App;
+#[macro_use]
+extern crate structopt;
+
+use structopt::StructOpt;
 
 mod blender;
-use self::blender::process_blender_subcommand;
 
 pub use self::blender::*;
+use crate::subcommands::export::ExportCmd;
+use crate::subcommands::install::InstallCmd;
+
+mod subcommands;
 
 /// Run the landon CLI
-pub fn run() {
-    let yaml = load_yaml!("cli.yml");
+pub fn run() -> Result<(), anyhow::Error> {
+    let landon = Landon::from_args();
+    landon.run()
+}
 
-    let mut app = App::from_yaml(yaml);
-
-    let mut help_text = vec![];
-    app.write_long_help(&mut help_text).unwrap();
-    let help_text: String = String::from_utf8(help_text).unwrap();
-
-    let matches = app.get_matches();
-
-    if let Some(matches) = matches.subcommand_matches("blender") {
-        process_blender_subcommand(&matches);
-    } else {
-        println!("{}", help_text)
+impl Subcommand for Landon {
+    fn run(&self) -> Result<(), anyhow::Error> {
+        let cmd: &dyn Subcommand = match self {
+            Landon::Export(cmd) => cmd,
+            Landon::Install(cmd) => cmd,
+        };
+        cmd.run()
     }
+}
+
+/// The Landon CLI
+#[derive(Debug, StructOpt)]
+#[structopt(name = "landon", rename_all = "kebab-case")]
+pub enum Landon {
+    /// Export meshes and armatures from your Blender Files
+    Export(ExportCmd),
+    /// Install various Blender addons
+    Install(InstallCmd),
+}
+
+trait Subcommand {
+    /// Run a subcommand
+    fn run(&self) -> Result<(), anyhow::Error>;
 }

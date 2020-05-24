@@ -1,5 +1,5 @@
 use landon;
 
-fn main() {
-    landon::run();
+fn main() -> Result<(), anyhow::Error> {
+    landon::run()
 }

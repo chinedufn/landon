@@ -12,3 +12,5 @@ mesh-visualizer/dist
 
 # GH Pages website
 mesh-visualizer/site-dist
+
+*.blend1

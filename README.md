@@ -42,6 +42,18 @@ As well as examples of integrating the tooling into your non-Rust application vi
 For now.. Take a look at the [mesh-visualizer](/mesh-visualizer) directory to see a full working example of implementing skeletal
 animation with models that were exported using `landon`.
 
+## Quick Start
+
+```
+cargo install -f landon
+landon install --mesh-to-json --armature-to-json
+
+BLEND_FILE='https://github.com/chinedufn/landon/blob/master/crates/blender-export-test/src/tests/multiple_meshes.blend?raw=true'
+curl -L $BLEND_FILE > /tmp/multiple-meshes.blend
+
+landon export -f /tmp/multiple-meshes.blend | landon parse
+```
+
 ## To Install
 
 We currently support `Blender 2.80`
@@ -50,10 +62,13 @@ We currently support `Blender 2.80`
 cargo install -f landon
 
 # Install blender mesh json exporter
-landon blender install mesh-to-json
+landon install --mesh-to-json
 
 # Install blender armature json addon
-landon blender install armature-to-json
+landon install --armature-to-json
+
+# Moree info
+landon install --help
 ```
 
 ## API
@@ -64,15 +79,19 @@ landon blender install armature-to-json
 
 ```sh
 # Help on all of the subcommands
-landon -h
+landon --help
 ```
 
 ```sh
-# Exporting data
-landon blender export -h
+landon export -f /path/to/file.blend -f /path/to/another-file.blend
+
+# More info
+landon export --help
 ```
 
 ## Running the mesh visualizer locally
+
+TODO: Rewrite this example and remove watchexec as a dependency.
 
 ```
 # Install a static server that sets the application/wasm mime type

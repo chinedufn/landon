@@ -32,7 +32,7 @@ for obj in objects:
 /// to parse the exported data into the data structures that you need.
 ///
 /// TODO: Integration test this
-pub fn export_blender_data(blender_files: &[PathBuf]) -> Result<String, String> {
+pub fn export_blender_data(blender_files: &[PathBuf]) -> Result<String, anyhow::Error> {
     let mut blender_process = Command::new("blender");
     let blender_process = blender_process.arg("--background");
 
@@ -46,10 +46,12 @@ pub fn export_blender_data(blender_files: &[PathBuf]) -> Result<String, String> 
     let output = blender_process.output().unwrap();
 
     if output.stderr.len() > 0 {
-        return Err(String::from_utf8(output.stderr).expect("Blender stderr"));
+        return Err(BlenderExportError::Stderr(String::from_utf8(
+            output.stderr,
+        )?))?;
     }
 
-    Ok(String::from_utf8(output.stdout).expect("Blender stdout"))
+    Ok(String::from_utf8(output.stdout)?)
 }
 
 fn open_blender_file(file: &dyn AsRef<Path>) -> String {
@@ -60,4 +62,12 @@ bpy.ops.wm.open_mainfile(filepath="{}")
 "#,
         file.as_ref().to_str().unwrap()
     )
+}
+
+/// An error while exporting data from Blender
+#[derive(Debug, thiserror::Error)]
+#[allow(missing_docs)]
+pub enum BlenderExportError {
+    #[error("Error while exporting data from blender: {0}")]
+    Stderr(String),
 }
