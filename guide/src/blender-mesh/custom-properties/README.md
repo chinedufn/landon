@@ -1,6 +1,6 @@
 # Custom Properties
 
-`landon` exports all [custom properties] found on a mesh.
+`landon` exports all [custom properties][custom-properties-rust-api] found on a mesh.
 
 These can be useful when your application code wants to treat certain meshes differently based on certain
 properties that you label the mesh with in Blender.
@@ -17,4 +17,6 @@ In Blender custom properties these can be added in the Object section of the Con
 
 ### Rust API
 
-https://docs.rs/blender-mesh/0.4.6/blender_mesh/struct.BlenderMesh.html#method.custom_properties
+[Rust API][custom-properties-rust-api]
+
+[custom-properties-rust-api]: https://docs.rs/blender-mesh/latest/blender_mesh/struct.BlenderMesh.html#method.custom_properties
