@@ -10,6 +10,7 @@
 
 - [Blender Mesh](./blender-mesh/README.md)
   - [Custom Properties](./blender-mesh/custom-properties/README.md)
+  - [Materials](./blender-mesh/materials/README.md)
 
 - [Blender Armature](./blender-armature/README.md)
   - [Bone Groups](./blender-armature/bone-groups/README.md)

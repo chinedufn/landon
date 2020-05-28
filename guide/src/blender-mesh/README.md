@@ -1,10 +1,16 @@
 # Blender Mesh
 
-## Installing the mesh exporter add-on
+The `blender-mesh` crate contains data structures and methods for working with meshes.
 
-```
-# TODO: Expose a CLI tool for this instead of needing to clone the repo...
-git clone git@github.com:chinedufn/landon.git
-cd landon
-blender --background --python ./install-addon.py
-```
+While the guide will be written with Blender users in mind, please note that
+a mesh is just a collection of data and as such almost all of `blender-mesh` knows nothing about
+`Blender` and can be used standalone.
+
+This chapter will introduce and explain different mesh data and functions.
+
+The [full API documentation][api] can be found on `docs.rs`.
+
+The JSON that is exported by the CLI matches the structure of the API, so the API is still a good
+reference for CLI-only users.
+
+[api]: https://docs.rs/blender-mesh/latest/blender_mesh
