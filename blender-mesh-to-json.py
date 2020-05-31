@@ -2,6 +2,7 @@
 # armature into a JSON file
 
 import bpy
+import collections
 import json
 import os
 from mathutils import Vector
@@ -294,7 +295,6 @@ class MeshToJSON(bpy.types.Operator):
             if property == '_RNA_UI':
                 continue
 
-
             # Some properties such as 'cycles_visibility' are automatically inserted by Blender, but can't be
             # serialized.
             # Here we test if a property can be serialized, and if it can't we just skip it
@@ -302,7 +302,17 @@ class MeshToJSON(bpy.types.Operator):
                 value = mesh.get(property)
                 json.dumps(value)
 
-                mesh_json['custom_properties'][property] = value
+                typed_value = {}
+
+                # TODO: Support vectors
+                if isinstance(value, float):
+                    typed_value = {"Float": value}
+                elif isinstance(value, int):
+                    typed_value = {"Int": value}
+                elif isinstance(value, str):
+                    typed_value = {"String": value}
+
+                mesh_json['custom_properties'][property] = typed_value
             except:
                 pass
 

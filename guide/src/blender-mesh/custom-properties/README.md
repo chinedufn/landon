@@ -15,6 +15,10 @@ In Blender custom properties these can be added in the Object section of the Con
 
 ![Custom mesh properties](./custom-properties.png)
 
+Int, Float and String custom properties are exported.
+
+Vectors are not currently supported - but feel free to open an issue if you need this.
+
 ### Rust API
 
 [BlenderMesh.custom_properties Rust API][custom-properties-rust-api]

@@ -69,7 +69,15 @@ fn expected_mesh_data() -> String {
             },
             "materials": {},
             "custom_properties": {
-                "example_property": 5.0
+                "example_float": {
+                    "Float": 20.0
+                },
+                "example_int": {
+                    "Int": 30
+                },
+                "example_string": {
+                    "String": "Hello"
+                }
             }
         }
     "#.to_string()

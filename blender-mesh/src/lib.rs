@@ -24,6 +24,7 @@ extern crate serde_derive;
 pub use self::combine_indices::CreateSingleIndexConfig;
 pub use self::export::*;
 pub use crate::bounding_box::BoundingBox;
+use crate::custom_property::CustomProperty;
 pub use crate::material::PrincipledBSDF;
 pub use crate::vertex_attributes::{MultiIndexedVertexAttributes, SingleIndexedVertexAttributes};
 pub use material::{Channel, MaterialInput};
@@ -32,6 +33,7 @@ use std::collections::HashMap;
 mod bone;
 mod bounding_box;
 mod combine_indices;
+mod custom_property;
 mod export;
 mod face_tangents;
 mod interleave;
@@ -68,7 +70,7 @@ pub struct BlenderMesh {
     #[serde(default)]
     materials: HashMap<String, PrincipledBSDF>,
     #[serde(default)]
-    custom_properties: HashMap<String, f32>,
+    custom_properties: HashMap<String, CustomProperty>,
 }
 
 impl BlenderMesh {
@@ -90,7 +92,7 @@ impl BlenderMesh {
     /// Custom properties for this mesh
     ///
     /// i.e. in Blender this might be found with `bpy.context.view_layer.objects.active.keys()`
-    pub fn custom_properties(&self) -> &HashMap<String, f32> {
+    pub fn custom_properties(&self) -> &HashMap<String, CustomProperty> {
         &self.custom_properties
     }
 
