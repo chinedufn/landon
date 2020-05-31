@@ -60,18 +60,23 @@ fn armature_layers_turned_off() {
 }
 
 /// Verify that we properly convert a rigify rig
-///
-/// The solution ended up being to:
-///
-/// ```text
-/// fkArmature.animation_data_clear()
-/// fkArmature.data.animation_data_clear()
-/// ```
 #[test]
 fn rigify() {
     BeforeAfterTestCase {
         blend_file: tests_dir().join("rigify.blend"),
         frame_to_render: 12,
+        max_error: 0.002,
+    }
+    .test();
+}
+
+/// Verify that we can convert from IK to FK for a mesh that has its armature linked from another
+/// .blend file.
+#[test]
+fn imported_linked_armature() {
+    BeforeAfterTestCase {
+        blend_file: tests_dir().join("linked-armature.blend"),
+        frame_to_render: 10,
         max_error: 0.002,
     }
     .test();
@@ -210,19 +215,21 @@ impl BeforeAfterTestCase {
         );
         assert_eq!(String::from_utf8(after_output.stderr).unwrap().as_str(), "");
 
+        let before_img = format!(
+            "{}{:04}.png",
+            before_img.to_str().unwrap(),
+            self.frame_to_render
+        );
+        let after_img = format!(
+            "{}{:04}.png",
+            after_img.to_str().unwrap(),
+            self.frame_to_render
+        );
         let output = Command::new("compare")
             .arg("-metric")
             .arg("RMSE")
-            .arg(&format!(
-                "{}{:04}.png",
-                before_img.to_str().unwrap(),
-                self.frame_to_render
-            ))
-            .arg(&format!(
-                "{}{:04}.png",
-                after_img.to_str().unwrap(),
-                self.frame_to_render
-            ))
+            .arg(&before_img)
+            .arg(&after_img)
             .arg("/dev/null")
             .output()
             .unwrap();
@@ -243,9 +250,15 @@ impl BeforeAfterTestCase {
 
         assert!(
             root_mean_square_error <= self.max_error,
-            "Root square mean error between old and new armature {}. {:?}",
+            r#"Root square mean error between old and new armature {}.
+            Blender File: {:?}
+            Before Convert IK: {:?}
+            After Convert IK: {:?}
+            "#,
             root_mean_square_error,
-            &self.blend_file
+            &self.blend_file,
+            before_img,
+            after_img
         );
     }
 }

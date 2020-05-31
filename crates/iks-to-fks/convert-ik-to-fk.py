@@ -68,7 +68,10 @@ class ConvertIKToFK(bpy.types.Operator):
           # An active object is required in order to change into object mode
           bpy.context.view_layer.objects.active = ikArmature
 
-          bpy.ops.object.mode_set(mode = 'OBJECT')
+          # If the armature is linked it will always be in object mode and we cannot mode_set.
+          if ikArmature.library == None:
+            bpy.ops.object.mode_set(mode = 'OBJECT')
+
           # Select our mesh and armature so that we can duplicate them later
           for mesh in ikArmature.children:
             if mesh.type == 'MESH':
@@ -180,9 +183,17 @@ class ConvertIKToFK(bpy.types.Operator):
                                     bpy.ops.anim.keyframe_delete(override, type='LocRotScale')
 
         # Delete all of the actions that were created when we duplicate our mesh and armature
-        for action in bpy.data.actions:
-            if action not in originalActionsList:
-                bpy.data.actions.remove(action)
+        #
+        # Unless the IK armature was linked. In which case we need to keep our new actions
+        # because our linked ones were not modified and do not have our new data.
+        if ikArmature.library is None:
+            for action in bpy.data.actions:
+                if action not in originalActionsList:
+                    bpy.data.actions.remove(action)
+        else:
+            for action in bpy.data.actions:
+                if action.library != None:
+                    bpy.data.actions.remove(action)
 
         # Go to Object mode so that they can export their new model
         bpy.ops.object.mode_set(mode = 'OBJECT')

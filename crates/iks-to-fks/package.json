@@ -1,6 +1,6 @@
 {
   "name": "blender-iks-to-fks",
-  "version": "2.0.7",
+  "version": "2.0.9",
   "description": "A Blender script that takes a mesh and armature that use IKs and other non-deformation bones and creates a new mesh and armature that uses only FK bones",
   "main": "bin/ik2fk.js",
   "bin": {
