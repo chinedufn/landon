@@ -1,6 +1,7 @@
 # The goal of this addon is to export all of the actions for the active
 # armature into a JSON file
 
+import ast
 import bpy
 import collections
 import json
@@ -303,16 +304,28 @@ class MeshToJSON(bpy.types.Operator):
                 json.dumps(value)
 
                 typed_value = {}
+                try:
+                    maybe_list = json.loads(value)
+                    if isinstance(maybe_list, list):
+                        typed_value = {"Vec": []}
+                        for item in maybe_list:
+                            if isinstance(item, float):
+                                typed_value["Vec"].append({"Float": item})
+                            elif isinstance(item, int):
+                                typed_value["Vec"].append({"Int": item})
+                            elif isinstance(item, str):
+                                typed_value["Vec"].append({"String": item})
+                        mesh_json['custom_properties'][property] = typed_value
+                        continue
+                except:
+                    if isinstance(value, float):
+                        typed_value = {"Float": value}
+                    elif isinstance(value, int):
+                        typed_value = {"Int": value}
+                    elif isinstance(value, str):
+                        typed_value = {"String": value}
 
-                # TODO: Support vectors
-                if isinstance(value, float):
-                    typed_value = {"Float": value}
-                elif isinstance(value, int):
-                    typed_value = {"Int": value}
-                elif isinstance(value, str):
-                    typed_value = {"String": value}
-
-                mesh_json['custom_properties'][property] = typed_value
+                    mesh_json['custom_properties'][property] = typed_value
             except:
                 pass
 

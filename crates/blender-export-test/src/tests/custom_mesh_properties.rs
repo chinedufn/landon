@@ -41,7 +41,7 @@ fn exports_custom_properties() {
     let expected_mesh = &expected_mesh_data();
     let expected_mesh: BlenderMesh = serde_json::from_str(expected_mesh).unwrap();
 
-    assert_eq!(mesh, &expected_mesh)
+    assert_eq!(mesh, &expected_mesh);
 }
 
 fn expected_mesh_data() -> String {
@@ -77,6 +77,13 @@ fn expected_mesh_data() -> String {
                 },
                 "example_string": {
                     "String": "Hello"
+                },
+                "example_vec": {
+                    "Vec": [
+                        {"Float": 1.0},
+                        {"Int": 2},
+                        {"String": "World"}
+                    ]
                 }
             }
         }

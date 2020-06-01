@@ -6,7 +6,13 @@ pub enum CustomProperty {
     Float(f32),
     Int(i32),
     String(String),
-    // TODO: Support vectors. Not sure which types are allowed, might need
-    // an enum.
-    // Vec(Vec<f32>),
+    Vec(Vec<CustomPropertyVecItem>),
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[allow(missing_docs)]
+pub enum CustomPropertyVecItem {
+    Float(f32),
+    Int(i32),
+    String(String),
 }
