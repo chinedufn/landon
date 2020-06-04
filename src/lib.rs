@@ -23,7 +23,6 @@ mod blender;
 pub use self::blender::*;
 use crate::subcommands::export::ExportCmd;
 use crate::subcommands::install::InstallCmd;
-use crate::subcommands::parse::ParseCmd;
 
 mod subcommands;
 
@@ -38,7 +37,6 @@ impl Subcommand for Landon {
         let cmd: &dyn Subcommand = match self {
             Landon::Export(cmd) => cmd,
             Landon::Install(cmd) => cmd,
-            Landon::Parse(cmd) => cmd,
         };
         cmd.run()
     }
@@ -49,12 +47,10 @@ impl Subcommand for Landon {
 #[derive(Debug, StructOpt)]
 #[structopt(name = "landon", rename_all = "kebab-case")]
 pub enum Landon {
-    /// Export meshes and armatures from your Blender Files
+    /// Export meshes and armatures from your Blender files to stdout as JSON
     Export(ExportCmd),
     /// Install various Blender addons
     Install(InstallCmd),
-    /// Parse exported Blender data from stdin or a file.
-    Parse(ParseCmd),
 }
 
 trait Subcommand {

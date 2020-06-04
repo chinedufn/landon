@@ -6,7 +6,6 @@
 
 - [Landon CLI](./landon-cli/README.md)
   - [Exporting data](./landon-cli/export/README.md)
-  - [Parsing exported data](./landon-cli/parse/README.md)
 
 - [Blender Mesh](./blender-mesh/README.md)
   - [Custom Properties](./blender-mesh/custom-properties/README.md)
