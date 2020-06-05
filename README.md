@@ -51,12 +51,15 @@ the JSON using the [jq](https://stedolan.github.io/jq/) CLI.
 cargo install -f landon
 landon install --mesh-to-json --armature-to-json
 
-# 
+# Download a Blender file to try landon with
 BLEND_FILE='https://github.com/chinedufn/landon/blob/master/crates/blender-export-test/src/tests/multiple_meshes.blend?raw=true'
 curl -L $BLEND_FILE > /tmp/multiple-meshes.blend
 
-# Write every meshname along with that meshes bounding box to stdout
-landon export -f /tmp/multiple-meshes.blend | landon parse | jq -r '.meshes | to_entries[] | .value | to_entries[] | "\(.key), \(.value | .bounding_box)"'
+# Write every meshname along with that meshes bounding box to stdout and redirect stdout to a file
+landon export -f /tmp/multiple-meshes.blend > exported.json
+
+# List all of the mesh names and bounding boxes
+cat exported.json | jq -r '.meshes | to_entries[] | .value | to_entries[] | "\(.key), \(.value | .bounding_box)"'
 
 # Second_Mesh, {"min_corner":[-1.3121787,0.44901967,0.67399526],"max_corner":[0.7619256,2.523124,2.7480996]}
 # AMesh, {"min_corner":[-3.2487504,-3.3098261,1.2566323],"max_corner":[-1.2487504,-1.3098261,3.2566323]}
