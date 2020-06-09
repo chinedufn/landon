@@ -55,7 +55,7 @@ landon install --mesh-to-json --armature-to-json
 BLEND_FILE='https://github.com/chinedufn/landon/blob/master/crates/blender-export-test/src/tests/multiple_meshes.blend?raw=true'
 curl -L $BLEND_FILE > /tmp/multiple-meshes.blend
 
-# Write every meshname along with that meshes bounding box to stdout and redirect stdout to a file
+# Export meshes and armatures to stdout and redirect stdout to a file
 landon export -f /tmp/multiple-meshes.blend > exported.json
 
 # List all of the mesh names and bounding boxes
