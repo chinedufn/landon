@@ -40,9 +40,12 @@ pub fn bone_groups_blend() -> PathBuf {
 }
 
 // landon repository root directory
-fn workspace_root() -> PathBuf {
+pub fn workspace_root() -> PathBuf {
     let workspace_root = env!("CARGO_MANIFEST_DIR").to_owned() + "/../../";
     let workspace_root = PathBuf::from(workspace_root);
-    eprintln!("workspace_root = {:#?}", workspace_root);
     workspace_root.canonicalize().unwrap()
+}
+
+pub fn blender_export_test_fixtures() -> PathBuf {
+    workspace_root().join("crates/blender-export-test/src/tests")
 }

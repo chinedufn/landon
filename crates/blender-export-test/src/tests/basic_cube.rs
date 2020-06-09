@@ -2,41 +2,19 @@ extern crate blender_mesh;
 extern crate serde;
 extern crate serde_json;
 
-use crate::filesystem::rel_workspace_string;
+use crate::filesystem::{rel_workspace, rel_workspace_string, workspace_root};
 use blender_mesh::parse_meshes_from_blender_stdout;
 use blender_mesh::BlenderMesh;
 
-use std::process::Command;
+use crate::tests::test_utils::export_meshes_from_blender_file;
 
 #[test]
 fn parse_data() {
     let basic_cube_blend =
-        &rel_workspace_string(&"crates/blender-export-test/src/tests/basic_cube.blend");
-    let _install_addon = &rel_workspace_string(&"install-addon.py");
-    let run_addon = &rel_workspace_string(&"run-addon.py");
+        workspace_root().join("crates/blender-export-test/src/tests/basic_cube.blend");
 
-    // TODO: Move the CLI spawning and parsing into `lib.rs`? In our test just verify
-    // the returned mesh data?
-
-    let blender_output = Command::new("blender")
-        .arg(basic_cube_blend)
-        .arg("--background")
-        .args(&["--python", run_addon])
-        .arg("-noaudio")
-        .arg("--")
-        .output()
-        .expect("Failed to execute Blender process");
-
-    let stderr = String::from_utf8(blender_output.stderr).unwrap();
-    assert_eq!(stderr, "");
-
-    let stdout = String::from_utf8(blender_output.stdout).unwrap();
-
-    let parsed_meshes = parse_meshes_from_blender_stdout(&stdout);
-
-    let (_filename, mesh) = parsed_meshes.iter().next().unwrap();
-
-    let mesh = mesh.get("Cube").unwrap();
+    let parsed_meshes = export_meshes_from_blender_file(basic_cube_blend);
+    let mesh = parsed_meshes.get("Cube").unwrap();
 
     let expected_mesh = &expected_mesh_data();
     let expected_mesh: BlenderMesh = serde_json::from_str(expected_mesh).unwrap();

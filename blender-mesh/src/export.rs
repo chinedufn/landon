@@ -41,13 +41,15 @@ pub fn parse_meshes_from_blender_stdout(blender_stdout: &str) -> MeshesByFilenam
     filenames_to_meshes
 }
 
+pub type FlattenedExportedMeshes = HashMap<String, BlenderMesh>;
+
 /// Convert MesheshByFilename into a HashMap<MeshName, BlenderMesh> that flattens all of the
 /// meshes across all of the files into one HashMap.
 ///
 /// This will error if there are two meshes with the same name across two or more files.
 pub fn flatten_exported_meshes_owned(
     meshes_by_filename: MeshesByFilename,
-) -> Result<HashMap<String, BlenderMesh>, FlattenMeshError> {
+) -> Result<FlattenedExportedMeshes, FlattenMeshError> {
     let mut flattened_meshes = HashMap::new();
 
     let mut duplicate_meshes: HashMap<String, Vec<String>> = HashMap::new();
