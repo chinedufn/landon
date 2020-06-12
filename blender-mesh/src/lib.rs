@@ -26,7 +26,9 @@ pub use self::export::*;
 pub use crate::bounding_box::BoundingBox;
 use crate::custom_property::CustomProperty;
 pub use crate::material::PrincipledBSDF;
-pub use crate::vertex_attributes::{MultiIndexedVertexAttributes, SingleIndexedVertexAttributes};
+pub use crate::vertex_attributes::{
+    BoneInfluence, MultiIndexedVertexAttributes, SingleIndexedVertexAttributes, Vertex,
+};
 pub use material::{Channel, MaterialInput};
 use std::collections::HashMap;
 

@@ -1,4 +1,4 @@
-use crate::vertex_attributes::{BoneInfluences, MultiIndexedVertexAttributes};
+use crate::vertex_attributes::{VertexBoneInfluences, MultiIndexedVertexAttributes};
 
 /// The number of bones that influence each uniform.
 ///
@@ -55,7 +55,7 @@ impl MultiIndexedVertexAttributes {
         }
 
         {
-            let BoneInfluences {
+            let VertexBoneInfluences {
                 bones_per_vertex,
                 bone_indices,
                 bone_weights,

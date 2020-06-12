@@ -1,4 +1,4 @@
-use crate::vertex_attributes::{BoneAttributes, VertexAttribute};
+use crate::vertex_attributes::VertexAttribute;
 
 mod interleave;
 
@@ -17,11 +17,74 @@ pub use self::interleave::*;
 #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
 pub struct SingleIndexedVertexAttributes {
     pub(crate) indices: Vec<u16>,
-    pub(crate) positions: VertexAttribute<f32>,
-    pub(crate) normals: Option<VertexAttribute<f32>>,
-    pub(crate) face_tangents: Option<VertexAttribute<f32>>,
-    pub(crate) uvs: Option<VertexAttribute<f32>>,
-    pub(crate) bones: Option<BoneAttributes>,
+    pub(crate) vertices: Vec<Vertex>,
+}
+
+/// A vertex within a mesh.
+///
+/// You'll typically buffer the Vertex's data onto the GPU interleaved into a single buffer, and
+/// then index into that buffer using the indices from [`SingleIndexedVertexAttributes`].
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct Vertex {
+    pub(crate) position: [f32; 3],
+    pub(crate) normal: Option<[f32; 3]>,
+    pub(crate) face_tangent: Option<[f32; 3]>,
+    pub(crate) uv: Option<[f32; 2]>,
+    pub(crate) bones: Option<[BoneInfluence; 4]>,
+}
+
+impl Vertex {
+    /// The model space position of this Vertex
+    pub fn position(&self) -> [f32; 3] {
+        self.position
+    }
+
+    /// The surface normal for the face that this Vertex belongs to
+    pub fn normal(&self) -> Option<[f32; 3]> {
+        self.normal
+    }
+
+    /// The face tangent for the face that this Vertex belongs to
+    pub fn face_tangent(&self) -> Option<[f32; 3]> {
+        self.face_tangent
+    }
+
+    /// The UV coordinates for this Vertex
+    pub fn uv(&self) -> Option<[f32; 2]> {
+        self.uv
+    }
+
+    /// The bones that influence this Vertex.
+    ///
+    /// Currently a maximum of 4 bones is supported for no other reason than it being uncommon to
+    /// need more than that.
+    ///
+    /// If this doesn't meet your needs pleas open an issue.
+    ///
+    /// If there are fewer than 4 influencing bones then the extra fake bones in this array will
+    /// have weights of zero.
+    pub fn bones(&self) -> Option<[BoneInfluence; 4]> {
+        self.bones
+    }
+}
+
+/// The index of a bone that influences the vertex along with the weighting of that influence
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BoneInfluence {
+    pub(crate) bone_idx: u8,
+    pub(crate) weight: f32,
+}
+
+impl BoneInfluence {
+    /// The index of this bone within the mesh's parent armature's bones.
+    pub fn bone_idx(&self) -> u8 {
+        self.bone_idx
+    }
+
+    /// The amount between \[0.0, 1.0\] that this bone should influence the Vertex
+    pub fn weight(&self) -> f32 {
+        self.weight
+    }
 }
 
 impl SingleIndexedVertexAttributes {
@@ -32,43 +95,14 @@ impl SingleIndexedVertexAttributes {
         &self.indices
     }
 
-    /// Every 3 floats corresponds to one vertex's position
-    pub fn positions(&self) -> &VertexAttribute<f32> {
-        &self.positions
-    }
-
-    /// Every 3 floats corresponds to one vertex's normal.
-    pub fn normals(&self) -> Option<&VertexAttribute<f32>> {
-        self.normals.as_ref()
-    }
-
-    /// Every 3 floats corresponds to one tangent vector - useful for normal mapping.
-    pub fn face_tangents(&self) -> Option<&VertexAttribute<f32>> {
-        self.face_tangents.as_ref()
-    }
-
-    /// Every 2 floats corresponds to one vertex's uv.
-    pub fn uvs(&self) -> Option<&VertexAttribute<f32>> {
-        self.uvs.as_ref()
-    }
-
-    /// The indices of the joints that influence each bone.
+    /// All of the vertex data for the mesh.
     ///
-    /// The number of floats per vertex can vary and can be found using
-    /// [`VertexAttribute.attribute_size()`].
-    ///
-    /// [`VertexAttribute.attribute_size()`]: struct.VertexAttribute.html#method.attribute_size
-    pub fn bones_influencers(&self) -> Option<&VertexAttribute<u8>> {
-        Some(&self.bones.as_ref()?.bone_influencers)
+    /// You can index into this data using [`SingleIndexedVertexAttributes#method.indices`]
+    pub fn vertices(&self) -> &Vec<Vertex> {
+        &self.vertices
     }
 
-    /// The weights of each bone influencer.
-    ///
-    /// The number of floats per vertex can vary and can be found using
-    /// [`VertexAttribute.attribute_size()`].
-    ///
-    /// [`VertexAttribute.attribute_size()`]: struct.VertexAttribute.html#method.attribute_size
-    pub fn bone_influencer_weights(&self) -> Option<&VertexAttribute<f32>> {
-        Some(&self.bones.as_ref()?.bone_weights)
+    pub(crate) fn vertices_mut(&mut self) -> &mut Vec<Vertex> {
+        &mut self.vertices
     }
 }

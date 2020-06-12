@@ -97,7 +97,7 @@ pub struct MultiIndexedVertexAttributes {
     pub(crate) positions: IndexedAttribute,
     pub(crate) normals: Option<IndexedAttribute>,
     pub(crate) uvs: Option<IndexedAttribute>,
-    pub(crate) bone_influences: Option<BoneInfluences>,
+    pub(crate) bone_influences: Option<VertexBoneInfluences>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
@@ -144,7 +144,7 @@ impl From<SingleIndexedVertexAttributes> for VertexAttributes {
 /// TODO: Remove this and use VertexAttribute with something like attribute_size: Varies(vec![])
 /// this allows us to handle all attributes the same way.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
-pub struct BoneInfluences {
+pub struct VertexBoneInfluences {
     /// The number of bones that affect each vertex.
     ///
     /// Example: [3, 5, 2] would mean that the first vertex is influenced by 3 bones, second by

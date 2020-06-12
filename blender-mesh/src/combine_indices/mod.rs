@@ -1,7 +1,8 @@
 pub use self::create_single_index_config::CreateSingleIndexConfig;
+use crate::bone::BoneInfluencesPerVertex;
 use crate::face_tangents::face_tangent_at_idx;
 use crate::vertex_attributes::{BoneAttributes, SingleIndexedVertexAttributes, VertexAttribute};
-use crate::BlenderMesh;
+use crate::{BlenderMesh, BoneInfluence, Vertex};
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
@@ -69,15 +70,12 @@ impl BlenderMesh {
 
         let mut expanded_positions = vec![];
         expanded_positions.resize((largest_vert_id + 1) * 3, EASILY_RECOGNIZABLE_NUMBER);
-        let mut expanded_positions = VertexAttribute::new(expanded_positions, 3).unwrap();
 
         let mut expanded_normals = vec![];
         expanded_normals.resize((largest_vert_id + 1) * 3, EASILY_RECOGNIZABLE_NUMBER);
-        let mut expanded_normals = VertexAttribute::new(expanded_normals, 3).unwrap();
 
         let mut expanded_uvs = vec![];
         expanded_uvs.resize((largest_vert_id + 1) * 2, EASILY_RECOGNIZABLE_NUMBER);
-        let mut expanded_uvs = VertexAttribute::new(expanded_uvs, 2).unwrap();
 
         let mut expanded_pos_indices = vec![];
 
@@ -97,13 +95,6 @@ impl BlenderMesh {
 
         let mut expanded_tangents = vec![];
         expanded_tangents.resize((largest_vert_id + 1) * 3, EASILY_RECOGNIZABLE_NUMBER);
-        let mut expanded_tangents = VertexAttribute::new(expanded_tangents, 3).unwrap();
-
-        let _total_indices: usize = multi
-            .vertices_in_each_face
-            .iter()
-            .map(|x| *x as usize)
-            .sum();
 
         // FIXME: Split this loop into a function
         for (elem_array_index, start_vert_id) in multi.positions.indices.iter().enumerate() {
@@ -131,12 +122,10 @@ impl BlenderMesh {
                         // TODO: Should we weight these based on the surface area of the face /
                         // the angle of the vertex and it's two edges on the face? Do some research
                         // on what other people do.
-                        expanded_tangents.increment_three_components(
-                            *vert_id_to_reuse.unwrap() as usize,
-                            x,
-                            y,
-                            z,
-                        );
+                        let vert_id_to_reuse = *vert_id_to_reuse.unwrap() as usize;
+                        expanded_tangents[vert_id_to_reuse * 3] += x;
+                        expanded_tangents[vert_id_to_reuse * 3 + 1] += y;
+                        expanded_tangents[vert_id_to_reuse * 3 + 2] += z;
                     }
                 }
             } else if !encountered_vert_ids.contains(&start_vert_id) {
@@ -216,18 +205,21 @@ impl BlenderMesh {
             &self.multi_indexed_vertex_attributes.bone_influences,
             config.bone_influences_per_vertex,
         ) {
-            (Some(_bone_attributes), Some(bone_influences_per_vertex)) => Some(BoneAttributes {
-                bone_influencers: VertexAttribute::new(
-                    new_group_indices.unwrap(),
-                    bone_influences_per_vertex,
-                )
-                .unwrap(),
-                bone_weights: VertexAttribute::new(
-                    new_group_weights.unwrap(),
-                    bone_influences_per_vertex,
-                )
-                .unwrap(),
-            }),
+            (Some(_bone_attributes), Some(bone_influences_per_vertex)) => Some((
+                BoneAttributes {
+                    bone_influencers: VertexAttribute::new(
+                        new_group_indices.unwrap(),
+                        bone_influences_per_vertex,
+                    )
+                    .unwrap(),
+                    bone_weights: VertexAttribute::new(
+                        new_group_weights.unwrap(),
+                        bone_influences_per_vertex,
+                    )
+                    .unwrap(),
+                },
+                bone_influences_per_vertex,
+            )),
             _ => None,
         };
 
@@ -235,11 +227,7 @@ impl BlenderMesh {
 
         let mut single_indexed_vertex_attributes = SingleIndexedVertexAttributes {
             indices: expanded_pos_indices,
-            positions: expanded_positions,
-            normals,
-            face_tangents: tangents,
-            uvs,
-            bones,
+            vertices: make_vertices(expanded_positions, normals, uvs, tangents, bones),
         };
 
         let indices = self.triangulate(&single_indexed_vertex_attributes.indices);
@@ -256,10 +244,10 @@ impl BlenderMesh {
         expanded_pos_indices: &mut Vec<u16>,
         start_vert_id: u16,
         elem_array_index: usize,
-        expanded_positions: &mut VertexAttribute<f32>,
-        expanded_normals: &mut VertexAttribute<f32>,
-        expanded_uvs: &mut VertexAttribute<f32>,
-        expanded_tangents: &mut VertexAttribute<f32>,
+        expanded_positions: &mut Vec<f32>,
+        expanded_normals: &mut Vec<f32>,
+        expanded_uvs: &mut Vec<f32>,
+        expanded_tangents: &mut Vec<f32>,
         normal_index: Option<u16>,
         uv_index: Option<u16>,
         face_idx: usize,
@@ -272,7 +260,9 @@ impl BlenderMesh {
 
         // TODO: Six methods to get and set the normal, pos, and uv for a vertex_num
         if let &[x, y, z] = multi.positions.attribute.data_at_idx(start_vert_id as u16) {
-            expanded_positions.set_three_components(start_vert_id, x, y, z);
+            expanded_positions[start_vert_id * 3] = x;
+            expanded_positions[start_vert_id * 3 + 1] = y;
+            expanded_positions[start_vert_id * 3 + 2] = z;
         }
 
         if let Some(normal_index) = normal_index {
@@ -283,20 +273,25 @@ impl BlenderMesh {
                 .attribute
                 .data_at_idx(normal_index)
             {
-                expanded_normals.set_three_components(start_vert_id, x, y, z);
+                expanded_normals[start_vert_id * 3] = x;
+                expanded_normals[start_vert_id * 3 + 1] = y;
+                expanded_normals[start_vert_id * 3 + 2] = z;
             }
         }
 
         if let Some(uv_index) = uv_index {
             if let &[u, v] = multi.uvs.as_ref().unwrap().attribute.data_at_idx(uv_index) {
-                expanded_uvs.set_two_components(start_vert_id, u, v);
+                expanded_uvs[start_vert_id * 2] = u;
+                expanded_uvs[start_vert_id * 2 + 1] = v;
             }
         }
 
         if let Some(face_tangents) = face_tangents {
             if face_tangents.len() > 0 {
                 let (x, y, z) = face_tangent_at_idx(&face_tangents, face_idx);
-                expanded_tangents.set_three_components(start_vert_id, x, y, z);
+                expanded_tangents[start_vert_id * 3] = x;
+                expanded_tangents[start_vert_id * 3 + 1] = y;
+                expanded_tangents[start_vert_id * 3 + 2] = z;
             }
         }
 
@@ -315,10 +310,10 @@ impl BlenderMesh {
         bone_influences_per_vertex: Option<u8>,
         new_group_indices: Option<&mut Vec<u8>>,
         new_group_weights: Option<&mut Vec<f32>>,
-        expanded_positions: &mut VertexAttribute<f32>,
-        expanded_normals: &mut VertexAttribute<f32>,
-        expanded_uvs: &mut VertexAttribute<f32>,
-        expanded_tangents: &mut VertexAttribute<f32>,
+        expanded_positions: &mut Vec<f32>,
+        expanded_normals: &mut Vec<f32>,
+        expanded_uvs: &mut Vec<f32>,
+        expanded_tangents: &mut Vec<f32>,
         face_idx: usize,
     ) {
         let multi = &self.multi_indexed_vertex_attributes;
@@ -416,6 +411,62 @@ impl DerefMut for EncounteredIndexCombinations {
     }
 }
 
+// TODO: We're just throwing things around as we work to refactor this crate ...
+fn make_vertices(
+    vertex_positions: Vec<f32>,
+    vertex_normals: Option<Vec<f32>>,
+    vertex_uvs: Option<Vec<f32>>,
+    tangents: Option<Vec<f32>>,
+    bones: Option<(BoneAttributes, u8)>,
+) -> Vec<Vertex> {
+    let mut vertices = vec![];
+    for idx in 0..vertex_positions.len() / 3 {
+        let position = [
+            vertex_positions[idx * 3],
+            vertex_positions[idx * 3 + 1],
+            vertex_positions[idx * 3 + 2],
+        ];
+        let normal = vertex_normals
+            .as_ref()
+            .map(|n| [n[idx * 3], n[idx * 3 + 1], n[idx * 3 + 2]]);
+        let uv = vertex_uvs
+            .as_ref()
+            .map(|uvs| [uvs[idx * 2], uvs[idx * 2 + 1]]);
+        let face_tangent = tangents.as_ref().map(|face_tangents| {
+            [
+                face_tangents[idx * 3],
+                face_tangents[idx * 3 + 1],
+                face_tangents[idx * 3 + 2],
+            ]
+        });
+        let bones = bones.as_ref().map(|(b, influences_per_vertex)| {
+            let count = *influences_per_vertex;
+
+            let mut bones = [BoneInfluence {
+                bone_idx: 0,
+                weight: 0.0,
+            }; 4];
+            for bone_idx in 0..count as usize {
+                bones[bone_idx] = BoneInfluence {
+                    bone_idx: b.bone_influencers[idx * count as usize + bone_idx],
+                    weight: b.bone_weights[idx * count as usize + bone_idx],
+                };
+            }
+
+            bones
+        });
+        vertices.push(Vertex {
+            position,
+            normal,
+            face_tangent,
+            uv,
+            bones,
+        });
+    }
+
+    vertices
+}
+
 /// TODO: These tests are getting hard to manage.
 /// We need smaller tests that test individual pieces of the combining.
 /// Then we can keep it to only a handful of tests that test entire meshes.
@@ -425,11 +476,11 @@ impl DerefMut for EncounteredIndexCombinations {
 pub mod tests {
     use super::*;
     use crate::bone::BoneInfluencesPerVertex;
-    use crate::concat_vecs;
     use crate::test_utils::*;
     use crate::vertex_attributes::{
-        BoneAttributes, BoneInfluences, IndexedAttribute, MultiIndexedVertexAttributes,
+        BoneAttributes, IndexedAttribute, MultiIndexedVertexAttributes, VertexBoneInfluences,
     };
+    use crate::{concat_vecs, Vertex};
 
     struct CombineIndicesTest {
         mesh_to_combine: BlenderMesh,
@@ -801,7 +852,7 @@ pub mod tests {
             }
 
             if let Some(bone_influences_per_vertex) = self.bone_influences_per_vertex {
-                parent_armature_bone_influences = Some(BoneInfluences {
+                parent_armature_bone_influences = Some(VertexBoneInfluences {
                     bones_per_vertex: bone_influences_per_vertex,
                     bone_indices: self.vertex_group_indices.unwrap(),
                     bone_weights: self.vertex_group_weights.unwrap(),
@@ -821,6 +872,7 @@ pub mod tests {
         }
     }
 
+    /// Messy code as part of an effort to slowly refactor these crates...
     #[derive(Default)]
     pub struct TodoDeleteMeSingleConverter {
         pub vertex_positions: Vec<f32>,
@@ -844,20 +896,25 @@ pub mod tests {
                         BoneInfluencesPerVertex::Uniform(b) => *b as _,
                     };
 
-                    Some(BoneAttributes {
-                        bone_influencers: (self.vertex_group_indices.unwrap(), b).into(),
-                        bone_weights: (self.vertex_group_weights.unwrap(), b).into(),
-                    })
+                    Some((
+                        BoneAttributes {
+                            bone_influencers: (self.vertex_group_indices.unwrap(), b).into(),
+                            bone_weights: (self.vertex_group_weights.unwrap(), b).into(),
+                        },
+                        b,
+                    ))
                 }
             };
 
             SingleIndexedVertexAttributes {
                 indices: self.vertex_position_indices,
-                positions: (self.vertex_positions, 3).into(),
-                normals: Some((self.vertex_normals, 3).into()),
-                face_tangents: self.tangents.map(|f| (f, 3).into()),
-                uvs: self.vertex_uvs.map(|uvs| (uvs, 2).into()),
-                bones,
+                vertices: make_vertices(
+                    self.vertex_positions,
+                    Some(self.vertex_normals),
+                    self.vertex_uvs,
+                    self.tangents,
+                    bones,
+                ),
             }
         }
     }

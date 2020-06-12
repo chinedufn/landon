@@ -21,19 +21,22 @@ impl SingleIndexedVertexAttributes {
     /// refactor / replace the combine_indices function because, for example, if we weight normals
     /// before we calculate face tangents our face tangents will be incorrect.
     /// In general this entire crate needs to be heavily TDD"d and refactored into something clean..
+    ///
+    /// TODO: When we combine normals we'll end up with a lot of vertices that have the same data
+    ///  so we should dedupe the vertices / indices
     pub fn face_weight_normals(&mut self) -> Result<(), WeightedNormalsError> {
         let mut encountered_positions: HashMap<[u32; 3], SharedVertexPositionWeightedNormal> =
             HashMap::new();
 
         for (vertex_num, pos_norm_data_idx) in self.indices.iter().enumerate() {
-            let normals = self.normals.as_ref().unwrap();
-
             let pos_norm_data_idx = *pos_norm_data_idx as usize;
 
-            let pos = &self.positions.data[to_range(pos_norm_data_idx)];
+            let vertex = self.vertices()[pos_norm_data_idx];
+
+            let pos = vertex.position;
             let pos_point = Point3::new(pos[0], pos[1], pos[2]);
 
-            let face_normal = &normals.data[to_range(pos_norm_data_idx)];
+            let face_normal = vertex.normal.unwrap();
             let face_normal = Vector3::new(face_normal[0], face_normal[1], face_normal[2]);
 
             let (connected_vertex_1, connected_vertex_2) = match vertex_num % 3 {
@@ -44,7 +47,7 @@ impl SingleIndexedVertexAttributes {
             };
 
             let connected_vertex_1 =
-                &self.positions.data[to_range(self.indices[connected_vertex_1] as usize)];
+                self.vertices[self.indices[connected_vertex_1] as usize].position;
             let connected_vertex_1 = Point3::new(
                 connected_vertex_1[0],
                 connected_vertex_1[1],
@@ -52,7 +55,7 @@ impl SingleIndexedVertexAttributes {
             );
 
             let connected_vertex_2 =
-                &self.positions.data[to_range(self.indices[connected_vertex_2] as usize)];
+                self.vertices[self.indices[connected_vertex_2] as usize].position;
             let connected_vertex_2 = Point3::new(
                 connected_vertex_2[0],
                 connected_vertex_2[1],
@@ -88,8 +91,10 @@ impl SingleIndexedVertexAttributes {
             let weighted_normal = weighted_normal.as_slice();
 
             for normal_data_idx in overlapping_vertices.normals_to_overwrite {
-                self.normals.as_mut().unwrap().data[to_range(normal_data_idx)]
-                    .copy_from_slice(weighted_normal);
+                let mut normal = [0.; 3];
+                normal.copy_from_slice(weighted_normal);
+
+                self.vertices_mut()[normal_data_idx].normal = Some(normal);
             }
         }
 
@@ -99,10 +104,6 @@ impl SingleIndexedVertexAttributes {
 
 fn to_range(idx: usize) -> std::ops::Range<usize> {
     3 * idx..3 * idx + 3
-}
-
-fn connected_vert_nums(vert_num: usize) -> (usize, usize) {
-    unimplemented!()
 }
 
 // While we iterate through our positions we keep track of which normals corresponded to
@@ -143,7 +144,7 @@ fn weight_normal_using_surface_and_angle(
 mod tests {
     use super::*;
     use crate::vertex_attributes::IndexedAttribute;
-    use crate::{BlenderMesh, CreateSingleIndexConfig};
+    use crate::{BlenderMesh, CreateSingleIndexConfig, Vertex};
     use std::f32::consts::PI;
 
     /// Calculate a weighted normal from a given normal and the connected edges
@@ -192,15 +193,33 @@ mod tests {
             0., 1., 0.,
         ];
 
+        let mut vertices = vec![];
+        for idx in 0..positions.len() / 3 {
+            vertices.push(Vertex {
+                position: [
+                    positions[idx * 3],
+                    positions[idx * 3 + 1],
+                    positions[idx * 3 + 2],
+                ],
+                normal: Some([normals[idx * 3], normals[idx * 3 + 1], normals[idx * 3 + 2]]),
+                ..Vertex::default()
+            });
+        }
+
         let mut single_indexed = SingleIndexedVertexAttributes {
             indices,
-            positions: (positions, 3).into(),
-            normals: Some((normals.clone(), 3).into()),
+            vertices,
             ..SingleIndexedVertexAttributes::default()
         };
         single_indexed.face_weight_normals().unwrap();
 
-        assert_eq!(single_indexed.normals.unwrap().data, normals);
+        let face_weighted_normals: Vec<f32> = single_indexed
+            .vertices()
+            .iter()
+            .flat_map(|v| v.normal.unwrap().to_vec())
+            .collect();
+
+        assert_eq!(face_weighted_normals, normals);
     }
 
     /// We repeat position index 0 twice - meaning that there are two vertices that share
@@ -221,7 +240,13 @@ mod tests {
 
         let expected_weighted_norm = get_expected_weighted_norm();
 
-        let actual_normals = single_indexed.normals.unwrap().data;
+        let normals: Vec<f32> = single_indexed
+            .vertices()
+            .iter()
+            .flat_map(|v| v.normal.unwrap().to_vec())
+            .collect();
+
+        let actual_normals = normals;
         assert_eq!(&actual_normals[0..3], &expected_weighted_norm);
         assert_eq!(&actual_normals[12..15], &expected_weighted_norm);
     }
@@ -265,10 +290,22 @@ mod tests {
             0., 0., 0.,
         ];
 
+        let mut vertices = vec![];
+        for idx in 0..positions.len() / 3 {
+            vertices.push(Vertex {
+                position: [
+                    positions[idx * 3],
+                    positions[idx * 3 + 1],
+                    positions[idx * 3 + 2],
+                ],
+                normal: Some([normals[idx * 3], normals[idx * 3 + 1], normals[idx * 3 + 2]]),
+                ..Vertex::default()
+            });
+        }
+
         let single_indexed = SingleIndexedVertexAttributes {
             indices,
-            positions: (positions, 3).into(),
-            normals: Some((normals, 3).into()),
+            vertices,
             ..SingleIndexedVertexAttributes::default()
         };
         single_indexed
