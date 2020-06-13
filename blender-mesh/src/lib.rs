@@ -28,6 +28,7 @@ use crate::custom_property::CustomProperty;
 pub use crate::material::PrincipledBSDF;
 pub use crate::vertex_attributes::{
     BoneInfluence, MultiIndexedVertexAttributes, SingleIndexedVertexAttributes, Vertex,
+    VertexAttribute,
 };
 pub use material::{Channel, MaterialInput};
 use std::collections::HashMap;

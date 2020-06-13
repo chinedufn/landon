@@ -1,6 +1,6 @@
 mod vertex_attribute;
 
-pub(crate) use self::vertex_attribute::{BoneAttributes, VertexAttribute};
+pub use self::vertex_attribute::{BoneAttributes, VertexAttribute};
 use crate::bone::BoneInfluencesPerVertex;
 
 mod single_indexed;
