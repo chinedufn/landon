@@ -26,6 +26,7 @@ pub use self::export::*;
 pub use crate::bounding_box::BoundingBox;
 use crate::custom_property::CustomProperty;
 pub use crate::material::PrincipledBSDF;
+use crate::serde::serialize_hashmap_deterministic;
 pub use crate::vertex_attributes::{
     BoneInfluence, MultiIndexedVertexAttributes, SingleIndexedVertexAttributes, Vertex,
     VertexAttribute,
@@ -41,6 +42,7 @@ mod export;
 mod face_tangents;
 mod interleave;
 mod material;
+mod serde;
 mod triangulate;
 mod vertex_attributes;
 mod y_up;
@@ -70,9 +72,9 @@ pub struct BlenderMesh {
     bounding_box: BoundingBox,
     #[serde(alias = "attribs")]
     multi_indexed_vertex_attributes: MultiIndexedVertexAttributes,
-    #[serde(default)]
+    #[serde(default, serialize_with = "serialize_hashmap_deterministic")]
     materials: HashMap<String, PrincipledBSDF>,
-    #[serde(default)]
+    #[serde(default, serialize_with = "serialize_hashmap_deterministic")]
     custom_properties: HashMap<String, CustomProperty>,
 }
 

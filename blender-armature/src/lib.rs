@@ -28,12 +28,14 @@ pub use self::coordinate_system::*;
 pub use self::export::*;
 pub use crate::interpolate::ActionSettings;
 pub use crate::interpolate::InterpolationSettings;
+use crate::serde::serialize_hashmap_deterministic;
 use nalgebra::Matrix4;
 
 mod convert;
 mod coordinate_system;
 mod export;
 mod interpolate;
+mod serde;
 
 /// Something went wrong in the Blender child process that was trying to parse your armature data.
 #[derive(Debug, Fail)]
@@ -62,13 +64,16 @@ pub enum BlenderError {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
 #[cfg_attr(test, derive(Clone))]
 pub struct BlenderArmature {
+    #[serde(serialize_with = "serialize_hashmap_deterministic")]
     pub joint_index: HashMap<String, u8>,
     pub inverse_bind_poses: Vec<Bone>,
     // TODO: Generic type instead of string for your action names so that you can have an enum
     // for your action names ... ?
     // TODO: Inner HashMap should have a float key not a string since it is a time in seconds
     // but you can't have floats as keys so need a workaround.
+    #[serde(serialize_with = "serialize_hashmap_deterministic")]
     pub actions: HashMap<String, Vec<Keyframe>>,
+    #[serde(serialize_with = "serialize_hashmap_deterministic")]
     bone_groups: HashMap<String, Vec<u8>>,
     #[serde(default)]
     coordinate_system: CoordinateSystem,
