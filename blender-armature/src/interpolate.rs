@@ -178,12 +178,18 @@ impl BlenderArmature {
                         // Get the dot product of the start and end rotation quaternions. If the
                         // dot product is negative we negative the rotation portion of the first
                         // dual quaternion in order to ensure the shortest path rotation.
+                        //
                         // http://www.xbdev.net/misc_demos/demos/dual_quaternions_beyond/paper.pdf
+                        // https://github.com/chinedufn/skeletal-animation-system/blob/9ae17c5b23759f7147bf7c464564e32a09e619ef/src/blend-dual-quaternions.js#L59
                         if dot_product(&prev_action_bone, cur_action_bone.as_slice()) < 0.0 {
                             prev_action_bone[0] = -prev_action_bone[0];
                             prev_action_bone[1] = -prev_action_bone[1];
                             prev_action_bone[2] = -prev_action_bone[2];
                             prev_action_bone[3] = -prev_action_bone[3];
+                            prev_action_bone[4] = -prev_action_bone[4];
+                            prev_action_bone[5] = -prev_action_bone[5];
+                            prev_action_bone[6] = -prev_action_bone[6];
+                            prev_action_bone[7] = -prev_action_bone[7];
                         }
 
                         let _new_bone = [0.0; 8];
