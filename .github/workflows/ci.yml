@@ -1,0 +1,25 @@
+name: ci
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    container:
+      image: chinedufn/blender-rustlang:latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Run all tests
+      run: |
+        xvfb-run cargo test --all
+
+    - name: Landon without CLI
+      run: cargo test -p landon --no-default-features
+

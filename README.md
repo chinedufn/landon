@@ -1,4 +1,4 @@
-Landon [![Build Status](https://dev.azure.com/frankienwafili/landon/_apis/build/status/chinedufn.landon?branchName=master)](https://dev.azure.com/frankienwafili/landon/_build/latest?definitionId=3&branchName=master) [![Build Status](https://travis-ci.org/chinedufn/landon.svg?branch=master)](https://travis-ci.org/chinedufn/landon) [![docs](https://docs.rs/landon/badge.svg)](https://docs.rs/landon)
+Landon [![Actions Status](https://github.com/chinedufn/landon/workflows/ci/badge.svg)](https://github.com/chinedufn/landon/actions)
 ===============
 
 > A collection of tools, data structures and methods for exporting Blender data (such as meshes and armatures) and preparing it for your rendering pipeline.

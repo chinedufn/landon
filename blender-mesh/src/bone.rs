@@ -1,4 +1,4 @@
-use crate::vertex_attributes::{VertexBoneInfluences, MultiIndexedVertexAttributes};
+use crate::vertex_attributes::{MultiIndexedVertexAttributes, VertexBoneInfluences};
 
 /// The number of bones that influence each uniform.
 ///
