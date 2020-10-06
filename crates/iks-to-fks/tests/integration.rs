@@ -6,21 +6,7 @@ use std::process::Command;
 /// since our script generates a new mesh and armature
 #[test]
 fn creates_seconds_armature() {
-    let output = Command::new("blender")
-        .arg(leg_blend())
-        .arg("--background")
-        .args(&["--python", run_addon_py().to_str().unwrap()])
-        .args(&["--python", print_num_objects_py().to_str().unwrap()])
-        .output()
-        .unwrap();
-
-    let stdout = String::from_utf8(output.stdout).unwrap();
-
-    assert!(
-        stdout.contains("The number of objects is: 5"),
-        "Stdout: {}",
-        stdout
-    )
+    assert_num_objects_after_convert_ik(leg_blend(), 5);
 }
 
 /// We render a frame of our mesh's animation from before and then after we've run our FK generation script
@@ -86,8 +72,61 @@ fn imported_linked_armature() {
 /// This makes everything work right out of the box for blender files that only have one armature and mesh.
 #[test]
 fn automatic_selection() {
+    assert_num_objects_after_convert_ik(unselected_blend(), 5);
+}
+
+/// Make sure that all of the duplicate actions that get created when we duplicate our armature
+/// and mesh end up getting removed.
+#[test]
+fn no_new_actions_created() {
+    assert_num_actions_after_convert_ik(leg_blend(), 1);
+}
+
+/// Make sure that if an armature has multiple child meshes we duplicate all of them so that all
+/// of their vertex groups are set to the new FK armature
+#[test]
+fn armature_with_multiple_child_meshes() {
+    // Original 2 meshes, original armature, new 2 mesh and new armature, camera = 7 objects total
+    assert_num_objects_after_convert_ik(multiple_meshes_for_armature(), 7);
+}
+
+/// Verify that we can export an armature when the armature's data block has a different name.
+/// We previously assumed that the data block would have the same name as the armature.
+///
+/// https://github.com/chinedufn/landon/issues/15
+#[test]
+fn armature_and_data_block_different_names() {
+    assert_num_actions_after_convert_ik(armature_name_different_from_data_block_name(), 1);
+}
+
+/// Verify that the blend file contains the correct number of objects after running the IK
+/// conversion.
+fn assert_num_objects_after_convert_ik(blend_file: PathBuf, expected: usize) {
+    let stdout = convert_ik_then_print_num_objects_then_return_stdout(blend_file);
+
+    assert!(
+        stdout.contains(&format!("The number of objects is: {}", expected)),
+        "Stdout: {}",
+        stdout
+    )
+}
+
+/// Verify that the blend file contains the correct number of actions after running the IK
+/// conversion.
+fn assert_num_actions_after_convert_ik(blend_file: PathBuf, expected: usize) {
+    let stdout = convert_ik_then_print_num_actions_then_return_stdout(blend_file);
+
+    assert!(
+        stdout.contains(&format!("The number of actions is: {}", expected)),
+        "Stdout: {}",
+        stdout
+    );
+}
+
+/// Run the convert ik to fk script on a Blender file and return stdout
+fn convert_ik_then_print_num_objects_then_return_stdout(blend_file: PathBuf) -> String {
     let output = Command::new("blender")
-        .arg(unselected_blend())
+        .arg(blend_file)
         .arg("--background")
         .args(&["--python", run_addon_py().to_str().unwrap()])
         .args(&["--python", print_num_objects_py().to_str().unwrap()])
@@ -96,20 +135,13 @@ fn automatic_selection() {
 
     let stdout = String::from_utf8(output.stdout).unwrap();
 
-    assert!(
-        // Original mesh and armature, new mesh and armature, camera = 5 objects total
-        stdout.contains("The number of objects is: 5"),
-        "Stdout: {}",
-        stdout
-    )
+    stdout
 }
 
-/// Make sure that all of the duplicate actions that get created when we duplicate our armature
-/// and mesh end up getting removed.
-#[test]
-fn no_new_actions_created() {
+/// Run the convert ik to fk script on a Blender file and return stdout
+fn convert_ik_then_print_num_actions_then_return_stdout(blend_file: PathBuf) -> String {
     let output = Command::new("blender")
-        .arg(leg_blend())
+        .arg(blend_file)
         .arg("--background")
         .args(&["--python", run_addon_py().to_str().unwrap()])
         .args(&["--python", print_num_actions_py().to_str().unwrap()])
@@ -118,33 +150,7 @@ fn no_new_actions_created() {
 
     let stdout = String::from_utf8(output.stdout).unwrap();
 
-    assert!(
-        stdout.contains("The number of actions is: 1"),
-        "Stdout: {}",
-        stdout
-    )
-}
-
-/// Make sure that if an armature has multiple child meshes we duplicate all of them so that all
-/// of their vertex groups are set to the new FK armature
-#[test]
-fn armature_with_multiple_child_meshes() {
-    let output = Command::new("blender")
-        .arg(multiple_meshes_for_armature())
-        .arg("--background")
-        .args(&["--python", run_addon_py().to_str().unwrap()])
-        .args(&["--python", print_num_objects_py().to_str().unwrap()])
-        .output()
-        .unwrap();
-
-    let stdout = String::from_utf8(output.stdout).unwrap();
-
-    assert!(
-        // Original 2 meshes, original armature, new 2 mesh and new armature, camera = 7 objects total
-        stdout.contains("The number of objects is: 7"),
-        "Stdout: {}",
-        stdout
-    )
+    stdout
 }
 
 /// Used to verify that before and after running blender-iks-to-fks generates approximately the
@@ -302,6 +308,10 @@ fn bezier_curve_bone_hooks_deform_set_to_false_blend() -> PathBuf {
 /// mesh might need to have different bone weights than the original.
 fn multiple_meshes_for_armature() -> PathBuf {
     tests_dir().join("multiple-meshes-for-armature.blend")
+}
+
+fn armature_name_different_from_data_block_name() -> PathBuf {
+    tests_dir().join("armature-name-different-from-data-block-name.blend")
 }
 
 /// Used to run our blender-iks-to-fks addon

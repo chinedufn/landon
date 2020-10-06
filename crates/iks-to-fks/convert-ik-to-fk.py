@@ -116,9 +116,9 @@ class ConvertIKToFK(bpy.types.Operator):
 
         # Now we remove all non deform bones from our FK armature
         bpy.ops.object.mode_set(mode = 'EDIT')
-        for fkEditBone in bpy.data.armatures[fkArmature.name].edit_bones:
+        for fkEditBone in bpy.data.armatures[fkArmature.data.name].edit_bones:
             if fkEditBone.use_deform == False:
-                bpy.data.armatures[fkArmature.name].edit_bones.remove(fkEditBone)
+                bpy.data.armatures[fkArmature.data.name].edit_bones.remove(fkEditBone)
 
          # Iterate through every action so that we can bake all keyframes across all actions
         for actionInfo in originalActionsList:
