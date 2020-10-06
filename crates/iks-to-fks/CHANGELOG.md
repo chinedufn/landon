@@ -1,3 +1,9 @@
+## 2.0.10
+
+- Fix issue where conversions failed if the armature's name was different from its data block name [#15]
+
+[#15]: https://github.com/chinedufn/landon/issues/15
+
 ## 1.4.2
 
 - Fix issue where we weren't deleting all of the old keyframes
