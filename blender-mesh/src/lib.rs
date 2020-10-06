@@ -47,6 +47,8 @@ mod triangulate;
 mod vertex_attributes;
 mod y_up;
 
+mod create_mesh;
+
 #[cfg(test)]
 mod test_utils;
 

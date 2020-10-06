@@ -9,13 +9,13 @@
 #[derive(Debug, Serialize, Deserialize, PartialEq, Default, Clone)]
 pub struct PrincipledBSDF {
     /// [r, g, b]
-    base_color: MaterialInput<[f32; 3], String>,
+    pub(crate) base_color: MaterialInput<[f32; 3], String>,
     /// roughness
-    roughness: MaterialInput<f32, (String, Channel)>,
+    pub(crate) roughness: MaterialInput<f32, (String, Channel)>,
     /// metallic
-    metallic: MaterialInput<f32, (String, Channel)>,
+    pub(crate) metallic: MaterialInput<f32, (String, Channel)>,
     /// The filename for the material's normal map
-    normal_map: Option<String>,
+    pub(crate) normal_map: Option<String>,
 }
 
 /// An input to a material property.
