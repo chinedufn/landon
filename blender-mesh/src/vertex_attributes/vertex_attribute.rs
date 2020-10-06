@@ -82,11 +82,6 @@ impl<T> VertexAttribute<T> {
     pub fn data(&self) -> &Vec<T> {
         &self.data
     }
-
-    /// Get the underlying data for this attribute mutably.
-    pub(crate) fn data_mut(&mut self) -> &mut Vec<T> {
-        &mut self.data
-    }
 }
 
 impl<T> VertexAttribute<T> {
@@ -98,35 +93,5 @@ impl<T> VertexAttribute<T> {
         let idx = (vertex_idx as usize) * attribute_size;
 
         &self.data[idx..idx + attribute_size]
-    }
-
-    /// Set vertex data for an attribute with 3 components per vertex
-    pub(crate) fn set_three_components(&mut self, idx: usize, comp1: T, comp2: T, comp3: T) {
-        self.data[idx * 3] = comp1;
-        self.data[idx * 3 + 1] = comp2;
-        self.data[idx * 3 + 2] = comp3;
-    }
-
-    /// Increment vertex data for an attribute with 3 components per vertex
-    ///
-    /// Useful for adding together two tangent vectors when preparing tangent data.
-    pub(crate) fn increment_three_components(&mut self, idx: usize, comp1: T, comp2: T, comp3: T)
-    where
-        T: std::ops::AddAssign,
-    {
-        self.data[idx * 3] += comp1;
-        self.data[idx * 3 + 1] += comp2;
-        self.data[idx * 3 + 2] += comp3;
-    }
-
-    /// Set vertex data for an attribute with 2 components per vertex
-    pub(crate) fn set_two_components(&mut self, idx: usize, comp1: T, comp2: T) {
-        self.data[idx * 2] = comp1;
-        self.data[idx * 2 + 1] = comp2;
-    }
-
-    /// Push data to the end of the underlying vector
-    pub(crate) fn push(&mut self, val: T) {
-        self.data.push(val)
     }
 }

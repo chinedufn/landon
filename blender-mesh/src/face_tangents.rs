@@ -154,7 +154,7 @@ mod tests {
 
     #[test]
     fn calculate_tangents_2_triangle() {
-        let mut mesh: BlenderMesh = BlenderMesh {
+        let mesh: BlenderMesh = BlenderMesh {
             multi_indexed_vertex_attributes: MultiIndexedVertexAttributes {
                 positions: (
                     vec![0, 1, 2, 0, 2, 3],
@@ -194,7 +194,7 @@ mod tests {
 
     #[test]
     fn calculate_tangents_1_quad() {
-        let mut mesh: BlenderMesh = BlenderMesh {
+        let mesh: BlenderMesh = BlenderMesh {
             multi_indexed_vertex_attributes: MultiIndexedVertexAttributes {
                 positions: (
                     vec![0, 1, 2, 3],

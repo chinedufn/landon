@@ -40,6 +40,14 @@ class MeshToJSON(bpy.types.Operator):
         mesh = bpy.context.view_layer.objects.active
 
         mesh_json = {
+            'name': mesh.name,
+            'armature_name': None,
+            # [x, y, z]
+            'bounding_box': {
+                'min_corner': [], 'max_corner': []
+            },
+            'materials': {},
+            'custom_properties': {},
             'attribs': {
                 'vertices_in_each_face': [],
                 'positions': {
@@ -70,15 +78,7 @@ class MeshToJSON(bpy.types.Operator):
                     'bone_indices': [],
                     'bone_weights': []
                 }
-            },
-            'armature_name': None,
-            'bounding_box': {
-                # [x, y, z]
-                'min_corner': [],
-                'max_corner': []
-            },
-            'materials': {},
-            'custom_properties': {}
+            }
         }
 
         # We maintain a list of all of the parent armature's bone names so that when exporting bone indices / weights

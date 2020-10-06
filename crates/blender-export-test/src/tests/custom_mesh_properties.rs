@@ -46,6 +46,7 @@ fn exports_custom_properties() {
 
 fn expected_mesh_data() -> String {
     r#"{
+            "name": "CubeWithCustomProperties",
             "multi_indexed_vertex_attributes": {
                 "vertices_in_each_face": [4, 4, 4, 4, 4, 4],
                 "positions": {

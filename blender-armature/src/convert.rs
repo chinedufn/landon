@@ -2,7 +2,7 @@
 
 use crate::BlenderArmature;
 use crate::Bone;
-use nalgebra::{Isometry3, Matrix3, Matrix4, Quaternion, Rotation3, UnitQuaternion, Vector4};
+use nalgebra::{Matrix4, Quaternion};
 
 impl BlenderArmature {
     /// Convert a matrix into a dual quaternion
@@ -101,12 +101,11 @@ fn quaternion_from_mat3(m: [f32; 9]) -> [f32; 4] {
     // Algorithm in Ken Shoemake's article in 1987 SIGGRAPH course notes
     // article "Quaternion Calculus and Fast Animation".
     let f_trace = m[0] + m[4] + m[8];
-    let mut f_root = 0.0;
 
     let mut out = [0.0; 4];
 
     if f_trace > 0.0 {
-        f_root = (f_trace + 1.0).sqrt();
+        let mut f_root = (f_trace + 1.0).sqrt();
         out[3] = 0.5 * f_root;
         f_root = 0.5 / f_root;
         out[0] = (m[5] - m[7]) * f_root;
@@ -123,7 +122,7 @@ fn quaternion_from_mat3(m: [f32; 9]) -> [f32; 4] {
         let j = (i + 1) % 3;
         let k = (i + 2) % 3;
 
-        f_root = (m[i * 3 + i] - m[j * 3 + j] - m[k * 3 + k] + 1.0).sqrt();
+        let mut f_root = (m[i * 3 + i] - m[j * 3 + j] - m[k * 3 + k] + 1.0).sqrt();
         out[i] = 0.5 * f_root;
         f_root = 0.5 / f_root;
         out[3] = (m[j * 3 + k] - m[k * 3 + j]) * f_root;

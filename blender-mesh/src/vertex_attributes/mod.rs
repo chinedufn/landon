@@ -106,13 +106,6 @@ pub struct IndexedAttribute {
     pub(crate) attribute: VertexAttribute<f32>,
 }
 
-#[allow(missing_docs)]
-impl IndexedAttribute {
-    pub fn new(indices: VertexIndices, attribute: VertexAttribute<f32>) -> Self {
-        IndexedAttribute { indices, attribute }
-    }
-}
-
 impl From<(VertexIndices, VertexAttribute<f32>)> for IndexedAttribute {
     fn from(v: (VertexIndices, VertexAttribute<f32>)) -> Self {
         Self {

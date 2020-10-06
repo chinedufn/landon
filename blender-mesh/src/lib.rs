@@ -68,6 +68,7 @@ pub enum BlenderError {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
 #[serde(deny_unknown_fields)]
 pub struct BlenderMesh {
+    name: String,
     armature_name: Option<String>,
     bounding_box: BoundingBox,
     #[serde(alias = "attribs")]
@@ -109,6 +110,11 @@ impl BlenderMesh {
     /// Set the mesh's bounding box.
     pub fn set_bounding_box(&mut self, bounding_box: BoundingBox) {
         self.bounding_box = bounding_box;
+    }
+
+    /// The name of the mesh
+    pub fn name(&self) -> &String {
+        &self.name
     }
 }
 

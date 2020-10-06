@@ -1,5 +1,3 @@
-use crate::vertex_attributes::VertexAttribute;
-
 mod interleave;
 
 pub use self::interleave::*;

@@ -1,5 +1,4 @@
 pub use self::create_single_index_config::CreateSingleIndexConfig;
-use crate::bone::BoneInfluencesPerVertex;
 use crate::face_tangents::face_tangent_at_idx;
 use crate::vertex_attributes::{BoneAttributes, SingleIndexedVertexAttributes, VertexAttribute};
 use crate::{BlenderMesh, BoneInfluence, Vertex};
@@ -476,11 +475,11 @@ fn make_vertices(
 pub mod tests {
     use super::*;
     use crate::bone::BoneInfluencesPerVertex;
+    use crate::concat_vecs;
     use crate::test_utils::*;
     use crate::vertex_attributes::{
         BoneAttributes, IndexedAttribute, MultiIndexedVertexAttributes, VertexBoneInfluences,
     };
-    use crate::{concat_vecs, Vertex};
 
     struct CombineIndicesTest {
         mesh_to_combine: BlenderMesh,
@@ -836,7 +835,7 @@ pub mod tests {
 
     impl Into<MultiIndexedVertexAttributes> for TodoDeleteMeMultiConverter {
         fn into(self) -> MultiIndexedVertexAttributes {
-            let mut normals = Some(IndexedAttribute {
+            let normals = Some(IndexedAttribute {
                 indices: self.vertex_normal_indices,
                 attribute: (self.vertex_normals, 3).into(),
             });

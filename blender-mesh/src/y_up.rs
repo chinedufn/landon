@@ -56,9 +56,7 @@ mod tests {
     use super::*;
     use crate::bounding_box::BoundingBox;
     use crate::indexed;
-    use crate::vertex_attributes::{
-        MultiIndexedVertexAttributes, SingleIndexedVertexAttributes, VertexAttributes,
-    };
+    use crate::vertex_attributes::MultiIndexedVertexAttributes;
     use nalgebra::Point3;
 
     #[test]

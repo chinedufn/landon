@@ -1,7 +1,6 @@
 use crate::filesystem::rel_workspace_string;
 use blender_mesh::{
     flatten_exported_meshes_owned, parse_meshes_from_blender_stdout, FlattenedExportedMeshes,
-    MeshesByFilename,
 };
 use std::path::PathBuf;
 use std::process::Command;

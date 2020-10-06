@@ -62,7 +62,7 @@ mod tests {
 
     #[test]
     fn triangulate_faces() {
-        let mut start_mesh = BlenderMesh {
+        let start_mesh = BlenderMesh {
             multi_indexed_vertex_attributes: MultiIndexedVertexAttributes {
                 positions: IndexedAttribute {
                     indices: vec![0, 1, 2, 3, 4, 5, 6, 7],

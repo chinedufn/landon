@@ -41,6 +41,7 @@ fn parse_data() {
 
 fn expected_mesh_data() -> String {
     r#"{
+            "name": "TexturedCube",
             "multi_indexed_vertex_attributes": {
                 "vertices_in_each_face": [ 4, 4, 4, 4, 4, 4 ],
                 "positions": {

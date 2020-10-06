@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 pub mod basic_cube;
 pub mod bone_groups;
 pub mod custom_mesh_properties;

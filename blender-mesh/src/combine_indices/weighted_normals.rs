@@ -102,10 +102,6 @@ impl SingleIndexedVertexAttributes {
     }
 }
 
-fn to_range(idx: usize) -> std::ops::Range<usize> {
-    3 * idx..3 * idx + 3
-}
-
 // While we iterate through our positions we keep track of which normals corresponded to
 // duplicate positions - along with the weighted normal.
 // Then when we're done we go back to all of the corresponding normals for each shared
@@ -143,8 +139,7 @@ fn weight_normal_using_surface_and_angle(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::vertex_attributes::IndexedAttribute;
-    use crate::{BlenderMesh, CreateSingleIndexConfig, Vertex};
+    use crate::Vertex;
     use std::f32::consts::PI;
 
     /// Calculate a weighted normal from a given normal and the connected edges
@@ -185,7 +180,6 @@ mod tests {
             0., 1., 0.,
         ];
 
-        let normal_indices = vec![2, 0, 1];
         #[rustfmt::skip]
         let normals = vec![
             0., 1., 0.,

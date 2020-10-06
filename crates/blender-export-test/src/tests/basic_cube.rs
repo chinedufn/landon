@@ -2,8 +2,7 @@ extern crate blender_mesh;
 extern crate serde;
 extern crate serde_json;
 
-use crate::filesystem::{rel_workspace, rel_workspace_string, workspace_root};
-use blender_mesh::parse_meshes_from_blender_stdout;
+use crate::filesystem::workspace_root;
 use blender_mesh::BlenderMesh;
 
 use crate::tests::test_utils::export_meshes_from_blender_file;
@@ -24,6 +23,7 @@ fn parse_data() {
 
 fn expected_mesh_data() -> String {
     r#"{
+            "name": "Cube",
             "multi_indexed_vertex_attributes": {
                 "vertices_in_each_face": [ 4, 4, 4, 4, 4, 4 ],
                 "positions": {
