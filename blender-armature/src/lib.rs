@@ -64,6 +64,7 @@ pub enum BlenderError {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
 #[cfg_attr(test, derive(Clone))]
 pub struct BlenderArmature {
+    name: String,
     #[serde(serialize_with = "serialize_hashmap_deterministic")]
     pub joint_index: HashMap<String, u8>,
     pub inverse_bind_poses: Vec<Bone>,
@@ -80,6 +81,11 @@ pub struct BlenderArmature {
 }
 
 impl BlenderArmature {
+    /// The name of the armature
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
     /// Blender [bone groups]
     ///
     /// Maps bone group name to a vector of the bones indices that are in that bone group.

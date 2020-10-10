@@ -561,6 +561,7 @@ mod tests {
         // Ripped this out of the skinned_letter_f.blend's JSON
         let armature = r#"
         {
+          "name": "Some Name",
           "actions": {
             "Twist": [
               {"frame_time_secs": 0.0, "bones": [{"Matrix": [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]}]},

@@ -23,13 +23,6 @@ class ExportArmatureToJSON(bpy.types.Operator):
 
     def execute(self, context):
         def main():
-            armatureJSON = {
-                'actions': {},
-                'inverse_bind_poses': [],
-                'joint_index': {},
-                'bone_groups': {}
-            }
-
             # Get the armature that is currently active. We will be parsing it's actions
             # TODO: Error message if the active object is not the armature
             activeArmature = bpy.context.view_layer.objects.active
@@ -40,6 +33,14 @@ class ExportArmatureToJSON(bpy.types.Operator):
                         activeArmature = obj
                         bpy.context.view_layer.objects.active = activeArmature
                         break
+
+            armatureJSON = {
+                'name': activeArmature.name,
+                'actions': {},
+                'inverse_bind_poses': [],
+                'joint_index': {},
+                'bone_groups': {}
+            }
 
             # Get all of the actions
             # TODO: If we later support handling multiple armatures we'll need to only use the
