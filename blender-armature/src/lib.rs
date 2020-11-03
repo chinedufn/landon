@@ -31,7 +31,6 @@ pub use crate::interpolate::InterpolationSettings;
 use crate::serde::serialize_hashmap_deterministic;
 use nalgebra::Matrix4;
 
-mod bone_position;
 mod convert;
 mod coordinate_system;
 mod export;
