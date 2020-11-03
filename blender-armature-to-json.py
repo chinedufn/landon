@@ -38,7 +38,7 @@ class ExportArmatureToJSON(bpy.types.Operator):
                 'name': activeArmature.name,
                 'actions': {},
                 'inverse_bind_poses': [],
-                'joint_index': {},
+                'joint_indices': {},
                 'bone_groups': {}
             }
 
@@ -103,7 +103,8 @@ class ExportArmatureToJSON(bpy.types.Operator):
                 #   https://blender.stackexchange.com/a/15229/40607
                 #
                 # TODO: Not currently handling the case where a bone has a parent since I'm using blender-iks-to-fks
-                # which clears all parent relationships before visual keying
+                #  which clears all parent relationships before visual keying
+                #  Need to add tests for handling this.
                 poseBone = activeArmature.pose.bones[boneName]
 
                 # We make sure to account for the world offset of the armature since matrix_local is in armature space
@@ -115,7 +116,7 @@ class ExportArmatureToJSON(bpy.types.Operator):
             # Now we create the JSON for the joint name indices. The bind poses and keyframe poses are
             # arrays of index 0...numBones - 1. To look up a bone in this array you use its joint name index
             for boneIndex, boneName in enumerate(allBoneNames):
-                armatureJSON['joint_index'][boneName] = boneIndex
+                armatureJSON['joint_indices'][boneName] = boneIndex
 
             # Exporting bone groups
             #
@@ -135,7 +136,7 @@ class ExportArmatureToJSON(bpy.types.Operator):
                 bpy.ops.pose.group_select()
 
                 for poseBone in bpy.context.selected_pose_bones:
-                    bone_index = armatureJSON['joint_index'][poseBone.bone.name]
+                    bone_index = armatureJSON['joint_indices'][poseBone.bone.name]
                     armatureJSON['bone_groups'][bone_group_name].append(bone_index)
 
                 bpy.ops.pose.group_deselect()

@@ -31,6 +31,7 @@ pub use crate::interpolate::InterpolationSettings;
 use crate::serde::serialize_hashmap_deterministic;
 use nalgebra::Matrix4;
 
+mod bone_position;
 mod convert;
 mod coordinate_system;
 mod export;
@@ -56,22 +57,14 @@ pub enum BlenderError {
 /// If you have other needs, such as a way to know the model space position of any bone at any
 /// time so that you can, say, render a baseball in on top of your hand bone.. Open an issue.
 /// (I plan to support this specific example in the future)
-///
-/// TODO: BlenderArmature.y_up() fixes the actions to be y up instead of z up
-///
-/// TODO: Replace String's with generics so that you can have type safety across different
-///       armature properties
 #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
 #[cfg_attr(test, derive(Clone))]
 pub struct BlenderArmature {
     name: String,
     #[serde(serialize_with = "serialize_hashmap_deterministic")]
-    pub joint_index: HashMap<String, u8>,
-    pub inverse_bind_poses: Vec<Bone>,
-    // TODO: Generic type instead of string for your action names so that you can have an enum
-    // for your action names ... ?
-    // TODO: Inner HashMap should have a float key not a string since it is a time in seconds
-    // but you can't have floats as keys so need a workaround.
+    joint_indices: HashMap<String, u8>,
+    inverse_bind_poses: Vec<Bone>,
+    // TODO: Make private
     #[serde(serialize_with = "serialize_hashmap_deterministic")]
     pub actions: HashMap<String, Vec<Keyframe>>,
     #[serde(serialize_with = "serialize_hashmap_deterministic")]
@@ -134,6 +127,20 @@ impl BlenderArmature {
     pub fn create_bone_group(&mut self, name: String, joint_indices: Vec<u8>) {
         self.bone_groups.insert(name, joint_indices);
     }
+
+    /// Get a bone's index into the various Vec<Bone> data structures that hold bone data.
+    pub fn joint_indices(&self) -> &HashMap<String, u8> {
+        &self.joint_indices
+    }
+
+    /// Every bone's inverse bind pose.
+    ///
+    /// The parent matrices are *not* multiplied in.
+    ///
+    /// So, if a parent matrix is moved the inverse bind matrix of the child will be the same.
+    pub fn inverse_bind_poses(&self) -> &Vec<Bone> {
+        &self.inverse_bind_poses
+    }
 }
 
 /// A bone in an armature. Can either be a dual quaternion or a matrix. When you export bones
@@ -142,8 +149,15 @@ impl BlenderArmature {
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(test, derive(Clone))]
 pub enum Bone {
+    /// TODO: Only support dual quarternions? We could use a custom derive to automatically convert
+    ///  [f32;16] matrices into [f32;8] dual quaternion (to avoid needing to get dual quat logic
+    ///  working in the python export script).
+    ///  We could also just write our export script in Rust and not use a custom deserialize
+    ///  Better yet ... just store both the matrix and the dual quaternion representation so that
+    ///  we can use either one depending on the scenario.
+    ///  If memory ever became an issue we could put matrices behind a feature flag.
     Matrix([f32; 16]),
-    /// Rptation:     [w, x, y, z]
+    /// Rotation:     [w, x, y, z]
     /// Translation:  [w, x, y, z]
     DualQuat([f32; 8]),
 }
@@ -152,6 +166,7 @@ pub enum Bone {
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(test, derive(Default, Clone))]
 pub struct Keyframe {
+    // FIXME: Duration
     frame_time_secs: f32,
     bones: Vec<Bone>,
 }
@@ -181,7 +196,12 @@ impl BlenderArmature {
     /// Iterate over all of the action bones and apply and multiply in the inverse bind pose.
     ///
     /// TODO: another function to apply bind shape matrix? Most armatures seem to export an identity
-    /// bind shape matrix but that might not be the same for every armature.
+    ///  bind shape matrix but that might not be the same for every armature.
+    ///
+    /// TODO: Do not mutate the matrices and instead just return the new values and let the caller
+    ///  handle caching them? Would mean less moving parts in our data structures and you always
+    ///  know exactly what you are getting. Right now you have no way actions of knowing whether or
+    ///  not actions have their bind poses pre-multiplied in.
     pub fn apply_inverse_bind_poses(&mut self) {
         for (_name, action) in self.actions.iter_mut() {
             for keyframe in action.iter_mut() {

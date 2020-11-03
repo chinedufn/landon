@@ -570,7 +570,7 @@ mod tests {
             ]
           },
           "inverse_bind_poses": [],
-          "joint_index": {},
+          "joint_indices": {},
           "bone_groups": {}
         }
     "#;
