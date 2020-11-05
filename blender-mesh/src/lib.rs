@@ -97,6 +97,11 @@ impl BlenderMesh {
         &self.materials
     }
 
+    /// A mutable map of material name to the material's data
+    pub fn materials_mut(&mut self) -> &mut HashMap<String, PrincipledBSDF> {
+        &mut self.materials
+    }
+
     /// Custom properties for this mesh
     ///
     /// i.e. in Blender this might be found with `bpy.context.view_layer.objects.active.keys()`

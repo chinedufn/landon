@@ -74,6 +74,21 @@ where
 }
 
 impl PrincipledBSDF {
+    /// Create a new physically-based material.
+    pub fn new(
+        base_color: MaterialInput<[f32; 3], String>,
+        roughness: MaterialInput<f32, (String, Channel)>,
+        metallic: MaterialInput<f32, (String, Channel)>,
+        normal_map: Option<String>,
+    ) -> Self {
+        PrincipledBSDF {
+            base_color,
+            roughness,
+            metallic,
+            normal_map,
+        }
+    }
+
     /// The base_color of the material.
     ///
     /// https://docs.blender.org/api/blender2.8/bpy.types.Material.html#bpy.types.Material.diffuse_color
