@@ -72,25 +72,26 @@ class ExportArmatureToJSON(bpy.types.Operator):
                 if actionKeyframes == []:
                      continue
 
-                armatureJSON['actions'][actionInfo.name] = []
+                armatureJSON['actions'][actionInfo.name] = {
+                    'keyframes': [],
+                    'pose_markers': {}
+                }
                 # Loop through the keyframes and build the frame data for the action
                 # We convert keyframes into times in seconds
                 index = 0
                 for frame in actionKeyframes:
-                    # Round the keyframes time in seconds to 6 decimal places.
-                    # i.e. 10.333333 seconds
-                    # So here, at 24FPS, frame 12 would become `0.5` (seconds)
-                    timeOfKeyframe = round(frame / bpy.context.scene.render.fps, 6)
                     # Get all of the bone pose matrices for this frame -> [bone1Matrix, bone2Matrix, ..]
-                    armatureJSON['actions'][actionInfo.name].append({
+                    armatureJSON['actions'][actionInfo.name]['keyframes'].append({
                         'bones': [],
-                        'frame_time_secs': None
+                        'frame': frame
                     })
                     for bone in getBonePosesAtKeyframe(frame, activeArmature, allBoneNames):
-                        armatureJSON['actions'][actionInfo.name][index]['bones'].append({'Matrix': matrixToArray(bone.matrix)})
-                        armatureJSON['actions'][actionInfo.name][index]['frame_time_secs'] = timeOfKeyframe
+                        armatureJSON['actions'][actionInfo.name]['keyframes'][index]['bones'].append({'Matrix': matrixToArray(bone.matrix)})
 
                     index += 1
+
+                for pose_marker in activeArmature.animation_data.action.pose_markers:
+                    armatureJSON['actions'][actionInfo.name]['pose_markers'][pose_marker.frame] = pose_marker.name;
 
             # Now that we've added our actions we add our bind poses
             # We iterate over pose bones instead of edit bones to ensure a consistent ordering
