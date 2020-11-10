@@ -55,7 +55,7 @@ pub struct PreviousAction<'a> {
     /// use std::time::Duration;
     ///
     /// // Blend previous_action into current_action linearly over 5 seconds
-    /// let create_interp_param_creator = |elapsed_time: Duration| 0.2 * delta_seconds;
+    /// let create_interp_param_creator = |elapsed_time: Duration| 0.2 * elapsed_time.as_secs_f32();
     /// ```
     pub create_interp_param: fn(Duration) -> f32,
 }
