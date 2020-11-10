@@ -17,20 +17,20 @@
 //! @see https://github.com/chinedufn/blender-actions-to-json - Exporting blender armatures / actions
 
 #[macro_use]
-extern crate failure;
-
-#[macro_use]
 extern crate serde_derive;
 
 use std::collections::HashMap;
 
-pub use self::coordinate_system::*;
-pub use self::export::*;
-pub use crate::interpolate::ActionSettings;
-pub use crate::interpolate::InterpolationSettings;
-use crate::serde::serialize_hashmap_deterministic;
 use nalgebra::Matrix4;
 
+use crate::serde::serialize_hashmap_deterministic;
+
+pub use self::action::*;
+pub use self::coordinate_system::*;
+pub use self::export::*;
+pub use self::interpolate::*;
+
+mod action;
 mod convert;
 mod coordinate_system;
 mod export;
@@ -38,12 +38,12 @@ mod interpolate;
 mod serde;
 
 /// Something went wrong in the Blender child process that was trying to parse your armature data.
-#[derive(Debug, Fail)]
+#[derive(Debug, thiserror::Error)]
 pub enum BlenderError {
     /// Errors in Blender are written to stderr. We capture the stderr from the `blender` child
     /// process that we spawned when attempting to export armature from a `.blend` file.
-    #[fail(
-        display = "There was an issue while exporting armature: Blender stderr output: {}",
+    #[error(
+        "There was an issue while exporting armature: Blender stderr output: {}",
         _0
     )]
     Stderr(String),
@@ -65,7 +65,7 @@ pub struct BlenderArmature {
     inverse_bind_poses: Vec<Bone>,
     // TODO: Make private
     #[serde(serialize_with = "serialize_hashmap_deterministic")]
-    pub actions: HashMap<String, Vec<Keyframe>>,
+    pub actions: HashMap<String, Action>,
     #[serde(serialize_with = "serialize_hashmap_deterministic")]
     bone_groups: HashMap<String, Vec<u8>>,
     #[serde(default)]
@@ -83,19 +83,17 @@ impl BlenderArmature {
     /// Maps bone group name to a vector of the bones indices that are in that bone group.
     ///
     /// ```rust
-    /// # use blender_armature::{BlenderArmature, InterpolationSettings, ActionSettings};
+    /// # use blender_armature::{BlenderArmature, InterpolationSettings, ActionSettings, Action};
+    /// # use std::time::Duration;
     ///
     /// let armature = create_blender_armature();
     ///
     /// let joint_indices = armature.bone_groups().get("My bone group").unwrap();
     ///
     /// let interpolate_opts = InterpolationSettings {
-    ///            current_time: 1.0,
-    ///            // FIXME: Base joint_indices on a property of `SkinnedMesh`
-    ///            joint_indices,
-    ///            blend_fn: None,
-    ///            current_action: &get_action(),
-    ///            previous_action: None,
+    ///     joint_indices,
+    ///     current_action: &get_action(),
+    ///     previous_action: None,
     ///
     /// };
     ///
@@ -103,7 +101,7 @@ impl BlenderArmature {
     ///
     /// # fn create_blender_armature() -> BlenderArmature {
     /// #   let mut  b = BlenderArmature::default();
-    /// #   b.actions.insert("SomeAction".to_string(), vec![]);
+    /// #   b.actions.insert("SomeAction".to_string(), Action::new(vec![]));
     /// #   b.create_bone_group("My bone group".to_string(), vec![]);
     /// #   b
     /// # }
@@ -111,7 +109,8 @@ impl BlenderArmature {
     /// # fn get_action() -> ActionSettings<'static> {
     /// #   ActionSettings {
     /// #       action_name: "SomeAction",
-    /// #       start_time: 0.0,
+    /// #       elapsed_time: Duration::from_secs(2),
+    /// #       frames_per_second: 24,
     /// #       should_loop: false
     /// #   }
     /// # }
@@ -145,8 +144,7 @@ impl BlenderArmature {
 /// A bone in an armature. Can either be a dual quaternion or a matrix. When you export bones
 /// from Blender they come as matrices - BlenderArmature lets you convert them into dual
 /// quaternions which are usually more favorable for when implementing skeletal animation.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Bone {
     /// TODO: Only support dual quarternions? We could use a custom derive to automatically convert
     ///  [f32;16] matrices into [f32;8] dual quaternion (to avoid needing to get dual quat logic
@@ -165,18 +163,16 @@ pub enum Bone {
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(test, derive(Default, Clone))]
 pub struct Keyframe {
-    // FIXME: Duration
-    frame_time_secs: f32,
+    // FIXME: Use frame number instead of time. This way we can sample at different frame rates.
+    //  Have the interpolation function accept a frame rate
+    frame: u16,
     bones: Vec<Bone>,
 }
 
 impl Keyframe {
     #[allow(missing_docs)]
-    pub fn new(frame_time_secs: f32, bones: Vec<Bone>) -> Self {
-        Keyframe {
-            frame_time_secs,
-            bones,
-        }
+    pub fn new(frame: u16, bones: Vec<Bone>) -> Self {
+        Keyframe { frame, bones }
     }
 
     /// All of the bones for this keyframe.
@@ -203,7 +199,7 @@ impl BlenderArmature {
     ///  not actions have their bind poses pre-multiplied in.
     pub fn apply_inverse_bind_poses(&mut self) {
         for (_name, action) in self.actions.iter_mut() {
-            for keyframe in action.iter_mut() {
+            for keyframe in action.keyframes_mut().iter_mut() {
                 for (index, bone) in keyframe.bones.iter_mut().enumerate() {
                     bone.multiply(&mut self.inverse_bind_poses[index]);
                 }
@@ -216,7 +212,7 @@ impl BlenderArmature {
     /// usually want to transpose your matrices before using them.
     pub fn transpose_actions(&mut self) {
         for (_name, action) in self.actions.iter_mut() {
-            for keyframe in action.iter_mut() {
+            for keyframe in action.keyframes_mut().iter_mut() {
                 for (_index, bone) in keyframe.bones.iter_mut().enumerate() {
                     bone.transpose();
                 }
@@ -230,7 +226,7 @@ impl BlenderArmature {
     /// dual quaternion linear blending.
     pub fn matrices_to_dual_quats(&mut self) {
         for (_, keyframes) in self.actions.iter_mut() {
-            for keyframe in keyframes.iter_mut() {
+            for keyframe in keyframes.keyframes_mut().iter_mut() {
                 for bone in keyframe.bones.iter_mut() {
                     *bone = BlenderArmature::matrix_to_dual_quat(bone);
                 }
@@ -300,12 +296,12 @@ mod tests {
         let mut start_actions = HashMap::new();
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
-            frame_time_secs: 1.0,
+            frame: 1,
             bones: vec![Bone::Matrix([
                 1.0, 6.0, 2.0, 1.0, 7.0, 1.0, 2.0, 5.0, 0.0, 4.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
             ])],
         });
-        start_actions.insert("Fly".to_string(), keyframes);
+        start_actions.insert("Fly".to_string(), Action::new(keyframes));
 
         let mut start_armature = BlenderArmature {
             actions: start_actions,
@@ -320,12 +316,12 @@ mod tests {
         let mut end_actions = HashMap::new();
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
-            frame_time_secs: 1.0,
+            frame: 1,
             bones: vec![Bone::Matrix([
                 1.0, 6.0, 7.0, 1.0, 7.0, 1.0, 27.0, 5.0, 0.0, 4.0, 1.0, 0.0, 0.0, 0.0, 5.0, 1.0,
             ])],
         });
-        end_actions.insert("Fly".to_string(), keyframes);
+        end_actions.insert("Fly".to_string(), Action::new(keyframes));
 
         let expected_armature = BlenderArmature {
             actions: end_actions,
@@ -340,12 +336,12 @@ mod tests {
         let mut start_actions = HashMap::new();
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
-            frame_time_secs: 1.0,
+            frame: 1,
             bones: vec![Bone::Matrix([
                 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
             ])],
         });
-        start_actions.insert("Fly".to_string(), keyframes);
+        start_actions.insert("Fly".to_string(), Action::new(keyframes));
 
         let mut start_armature = BlenderArmature {
             actions: start_actions,
@@ -357,10 +353,10 @@ mod tests {
         let mut end_actions = HashMap::new();
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
-            frame_time_secs: 1.0,
+            frame: 1,
             bones: vec![Bone::DualQuat([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])],
         });
-        end_actions.insert("Fly".to_string(), keyframes);
+        end_actions.insert("Fly".to_string(), Action::new(keyframes));
 
         let expected_armature = BlenderArmature {
             actions: end_actions,
@@ -376,13 +372,13 @@ mod tests {
         let mut start_actions = HashMap::new();
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
-            frame_time_secs: 1.0,
+            frame: 1,
             bones: vec![Bone::Matrix([
                 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 1.0,
             ])],
         });
 
-        start_actions.insert("Fly".to_string(), keyframes);
+        start_actions.insert("Fly".to_string(), Action::new(keyframes));
 
         let mut start_armature = BlenderArmature {
             actions: start_actions,
@@ -394,12 +390,12 @@ mod tests {
         let mut end_actions = HashMap::new();
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
-            frame_time_secs: 1.0,
+            frame: 1,
             bones: vec![Bone::Matrix([
                 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 5.0, 0.0, 0.0, 0.0, 1.0,
             ])],
         });
-        end_actions.insert("Fly".to_string(), keyframes);
+        end_actions.insert("Fly".to_string(), Action::new(keyframes));
 
         let expected_armature = BlenderArmature {
             actions: end_actions,

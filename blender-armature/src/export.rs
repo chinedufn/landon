@@ -121,9 +121,9 @@ fn find_first_armature_after_index(
 
 /// An error when trying to flatten your exported data across multiple files into one HashMap of
 /// armature name to armature data.
-#[derive(Debug, Fail)]
+#[derive(Debug, thiserror::Error)]
 pub enum FlattenArmatureError {
-    #[fail(display = "Duplicate armatures found: {:#?}", duplicates)]
+    #[error("Duplicate armatures found: {:#?}", duplicates)]
     DuplicateArmatureNamesAcrossFiles {
         // HashMap<ArmatureName, Vec<FilesThatItAppearsIn>>
         duplicates: HashMap<String, Vec<String>>,

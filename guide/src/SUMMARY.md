@@ -13,6 +13,7 @@
 
 - [Blender Armature](./blender-armature/README.md)
   - [Bone Groups](./blender-armature/bone-groups/README.md)
+  - [Pose Markers](./blender-armature/pose-markers/README.md)
 
 - [Blender Iks to Fks](./blender-iks-to-fks/README.md)
   - [Troubleshooting](./blender-iks-to-fks/troubleshooting/README.md)

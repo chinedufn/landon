@@ -66,8 +66,8 @@ impl BlenderArmature {
                     dual_quat_z_up_right_to_y_up_right(bone);
                 }
 
-                for (_action, keyframes) in self.actions.iter_mut() {
-                    for keyframe in keyframes {
+                for (_action_name, action) in self.actions.iter_mut() {
+                    for keyframe in action.keyframes_mut() {
                         for bone in keyframe.bones_mut() {
                             dual_quat_z_up_right_to_y_up_right(bone);
                         }
@@ -97,7 +97,7 @@ fn dual_quat_z_up_right_to_y_up_right(bone: &mut Bone) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{BlenderArmature, Bone, Keyframe};
+    use crate::{Action, BlenderArmature, Bone, Keyframe};
     use std::collections::HashMap;
 
     /// Convert from the default Z-up right handed coordinate system to a Y-up right handed
@@ -111,17 +111,17 @@ mod tests {
         let bone = Bone::DualQuat([0., 1., 2., 3., 4., 5., 6., 7.]);
         arm.inverse_bind_poses = vec![bone.clone()];
 
-        let keyframes = Keyframe::new(0., vec![bone]);
+        let keyframes = Keyframe::new(0, vec![bone]);
 
         let mut actions = HashMap::new();
-        actions.insert("Idle".to_string(), vec![keyframes]);
+        actions.insert("Idle".to_string(), Action::new(vec![keyframes]));
         arm.actions = actions;
 
         arm.change_coordinate_system(CoordinateSystem::new(Axis::Y, Hand::Right));
 
         assert_eq!(arm.inverse_bind_poses[0].as_slice(), &expected_bone);
         assert_eq!(
-            arm.actions[&"Idle".to_string()][0].bones()[0].as_slice(),
+            arm.actions[&"Idle".to_string()].keyframes()[0].bones()[0].as_slice(),
             &expected_bone
         );
     }
@@ -138,17 +138,17 @@ mod tests {
         let bone = Bone::DualQuat([0., 1., 2., 3., 4., 5., 6., 7.]);
         arm.inverse_bind_poses = vec![bone.clone()];
 
-        let keyframes = Keyframe::new(0., vec![bone]);
+        let keyframes = Keyframe::new(0, vec![bone]);
 
         let mut actions = HashMap::new();
-        actions.insert("Idle".to_string(), vec![keyframes]);
+        actions.insert("Idle".to_string(), Action::new(vec![keyframes]));
         arm.actions = actions;
 
         arm.change_coordinate_system(CoordinateSystem::new(Axis::Y, Hand::Right));
 
         assert_eq!(arm.inverse_bind_poses[0].as_slice(), &expected_bone);
         assert_eq!(
-            arm.actions[&"Idle".to_string()][0].bones()[0].as_slice(),
+            arm.actions[&"Idle".to_string()].keyframes()[0].bones()[0].as_slice(),
             &expected_bone
         );
     }
