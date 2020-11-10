@@ -453,36 +453,6 @@ mod tests {
         .test();
     }
 
-    /// Verify that we return any pose markers that were between the previously sampled time and
-    ///  the current time.
-    #[test]
-    fn returns_a_list_of_pose_markers_that_were_crossed() {
-        // unimplemented!(
-        //     r#"
-        // First refactor this file, make sure that tests pass and then implement pose markers
-        // "#
-        // )
-    }
-
-    /// Verify that if the previous time that we sampled was near the end of the set of frames and
-    ///  the and we are now back near the beginning we return any pose markers that were in between.
-    ///
-    /// So if
-    ///  - We started at frame 7
-    ///  - We are now looped back around at frame 4
-    ///  - There is a pose marker at frame 2
-    ///
-    /// We would return the pose marker at frame 2
-    #[test]
-    fn returns_poses_that_were_looped_around() {
-        // unimplemented!(
-        //     r#"
-        // Leave a TODO that we don't currently support letting you know if you passed a pose marker
-        //  twice, but if we ever need to we can add support for it.
-        // "#
-        // )
-    }
-
     impl<'a> DualQuatTestCase<'a> {
         fn test(self) {
             let mut actions = HashMap::new();

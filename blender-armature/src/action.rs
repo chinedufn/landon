@@ -8,6 +8,7 @@ type Frame = u16;
 #[cfg_attr(test, derive(Clone))]
 pub struct Action {
     keyframes: Vec<Keyframe>,
+    #[serde(default)]
     pose_markers: HashMap<Frame, String>,
 }
 
