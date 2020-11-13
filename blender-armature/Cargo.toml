@@ -1,6 +1,6 @@
 [package]
 name = "blender-armature"
-version = "0.4.0"
+version = "0.4.2"
 authors = ["Chinedu Francis Nwafili <frankie.nwafili@gmail.com>"]
 description = "Serialize / deserialize Blender armatures"
 keywords = ["blender", "skeleton", "armature", "bone", "vertex"]
@@ -15,4 +15,5 @@ nalgebra = "0.16.12"
 serde = "1"
 serde_derive = "1"
 serde_json = "1"
+serde_yaml = "0.8"
 thiserror = "1"

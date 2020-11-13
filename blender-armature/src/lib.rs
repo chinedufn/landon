@@ -65,7 +65,7 @@ pub struct BlenderArmature {
     inverse_bind_poses: Vec<Bone>,
     // TODO: Make private
     #[serde(serialize_with = "serialize_hashmap_deterministic")]
-    pub actions: HashMap<String, Action>,
+    actions: HashMap<String, Action>,
     #[serde(serialize_with = "serialize_hashmap_deterministic")]
     bone_groups: HashMap<String, Vec<u8>>,
     #[serde(default)]
@@ -101,7 +101,7 @@ impl BlenderArmature {
     ///
     /// # fn create_blender_armature() -> BlenderArmature {
     /// #   let mut  b = BlenderArmature::default();
-    /// #   b.actions.insert("SomeAction".to_string(), Action::new(vec![]));
+    /// #   b.actions_mut().insert("SomeAction".to_string(), Action::new(vec![]));
     /// #   b.create_bone_group("My bone group".to_string(), vec![]);
     /// #   b
     /// # }
@@ -139,6 +139,16 @@ impl BlenderArmature {
     pub fn inverse_bind_poses(&self) -> &Vec<Bone> {
         &self.inverse_bind_poses
     }
+
+    /// All of the actions defined on the armature, keyed by action name.
+    pub fn actions(&self) -> &HashMap<String, Action> {
+        &self.actions
+    }
+
+    /// See [`BlenderArmature.method#actions`]
+    pub fn actions_mut(&mut self) -> &mut HashMap<String, Action> {
+        &mut self.actions
+    }
 }
 
 /// A bone in an armature. Can either be a dual quaternion or a matrix. When you export bones
@@ -163,8 +173,6 @@ pub enum Bone {
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(test, derive(Default, Clone))]
 pub struct Keyframe {
-    // FIXME: Use frame number instead of time. This way we can sample at different frame rates.
-    //  Have the interpolation function accept a frame rate
     frame: u16,
     bones: Vec<Bone>,
 }
