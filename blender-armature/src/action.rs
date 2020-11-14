@@ -36,7 +36,7 @@ impl Action {
 
     /// The largest keyed frame number in the action.
     pub fn largest_frame(&self) -> u16 {
-        self.keyframes.smallest_frame
+        self.keyframes.largest_frame
     }
 
     /// The number of frames separating the largest frame from the smallest.
