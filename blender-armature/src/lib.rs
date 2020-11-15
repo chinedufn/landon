@@ -93,7 +93,6 @@ impl BlenderArmature {
     /// let interpolate_opts = InterpolationSettings {
     ///     joint_indices,
     ///     current_action: &get_action(),
-    ///     previous_action: None,
     ///
     /// };
     ///

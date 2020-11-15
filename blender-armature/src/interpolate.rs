@@ -25,16 +25,16 @@
 //! // ...
 //! ```
 
-use std::collections::BTreeMap;
 use std::time::Duration;
 
-use crate::BlenderArmature;
-use crate::Bone;
+use crate::{BlenderArmature, Bone};
 
+pub use self::interpolated_bones::*;
 pub use self::interpolation_settings::*;
-use std::ops::Deref;
+use std::collections::BTreeMap;
 
 mod interpolate_action;
+mod interpolated_bones;
 mod interpolation_settings;
 
 /// Returns 0.0 if no time has elapsed.
@@ -42,20 +42,6 @@ mod interpolation_settings;
 /// Returns 1.0 if >= 200 milliseconds have elapsed
 pub fn linear_200_milliseconds(elapsed: Duration) -> f32 {
     (5.0 * elapsed.as_secs_f32()).min(1.0)
-}
-
-/// Bones that were interpolated based on an armature's action.
-#[derive(Debug)]
-pub struct InterpolatedBones {
-    bones: BTreeMap<u8, Bone>,
-}
-
-impl Deref for InterpolatedBones {
-    type Target = BTreeMap<u8, Bone>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.bones
-    }
 }
 
 impl BlenderArmature {
@@ -77,101 +63,9 @@ impl BlenderArmature {
     ///
     /// - [ ] Return Result<HashMap<u8, Bone>, InterpolationError>
     /// - [ ] error if clock time is negative
-    pub fn interpolate_bones(&self, opts: InterpolationSettings) -> InterpolatedBones {
-        let current_action_bones =
-            self.interpolate_action(&opts.current_action, opts.joint_indices);
-
-        let bones = match opts.previous_action {
-            None => current_action_bones,
-            Some(previous_action) => {
-                let previous_action_bones =
-                    self.interpolate_action(&previous_action.action, opts.joint_indices);
-
-                interpolate_bones(
-                    &previous_action_bones,
-                    &current_action_bones,
-                    (previous_action.create_interp_param)(opts.current_action.elapsed_time),
-                )
-            }
-        };
-
-        InterpolatedBones { bones }
+    pub fn interpolate_bones(&self, opts: InterpolationSettings) -> BTreeMap<u8, Bone> {
+        self.interpolate_action(&opts.current_action, opts.joint_indices)
     }
-}
-
-fn interpolate_bones(
-    start: &BTreeMap<u8, Bone>,
-    end: &BTreeMap<u8, Bone>,
-    interp_param: f32,
-) -> BTreeMap<u8, Bone> {
-    start
-        .iter()
-        .zip(end.iter())
-        .map(
-            |((prev_joint_idx, prev_action_bone), (cur_joint_idx, cur_action_bone))| {
-                // TODO: We were using a hashmap where the iteration order isn't guaranteed and hence we would hit this condition.
-                // Really just need to refactor all of landon now that we're much more experienced with Rust.
-                if prev_joint_idx != cur_joint_idx {
-                    panic!("We do not currently support the current action having different joints than the previous action");
-                }
-
-                // FIXME: Ditch clones
-                let prev = prev_action_bone.as_slice();
-                let mut prev_action_bone: [f32; 8] = [0.0; 8];
-                prev_action_bone.copy_from_slice(prev);
-
-                // Get the dot product of the start and end rotation quaternions. If the
-                // dot product is negative we negate the first dual quaternion in order to
-                // ensure the shortest path rotation.
-                //
-                // http://www.xbdev.net/misc_demos/demos/dual_quaternions_beyond/paper.pdf
-                // https://github.com/chinedufn/skeletal-animation-system/blob/9ae17c5b23759f7147bf7c464564e32a09e619ef/src/blend-dual-quaternions.js#L59
-                if dot_product(&prev_action_bone, cur_action_bone.as_slice()) < 0.0 {
-                    prev_action_bone[0] = -prev_action_bone[0];
-                    prev_action_bone[1] = -prev_action_bone[1];
-                    prev_action_bone[2] = -prev_action_bone[2];
-                    prev_action_bone[3] = -prev_action_bone[3];
-                    prev_action_bone[4] = -prev_action_bone[4];
-                    prev_action_bone[5] = -prev_action_bone[5];
-                    prev_action_bone[6] = -prev_action_bone[6];
-                    prev_action_bone[7] = -prev_action_bone[7];
-                }
-
-                let _new_bone = [0.0; 8];
-
-                let new_bone = interpolate_bone(&Bone::DualQuat(prev_action_bone), &cur_action_bone, interp_param);
-
-                (*cur_joint_idx, new_bone)
-            },
-        )
-        .collect()
-}
-
-fn interpolate_bone(start_bone: &Bone, end_bone: &Bone, amount: f32) -> Bone {
-    match start_bone {
-        &Bone::DualQuat(ref start_dual_quat) => match end_bone {
-            &Bone::DualQuat(ref end_dual_quat) => {
-                let mut interpolated_dual_quat: [f32; 8] = [0.0; 8];
-
-                for index in 0..8 {
-                    let start = start_dual_quat[index];
-                    let end = end_dual_quat[index];
-                    interpolated_dual_quat[index] = (end - start) * amount + start;
-                }
-
-                Bone::DualQuat(interpolated_dual_quat)
-            }
-            _ => panic!(
-                "You may only interpolate bones of the same type. Please convert\
-                 your end bone into a dual quaternion before interpolating"
-            ),
-        },
-        &Bone::Matrix(ref _matrix) => unimplemented!(),
-    }
-}
-
-fn dot_product(a: &[f32], b: &[f32]) -> f32 {
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]
 }
 
 // Tests originally ported from:
@@ -180,7 +74,7 @@ fn dot_product(a: &[f32], b: &[f32]) -> f32 {
 mod tests {
     use std::collections::HashMap;
 
-    use crate::{Action, Keyframe};
+    use crate::{Action, Bone, Keyframe};
 
     use super::*;
 
@@ -197,9 +91,10 @@ mod tests {
 
     const ONE_FPS: u8 = 1;
 
-    /// Verify that if there is no previous animation only the current animation is intrepolated.
+    /// Verify that we blend properly when the elapsed time has not yet exceeded the animation's
+    /// duration.
     #[test]
-    fn no_previous_animation() {
+    fn less_than_total_duration() {
         DualQuatTestCase {
             keyframes: vec![
                 TestKeyframeDualQuat {
@@ -221,7 +116,6 @@ mod tests {
                     ONE_FPS,
                     true,
                 ),
-                previous_action: None,
             },
         }
         .test();
@@ -246,7 +140,6 @@ mod tests {
             interp_settings: InterpolationSettings {
                 joint_indices: &vec![0][..],
                 current_action: &ActionSettings::new("test", Duration::from_secs(4), ONE_FPS, true),
-                previous_action: None,
             },
         }
         .test();
@@ -279,7 +172,6 @@ mod tests {
                     ONE_FPS,
                     true,
                 ),
-                previous_action: None,
             },
         }
         .test();
@@ -309,80 +201,6 @@ mod tests {
                     ONE_FPS,
                     false,
                 ),
-                previous_action: None,
-            },
-        }
-        .test();
-    }
-
-    /// Verify that the previous action and current action are blended together based on the
-    /// provided blend function.
-    #[test]
-    fn blend_out_previous_action() {
-        DualQuatTestCase {
-            keyframes: vec![
-                TestKeyframeDualQuat {
-                    frame: 0,
-                    bone: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                },
-                TestKeyframeDualQuat {
-                    frame: 3,
-                    bone: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
-                },
-                TestKeyframeDualQuat {
-                    frame: 5,
-                    bone: [5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0],
-                },
-                TestKeyframeDualQuat {
-                    frame: 8,
-                    bone: [8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0, 8.0],
-                },
-            ],
-            expected_bone: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
-            interp_settings: InterpolationSettings {
-                joint_indices: &vec![0][..],
-                current_action: &ActionSettings::new("test", Duration::from_secs(1), ONE_FPS, true),
-                previous_action: Some(PreviousAction {
-                    action: &ActionSettings::new("test", Duration::from_secs(5), ONE_FPS, false),
-                    create_interp_param: two_second_blend_func,
-                }),
-            },
-        }
-        .test();
-    }
-
-    /// Verify that if the previous animation is set to not loop and enough time has elapsed for the
-    /// previous animation to be passed the end frame that we sample the end frame when blending
-    /// in the previous animation.
-    #[test]
-    fn non_looping_previous_animation() {
-        DualQuatTestCase {
-            keyframes: vec![
-                TestKeyframeDualQuat {
-                    frame: 1,
-                    bone: [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
-                },
-                TestKeyframeDualQuat {
-                    frame: 3,
-                    bone: [1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
-                },
-                TestKeyframeDualQuat {
-                    frame: 5,
-                    bone: [3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0],
-                },
-                TestKeyframeDualQuat {
-                    frame: 7,
-                    bone: [1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
-                },
-            ],
-            expected_bone: [1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
-            interp_settings: InterpolationSettings {
-                joint_indices: &vec![0][..],
-                current_action: &ActionSettings::new("test", Duration::from_secs(0), ONE_FPS, true),
-                previous_action: Some(PreviousAction {
-                    action: &ActionSettings::new("test", Duration::from_secs(10), ONE_FPS, false),
-                    create_interp_param: linear_200_milliseconds,
-                }),
             },
         }
         .test();
@@ -409,14 +227,12 @@ mod tests {
                 // TODO: armature.get_group_indices(BlenderArmature::BONE_GROUPS_ALL)
                 joint_indices: &vec![0][..],
                 current_action: &ActionSettings::new("test", Duration::from_secs(0), ONE_FPS, true),
-                previous_action: None,
             },
         }
         .test();
     }
 
-    /// Verify that the frames per second are factored in when sampling the current and previous
-    /// action.
+    /// Verify that the frames per second are factored in when sampling the action.
     #[test]
     fn uses_frames_per_second() {
         DualQuatTestCase {
@@ -430,24 +246,15 @@ mod tests {
                     bone: [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0],
                 },
             ],
-            expected_bone: [6., 6., 6., 6., 6., 6., 6., 6.],
+            expected_bone: [20., 20., 20., 20., 20., 20., 20., 20.],
             interp_settings: InterpolationSettings {
                 joint_indices: &vec![0][..],
                 current_action: &ActionSettings::new(
                     "test",
-                    Duration::from_secs_f32(0.1),
+                    Duration::from_secs_f32(0.2),
                     10,
                     false,
                 ),
-                previous_action: Some(PreviousAction {
-                    action: &ActionSettings::new(
-                        "test",
-                        Duration::from_secs_f32(0.002),
-                        100,
-                        false,
-                    ),
-                    create_interp_param: linear_200_milliseconds,
-                }),
             },
         }
         .test();
@@ -477,9 +284,5 @@ mod tests {
 
             assert_eq!(interpolated_bone.as_slice(), &self.expected_bone,);
         }
-    }
-
-    fn two_second_blend_func(elapsed: Duration) -> f32 {
-        (0.5 * elapsed.as_secs_f32()).min(1.0)
     }
 }

@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 pub use self::action_settings::*;
 
 mod action_settings;
@@ -31,31 +29,4 @@ pub struct InterpolationSettings<'a> {
     pub joint_indices: &'a [u8],
     /// Settings for the current action (animation) of this armature.
     pub current_action: &'a ActionSettings<'a>,
-    /// Optional settings for the previous action of this armature. This is useful for blending
-    /// the last animation that you were playing into the current one.
-    pub previous_action: Option<PreviousAction<'a>>,
-}
-
-/// Optional settings for the previous action of this armature. This is useful for blending
-/// the last animation that you were playing into the current one.
-#[derive(Debug)]
-pub struct PreviousAction<'a> {
-    /// The action that we are blending away fro,
-    pub action: &'a ActionSettings<'a>,
-    /// 0.0 means to source from your previous animation, 1.0 your current animation, and anything
-    /// in between controls how much of your previous animation to use vs. your next.
-    ///
-    /// This is used to control how quickly your previous_action blends into your current_action.
-    ///
-    /// If you supply a previous_animation your previous_action will be blended into your
-    /// current_action using your create_interp_param.
-    ///
-    /// ex:
-    /// ```
-    /// use std::time::Duration;
-    ///
-    /// // Blend previous_action into current_action linearly over 5 seconds
-    /// let create_interp_param_creator = |elapsed_time: Duration| 0.2 * elapsed_time.as_secs_f32();
-    /// ```
-    pub create_interp_param: fn(Duration) -> f32,
 }

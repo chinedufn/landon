@@ -1,9 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::interpolate::interpolate_action::surrounding_keyframes::get_surrounding_keyframes;
-use crate::{ActionSettings, BlenderArmature, Bone, Keyframe};
-
-use super::interpolate_bone;
+use crate::{interpolate_bone, ActionSettings, BlenderArmature, Bone, Keyframe};
 
 mod surrounding_keyframes;
 
