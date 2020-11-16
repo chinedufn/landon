@@ -1,6 +1,6 @@
 [package]
 name = "landon"
-version = "0.8.8"
+version = "0.8.9"
 authors = ["Chinedu Francis Nwafili <frankie.nwafili@gmail.com>"]
 publish = true
 description = "A collection of tools, data structures and methods for exporting Blender data (such as meshes and armatures) and preparing it for your rendering pipeline."
@@ -16,8 +16,8 @@ default = ["cli"]
 
 [dependencies]
 anyhow = "1"
-blender-armature = {path = "./blender-armature", version = "0.5.0"}
-blender-mesh = {path = "./blender-mesh", version = "0.8.3"}
+blender-armature = {path = "./blender-armature", version = "0.5.1"}
+blender-mesh = {path = "./blender-mesh", version = "0.8.6"}
 serde = {version = "1", features = ["derive"]}
 serde_json = "1"
 thiserror = "1"
