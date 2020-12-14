@@ -64,7 +64,7 @@ impl BlenderArmature {
     /// - [ ] Return Result<HashMap<u8, Bone>, InterpolationError>
     /// - [ ] error if clock time is negative
     pub fn interpolate_bones(&self, opts: InterpolationSettings) -> BTreeMap<u8, Bone> {
-        self.interpolate_action(&opts.current_action, opts.joint_indices)
+        self.interpolate_action(&opts.action, opts.joint_indices)
     }
 }
 
@@ -109,13 +109,8 @@ mod tests {
             expected_bone: [0.75, 0.75, 0.75, 0.75, 0.25, 0.25, 0.25, 0.25],
             interp_settings: InterpolationSettings {
                 // TODO: armature.get_group_indices(BlenderArmature::BONE_GROUPS_ALL)
-                joint_indices: &vec![0][..],
-                current_action: &ActionSettings::new(
-                    "test",
-                    Duration::from_secs_f32(1.5),
-                    ONE_FPS,
-                    true,
-                ),
+                joint_indices: &[0],
+                action: ActionSettings::new("test", Duration::from_secs_f32(1.5), ONE_FPS, true),
             },
         }
         .test();
@@ -138,8 +133,8 @@ mod tests {
             ],
             expected_bone: [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
             interp_settings: InterpolationSettings {
-                joint_indices: &vec![0][..],
-                current_action: &ActionSettings::new("test", Duration::from_secs(4), ONE_FPS, true),
+                joint_indices: &[0],
+                action: ActionSettings::new("test", Duration::from_secs(4), ONE_FPS, true),
             },
         }
         .test();
@@ -165,13 +160,8 @@ mod tests {
             ],
             expected_bone: [4.0, 4.0, 4.0, 4.0, 0.0, 0.0, 0.0, 0.0],
             interp_settings: InterpolationSettings {
-                joint_indices: &vec![0][..],
-                current_action: &ActionSettings::new(
-                    "test",
-                    Duration::from_secs_f32(2.5),
-                    ONE_FPS,
-                    true,
-                ),
+                joint_indices: &[0],
+                action: ActionSettings::new("test", Duration::from_secs_f32(2.5), ONE_FPS, true),
             },
         }
         .test();
@@ -194,13 +184,8 @@ mod tests {
             ],
             expected_bone: [3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0],
             interp_settings: InterpolationSettings {
-                joint_indices: &vec![0][..],
-                current_action: &ActionSettings::new(
-                    "test",
-                    Duration::from_secs(7),
-                    ONE_FPS,
-                    false,
-                ),
+                joint_indices: &[0],
+                action: ActionSettings::new("test", Duration::from_secs(7), ONE_FPS, false),
             },
         }
         .test();
@@ -225,8 +210,8 @@ mod tests {
             expected_bone: [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
             interp_settings: InterpolationSettings {
                 // TODO: armature.get_group_indices(BlenderArmature::BONE_GROUPS_ALL)
-                joint_indices: &vec![0][..],
-                current_action: &ActionSettings::new("test", Duration::from_secs(0), ONE_FPS, true),
+                joint_indices: &[0],
+                action: ActionSettings::new("test", Duration::from_secs(0), ONE_FPS, true),
             },
         }
         .test();
@@ -248,13 +233,8 @@ mod tests {
             ],
             expected_bone: [20., 20., 20., 20., 20., 20., 20., 20.],
             interp_settings: InterpolationSettings {
-                joint_indices: &vec![0][..],
-                current_action: &ActionSettings::new(
-                    "test",
-                    Duration::from_secs_f32(0.2),
-                    10,
-                    false,
-                ),
+                joint_indices: &[0],
+                action: ActionSettings::new("test", Duration::from_secs_f32(0.2), 10, false),
             },
         }
         .test();

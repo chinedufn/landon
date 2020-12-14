@@ -28,5 +28,5 @@ pub struct InterpolationSettings<'a> {
     /// TODO: Use an enum that has a variant for this slice of indices or a variant for ::ALL
     pub joint_indices: &'a [u8],
     /// Settings for the current action (animation) of this armature.
-    pub current_action: &'a ActionSettings<'a>,
+    pub action: ActionSettings<'a>,
 }
