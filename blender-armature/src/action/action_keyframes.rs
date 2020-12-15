@@ -2,12 +2,13 @@ use crate::Keyframe;
 
 mod action_keyframes_serde;
 
+/// All of the keyframes in an action.
 #[derive(Debug, PartialEq, Default)]
 #[cfg_attr(test, derive(Clone))]
-pub(super) struct ActionKeyframes {
-    pub(super) keyframes: Vec<Keyframe>,
-    pub(super) smallest_frame: u16,
-    pub(super) largest_frame: u16,
+pub struct ActionKeyframes {
+    keyframes: Vec<Keyframe>,
+    smallest_frame: u16,
+    largest_frame: u16,
 }
 
 impl ActionKeyframes {
@@ -28,5 +29,21 @@ impl ActionKeyframes {
             smallest_frame,
             largest_frame,
         }
+    }
+
+    pub fn keyframes(&self) -> &Vec<Keyframe> {
+        &self.keyframes
+    }
+
+    pub fn keyframes_mut(&mut self) -> &mut Vec<Keyframe> {
+        &mut self.keyframes
+    }
+
+    pub fn smallest_frame(&self) -> u16 {
+        self.smallest_frame
+    }
+
+    pub fn largest_frame(&self) -> u16 {
+        self.largest_frame
     }
 }

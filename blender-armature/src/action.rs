@@ -1,6 +1,8 @@
-use crate::action::action_keyframes::ActionKeyframes;
-use crate::Keyframe;
 use std::collections::HashMap;
+
+use crate::Keyframe;
+
+pub use self::action_keyframes::*;
 
 type Frame = u16;
 
@@ -26,17 +28,17 @@ impl Action {
 
     /// Each of the key frames for the action.
     pub fn keyframes(&self) -> &Vec<Keyframe> {
-        &self.keyframes.keyframes
+        &self.keyframes.keyframes()
     }
 
     /// The smallest keyed frame number in the action.
     pub fn smallest_frame(&self) -> u16 {
-        self.keyframes.smallest_frame
+        self.keyframes.smallest_frame()
     }
 
     /// The largest keyed frame number in the action.
     pub fn largest_frame(&self) -> u16 {
-        self.keyframes.largest_frame
+        self.keyframes.largest_frame()
     }
 
     /// The number of frames separating the largest frame from the smallest.
@@ -68,6 +70,6 @@ impl Action {
     ///
     /// See [`Action.method#keyframes`]
     pub(crate) fn keyframes_mut(&mut self) -> &mut Vec<Keyframe> {
-        &mut self.keyframes.keyframes
+        self.keyframes.keyframes_mut()
     }
 }
