@@ -2,7 +2,7 @@ use crate::Keyframe;
 
 /// If you're sampling time 1.5seconds and there are three keyframes, 0.0s, 1.8s, 2.2s the
 /// surrounding keyframes are 0.0s and 1.8s
-pub(crate) fn get_surrounding_keyframes(
+pub(super) fn get_surrounding_keyframes(
     keyframes: &Vec<Keyframe>,
     elapsed_frames: f32,
 ) -> (&Keyframe, &Keyframe) {

@@ -83,35 +83,29 @@ impl BlenderArmature {
     /// Maps bone group name to a vector of the bones indices that are in that bone group.
     ///
     /// ```rust
-    /// # use blender_armature::{BlenderArmature, InterpolationSettings, ActionSettings, Action};
+    /// # use blender_armature::{Action, BlenderArmature, FrameOffset, SampleDesc};
     /// # use std::time::Duration;
     ///
     /// let armature = create_blender_armature();
     ///
     /// let joint_indices = armature.bone_groups().get("My bone group").unwrap();
     ///
-    /// let interpolate_opts = InterpolationSettings {
+    /// let sample_desc = SampleDesc {
     ///     joint_indices,
-    ///     action: get_action(),
-    ///
+    ///     frame_offset: FrameOffset::new_with_elapsed_time_and_frames_per_second(
+    ///         Duration::from_secs(2),
+    ///         24,
+    ///     ),
+    ///     should_loop: false
     /// };
     ///
-    /// let _bones = armature.interpolate_bones(interpolate_opts);
+    /// let _bones = armature.interpolate_bones("SomeAction", sample_desc);
     ///
     /// # fn create_blender_armature() -> BlenderArmature {
     /// #   let mut  b = BlenderArmature::default();
     /// #   b.actions_mut().insert("SomeAction".to_string(), Action::new(vec![]));
     /// #   b.create_bone_group("My bone group".to_string(), vec![]);
     /// #   b
-    /// # }
-    ///
-    /// # fn get_action() -> ActionSettings<'static> {
-    /// #   ActionSettings {
-    /// #       action_name: "SomeAction",
-    /// #       elapsed_time: Duration::from_secs(2),
-    /// #       frames_per_second: 24,
-    /// #       should_loop: false
-    /// #   }
     /// # }
     /// ```
     ///

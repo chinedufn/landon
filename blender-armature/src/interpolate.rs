@@ -27,15 +27,13 @@
 
 use std::time::Duration;
 
-use crate::{BlenderArmature, Bone};
+use crate::{BlenderArmature, Bone, SampleDesc};
 
 pub use self::interpolated_bones::*;
-pub use self::interpolation_settings::*;
 use std::collections::BTreeMap;
 
 mod interpolate_action;
 mod interpolated_bones;
-mod interpolation_settings;
 
 /// Returns 0.0 if no time has elapsed.
 /// Returns 0.5 if 100 milliseconds have elapsed.
@@ -63,8 +61,12 @@ impl BlenderArmature {
     ///
     /// - [ ] Return Result<HashMap<u8, Bone>, InterpolationError>
     /// - [ ] error if clock time is negative
-    pub fn interpolate_bones(&self, opts: InterpolationSettings) -> BTreeMap<u8, Bone> {
-        self.interpolate_action(&opts.action, opts.joint_indices)
+    pub fn interpolate_bones(
+        &self,
+        action_name: &str,
+        sample_desc: SampleDesc,
+    ) -> BTreeMap<u8, Bone> {
+        self.interpolate_action(action_name, sample_desc)
     }
 }
 
@@ -74,14 +76,14 @@ impl BlenderArmature {
 mod tests {
     use std::collections::HashMap;
 
-    use crate::{Action, Bone, Keyframe};
+    use crate::{Action, Bone, FrameOffset, Keyframe, SampleDesc};
 
     use super::*;
 
     struct DualQuatTestCase<'a> {
         keyframes: Vec<TestKeyframeDualQuat>,
         expected_bone: [f32; 8],
-        interp_settings: InterpolationSettings<'a>,
+        sample_desc: SampleDesc<'a>,
     }
 
     struct TestKeyframeDualQuat {
@@ -107,10 +109,14 @@ mod tests {
                 },
             ],
             expected_bone: [0.75, 0.75, 0.75, 0.75, 0.25, 0.25, 0.25, 0.25],
-            interp_settings: InterpolationSettings {
+            sample_desc: SampleDesc {
                 // TODO: armature.get_group_indices(BlenderArmature::BONE_GROUPS_ALL)
                 joint_indices: &[0],
-                action: ActionSettings::new("test", Duration::from_secs_f32(1.5), ONE_FPS, true),
+                frame_offset: FrameOffset::new_with_elapsed_time_and_frames_per_second(
+                    Duration::from_secs_f32(1.5),
+                    ONE_FPS,
+                ),
+                should_loop: true,
             },
         }
         .test();
@@ -132,9 +138,13 @@ mod tests {
                 },
             ],
             expected_bone: [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
-            interp_settings: InterpolationSettings {
+            sample_desc: SampleDesc {
                 joint_indices: &[0],
-                action: ActionSettings::new("test", Duration::from_secs(4), ONE_FPS, true),
+                frame_offset: FrameOffset::new_with_elapsed_time_and_frames_per_second(
+                    Duration::from_secs(4),
+                    ONE_FPS,
+                ),
+                should_loop: true,
             },
         }
         .test();
@@ -159,9 +169,13 @@ mod tests {
                 },
             ],
             expected_bone: [4.0, 4.0, 4.0, 4.0, 0.0, 0.0, 0.0, 0.0],
-            interp_settings: InterpolationSettings {
+            sample_desc: SampleDesc {
                 joint_indices: &[0],
-                action: ActionSettings::new("test", Duration::from_secs_f32(2.5), ONE_FPS, true),
+                frame_offset: FrameOffset::new_with_elapsed_time_and_frames_per_second(
+                    Duration::from_secs_f32(2.5),
+                    ONE_FPS,
+                ),
+                should_loop: true,
             },
         }
         .test();
@@ -183,9 +197,13 @@ mod tests {
                 },
             ],
             expected_bone: [3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0],
-            interp_settings: InterpolationSettings {
+            sample_desc: SampleDesc {
                 joint_indices: &[0],
-                action: ActionSettings::new("test", Duration::from_secs(7), ONE_FPS, false),
+                frame_offset: FrameOffset::new_with_elapsed_time_and_frames_per_second(
+                    Duration::from_secs(7),
+                    ONE_FPS,
+                ),
+                should_loop: false,
             },
         }
         .test();
@@ -208,10 +226,14 @@ mod tests {
             ],
             // Same as the first bone in the animation
             expected_bone: [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
-            interp_settings: InterpolationSettings {
+            sample_desc: SampleDesc {
                 // TODO: armature.get_group_indices(BlenderArmature::BONE_GROUPS_ALL)
                 joint_indices: &[0],
-                action: ActionSettings::new("test", Duration::from_secs(0), ONE_FPS, true),
+                frame_offset: FrameOffset::new_with_elapsed_time_and_frames_per_second(
+                    Duration::from_secs(0),
+                    ONE_FPS,
+                ),
+                should_loop: true,
             },
         }
         .test();
@@ -232,9 +254,13 @@ mod tests {
                 },
             ],
             expected_bone: [20., 20., 20., 20., 20., 20., 20., 20.],
-            interp_settings: InterpolationSettings {
+            sample_desc: SampleDesc {
                 joint_indices: &[0],
-                action: ActionSettings::new("test", Duration::from_secs_f32(0.2), 10, false),
+                frame_offset: FrameOffset::new_with_elapsed_time_and_frames_per_second(
+                    Duration::from_secs_f32(0.2),
+                    10,
+                ),
+                should_loop: false,
             },
         }
         .test();
@@ -259,7 +285,7 @@ mod tests {
                 ..BlenderArmature::default()
             };
 
-            let interpolated_bones = armature.interpolate_bones(self.interp_settings);
+            let interpolated_bones = armature.interpolate_bones("test", self.sample_desc);
             let interpolated_bone = interpolated_bones.get(&0).unwrap();
 
             assert_eq!(interpolated_bone.as_slice(), &self.expected_bone,);

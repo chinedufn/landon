@@ -1,6 +1,10 @@
 use crate::Keyframe;
 
+pub use self::sample::*;
+use std::ops::Deref;
+
 mod action_keyframes_serde;
+mod sample;
 
 /// All of the keyframes in an action.
 #[derive(Debug, PartialEq, Default)]
@@ -45,5 +49,13 @@ impl ActionKeyframes {
 
     pub fn largest_frame(&self) -> u16 {
         self.largest_frame
+    }
+}
+
+impl Deref for ActionKeyframes {
+    type Target = Vec<Keyframe>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.keyframes
     }
 }

@@ -27,8 +27,8 @@ impl Action {
     }
 
     /// Each of the key frames for the action.
-    pub fn keyframes(&self) -> &Vec<Keyframe> {
-        &self.keyframes.keyframes()
+    pub fn keyframes(&self) -> &ActionKeyframes {
+        &self.keyframes
     }
 
     /// The smallest keyed frame number in the action.
