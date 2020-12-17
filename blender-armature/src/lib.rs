@@ -83,7 +83,7 @@ impl BlenderArmature {
     /// Maps bone group name to a vector of the bones indices that are in that bone group.
     ///
     /// ```rust
-    /// # use blender_armature::{Action, BlenderArmature, FrameOffset, SampleDesc};
+    /// # use blender_armature::{Action, BlenderArmature, FrameOffset, SampleDesc, JointIndicesRef};
     /// # use std::time::Duration;
     ///
     /// let armature = create_blender_armature();
@@ -91,7 +91,6 @@ impl BlenderArmature {
     /// let joint_indices = armature.bone_groups().get("My bone group").unwrap();
     ///
     /// let sample_desc = SampleDesc {
-    ///     joint_indices,
     ///     frame_offset: FrameOffset::new_with_elapsed_time_and_frames_per_second(
     ///         Duration::from_secs(2),
     ///         24,
@@ -99,7 +98,11 @@ impl BlenderArmature {
     ///     should_loop: false
     /// };
     ///
-    /// let _bones = armature.interpolate_bones("SomeAction", sample_desc);
+    /// let _bones = armature.interpolate_bones(
+    ///     "SomeAction",
+    ///     JointIndicesRef::Some(joint_indices),
+    ///     sample_desc
+    /// );
     ///
     /// # fn create_blender_armature() -> BlenderArmature {
     /// #   let mut  b = BlenderArmature::default();

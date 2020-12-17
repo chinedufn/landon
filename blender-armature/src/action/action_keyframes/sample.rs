@@ -1,19 +1,23 @@
-use crate::{interpolate_bone, ActionKeyframes, Bone, Keyframe};
 use std::collections::BTreeMap;
 
-mod sample_desc;
-mod surrounding_keyframes;
+use crate::{interpolate_bone, ActionKeyframes, Bone, Keyframe};
+
+pub use self::joint_indices::*;
 pub use self::sample_desc::*;
 use self::surrounding_keyframes::get_surrounding_keyframes;
+
+mod joint_indices;
+mod sample_desc;
+mod surrounding_keyframes;
 
 impl ActionKeyframes {
     /// Sample the bones based on the amount of elapsed time at the given framerate.
     ///
     /// See [`ActionSettings.elapsed_time`]
-    pub fn sample(&self, sample_desc: SampleDesc) -> BTreeMap<u8, Bone> {
+    pub fn sample(&self, joint_indices: &[u8], sample_desc: SampleDesc) -> BTreeMap<u8, Bone> {
         let mut interpolated_bones = BTreeMap::new();
 
-        if sample_desc.joint_indices.len() == 0 {
+        if joint_indices.len() == 0 {
             return interpolated_bones;
         }
 
@@ -47,7 +51,7 @@ impl ActionKeyframes {
                 / (action_upper_keyframe.frame - action_lower_keyframe.frame) as f32
         };
 
-        for joint_index in sample_desc.joint_indices.iter() {
+        for joint_index in joint_indices.iter() {
             let joint_index = *joint_index;
 
             let lower_bone = &action_lower_keyframe.bones[joint_index as usize];
@@ -61,7 +65,7 @@ impl ActionKeyframes {
         interpolated_bones
     }
 
-    fn find_lowest_and_highest_keyframe<'a>(&'a self) -> (&'a Keyframe, &'a Keyframe) {
+    fn find_lowest_and_highest_keyframe(&self) -> (&Keyframe, &Keyframe) {
         let keyframes = self.keyframes();
 
         let mut lowest_keyframe = u16::max_value();
