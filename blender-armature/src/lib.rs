@@ -21,8 +21,6 @@ extern crate serde_derive;
 
 use std::collections::HashMap;
 
-use nalgebra::Matrix4;
-
 use crate::serde::serialize_hashmap_deterministic;
 
 pub use self::action::*;
