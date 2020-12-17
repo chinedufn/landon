@@ -170,6 +170,11 @@ impl Keyframe {
     pub fn bones_mut(&mut self) -> &mut Vec<Bone> {
         &mut self.bones
     }
+
+    /// The frame number
+    pub fn frame(&self) -> u16 {
+        self.frame
+    }
 }
 
 // TODO: These methods can be abstracted into calling a method that takes a callback
