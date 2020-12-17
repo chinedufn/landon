@@ -11,7 +11,7 @@ impl BlenderArmature {
         sample_desc: SampleDesc,
     ) -> BTreeMap<u8, Bone> {
         let joint_indices = match joint_indices {
-            JointIndicesRef::All => todo!(),
+            JointIndicesRef::All => unimplemented!("TODO"),
             JointIndicesRef::Some(joint_indices) => joint_indices,
         };
 
