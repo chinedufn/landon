@@ -21,30 +21,8 @@ pub fn blend_towards_bones(
                     panic!("We do not currently support the current action having different joints than the previous action");
                 }
 
-                let prev = prev_action_bone.as_slice();
-                let mut prev_action_bone: [f32; 8] = [0.0; 8];
-                prev_action_bone.copy_from_slice(prev);
 
-                // Get the dot product of the start and end rotation quaternions. If the
-                // dot product is negative we negate the first dual quaternion in order to
-                // ensure the shortest path rotation.
-                //
-                // http://www.xbdev.net/misc_demos/demos/dual_quaternions_beyond/paper.pdf
-                // https://github.com/chinedufn/skeletal-animation-system/blob/9ae17c5b23759f7147bf7c464564e32a09e619ef/src/blend-dual-quaternions.js#L59
-                if dot_product(&prev_action_bone, cur_action_bone.as_slice()) < 0.0 {
-                    prev_action_bone[0] = -prev_action_bone[0];
-                    prev_action_bone[1] = -prev_action_bone[1];
-                    prev_action_bone[2] = -prev_action_bone[2];
-                    prev_action_bone[3] = -prev_action_bone[3];
-                    prev_action_bone[4] = -prev_action_bone[4];
-                    prev_action_bone[5] = -prev_action_bone[5];
-                    prev_action_bone[6] = -prev_action_bone[6];
-                    prev_action_bone[7] = -prev_action_bone[7];
-                }
-
-                let _new_bone = [0.0; 8];
-
-                let new_bone = interpolate_bone(&Bone::DualQuat(prev_action_bone), &cur_action_bone, interp_param);
+                let new_bone = interpolate_bone(prev_action_bone, &cur_action_bone, interp_param);
 
                 (*cur_joint_idx, new_bone)
             },
@@ -56,11 +34,33 @@ pub(crate) fn interpolate_bone(start_bone: &Bone, end_bone: &Bone, amount: f32) 
     match start_bone {
         &Bone::DualQuat(ref start_dual_quat) => match end_bone {
             &Bone::DualQuat(ref end_dual_quat) => {
+                let mut start: [f32; 8] = [0.0; 8];
+                start.copy_from_slice(start_dual_quat);
+
+                let mut end = [0.; 8];
+                end.copy_from_slice(end_dual_quat);
+
+                // Get the dot product of the start and end rotation quaternions. If the
+                // dot product is negative we negate one of the dual quaternions in order to
+                // ensure the shortest path rotation.
+                //
+                // http://www.xbdev.net/misc_demos/demos/dual_quaternions_beyond/paper.pdf
+                if dot_product(&start, &end) < 0.0 {
+                    end[0] = -end[0];
+                    end[1] = -end[1];
+                    end[2] = -end[2];
+                    end[3] = -end[3];
+                    end[4] = -end[4];
+                    end[5] = -end[5];
+                    end[6] = -end[6];
+                    end[7] = -end[7];
+                }
+
                 let mut interpolated_dual_quat: [f32; 8] = [0.0; 8];
 
                 for index in 0..8 {
-                    let start = start_dual_quat[index];
-                    let end = end_dual_quat[index];
+                    let start = start[index];
+                    let end = end[index];
                     interpolated_dual_quat[index] = (end - start) * amount + start;
                 }
 

@@ -23,13 +23,14 @@ impl ActionKeyframes {
 
         let keyframes = self.keyframes();
 
-        let (lowest_keyframe, highest_keyframe) = self.find_lowest_and_highest_keyframe();
+        let (lowest_keyframe, highest_keyframe) =
+            (self.smallest_frame as f32, self.largest_frame as f32);
 
         let mut frames_elapsed = sample_desc.frame_offset.get();
 
-        let mut key_time_to_sample = lowest_keyframe.frame as f32 + frames_elapsed;
+        let mut key_time_to_sample = lowest_keyframe as f32 + frames_elapsed;
 
-        let action_duration = (highest_keyframe.frame - lowest_keyframe.frame) as f32;
+        let action_duration = (highest_keyframe - lowest_keyframe) as f32;
 
         if frames_elapsed > action_duration {
             if sample_desc.should_loop {
@@ -38,7 +39,7 @@ impl ActionKeyframes {
                 frames_elapsed = action_duration;
             }
 
-            key_time_to_sample = lowest_keyframe.frame as f32 + frames_elapsed;
+            key_time_to_sample = lowest_keyframe as f32 + frames_elapsed;
         }
 
         let (action_lower_keyframe, action_upper_keyframe) =
@@ -63,30 +64,5 @@ impl ActionKeyframes {
         }
 
         interpolated_bones
-    }
-
-    fn find_lowest_and_highest_keyframe(&self) -> (&Keyframe, &Keyframe) {
-        let keyframes = self.keyframes();
-
-        let mut lowest_keyframe = u16::max_value();
-        let mut lowest_keyframe_idx = 0;
-
-        let mut highest_keyframe = 0;
-        let mut highest_keyframe_idx = 0;
-
-        for (index, keyframe) in keyframes.iter().enumerate() {
-            if keyframe.frame < lowest_keyframe {
-                lowest_keyframe = keyframe.frame;
-                lowest_keyframe_idx = index;
-            } else if keyframe.frame > highest_keyframe {
-                highest_keyframe = keyframe.frame;
-                highest_keyframe_idx = index;
-            }
-        }
-
-        (
-            &keyframes[lowest_keyframe_idx],
-            &keyframes[highest_keyframe_idx],
-        )
     }
 }
