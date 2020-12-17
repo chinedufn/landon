@@ -84,12 +84,18 @@ impl BlenderArmature {
 fn dual_quat_z_up_right_to_y_up_right(bone: &mut Bone) {
     match bone {
         Bone::Matrix(_) => unimplemented!(),
-        Bone::DualQuat(dual_quat) => {
-            dual_quat.swap(2, 3);
-            dual_quat[3] = -dual_quat[3];
+        Bone::DualQuat(dq) => {
+            let rot_y = dq.rot.j;
+            let rot_z = dq.rot.k;
 
-            dual_quat.swap(6, 7);
-            dual_quat[7] = -dual_quat[7];
+            dq.rot.j = rot_z;
+            dq.rot.k = -rot_y;
+
+            let trans_y = dq.trans.j;
+            let trans_z = dq.trans.k;
+
+            dq.trans.j = trans_z;
+            dq.trans.k = -trans_y;
         }
     };
 }
@@ -97,7 +103,8 @@ fn dual_quat_z_up_right_to_y_up_right(bone: &mut Bone) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Action, BlenderArmature, Bone, Keyframe};
+    use crate::interpolate::tests::dq_to_bone;
+    use crate::{Action, BlenderArmature, Keyframe};
     use std::collections::HashMap;
 
     /// Convert from the default Z-up right handed coordinate system to a Y-up right handed
@@ -106,9 +113,9 @@ mod tests {
     fn convert_dual_quaternions_z_up_right_to_y_up_right() {
         let mut arm = BlenderArmature::default();
 
-        let expected_bone = [0., 1., 3., -2., 4., 5., 7., -6.];
+        let expected_bone = dq_to_bone([0., 1., 3., -2., 4., 5., 7., -6.]);
 
-        let bone = Bone::DualQuat([0., 1., 2., 3., 4., 5., 6., 7.]);
+        let bone = dq_to_bone([0., 1., 2., 3., 4., 5., 6., 7.]);
         arm.inverse_bind_poses = vec![bone.clone()];
 
         let keyframes = Keyframe::new(0, vec![bone]);
@@ -119,9 +126,9 @@ mod tests {
 
         arm.change_coordinate_system(CoordinateSystem::new(Axis::Y, Hand::Right));
 
-        assert_eq!(arm.inverse_bind_poses[0].as_slice(), &expected_bone);
+        assert_eq!(&arm.inverse_bind_poses[0], &expected_bone);
         assert_eq!(
-            arm.actions[&"Idle".to_string()].keyframes()[0].bones()[0].as_slice(),
+            &arm.actions[&"Idle".to_string()].keyframes()[0].bones()[0],
             &expected_bone
         );
     }
@@ -133,10 +140,10 @@ mod tests {
         let mut arm = BlenderArmature::default();
         arm.change_coordinate_system(CoordinateSystem::new(Axis::Y, Hand::Right));
 
-        let expected_bone = [0., 1., 2., 3., 4., 5., 6., 7.];
+        let expected_bone = dq_to_bone([0., 1., 2., 3., 4., 5., 6., 7.]);
 
-        let bone = Bone::DualQuat([0., 1., 2., 3., 4., 5., 6., 7.]);
-        arm.inverse_bind_poses = vec![bone.clone()];
+        let bone = dq_to_bone([0., 1., 2., 3., 4., 5., 6., 7.]);
+        arm.inverse_bind_poses = vec![bone];
 
         let keyframes = Keyframe::new(0, vec![bone]);
 
@@ -146,9 +153,9 @@ mod tests {
 
         arm.change_coordinate_system(CoordinateSystem::new(Axis::Y, Hand::Right));
 
-        assert_eq!(arm.inverse_bind_poses[0].as_slice(), &expected_bone);
+        assert_eq!(&arm.inverse_bind_poses[0], &expected_bone);
         assert_eq!(
-            arm.actions[&"Idle".to_string()].keyframes()[0].bones()[0].as_slice(),
+            &arm.actions[&"Idle".to_string()].keyframes()[0].bones()[0],
             &expected_bone
         );
     }

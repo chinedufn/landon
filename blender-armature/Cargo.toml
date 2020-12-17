@@ -1,6 +1,6 @@
 [package]
 name = "blender-armature"
-version = "0.6.2"
+version = "0.7.0"
 authors = ["Chinedu Francis Nwafili <frankie.nwafili@gmail.com>"]
 description = "Serialize / deserialize Blender armatures"
 keywords = ["blender", "skeleton", "armature", "bone", "vertex"]
@@ -11,7 +11,9 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1"
-nalgebra = "0.16.12"
+# Until https://github.com/dimforge/nalgebra/pull/810 lands
+nalgebra = {git = "https://github.com/chinedufn/nalgebra", features = ["serde-serialize"], rev = "cbab6de2657"}
+#nalgebra = {version = "0.16", features = ["serde-serialize"]}
 serde = "1"
 serde_derive = "1"
 serde_json = "1"

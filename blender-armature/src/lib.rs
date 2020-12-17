@@ -26,11 +26,13 @@ use nalgebra::Matrix4;
 use crate::serde::serialize_hashmap_deterministic;
 
 pub use self::action::*;
+pub use self::bone::*;
 pub use self::coordinate_system::*;
 pub use self::export::*;
 pub use self::interpolate::*;
 
 mod action;
+mod bone;
 mod convert;
 mod coordinate_system;
 mod export;
@@ -147,24 +149,6 @@ impl BlenderArmature {
     }
 }
 
-/// A bone in an armature. Can either be a dual quaternion or a matrix. When you export bones
-/// from Blender they come as matrices - BlenderArmature lets you convert them into dual
-/// quaternions which are usually more favorable for when implementing skeletal animation.
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq)]
-pub enum Bone {
-    /// TODO: Only support dual quarternions? We could use a custom derive to automatically convert
-    ///  [f32;16] matrices into [f32;8] dual quaternion (to avoid needing to get dual quat logic
-    ///  working in the python export script).
-    ///  We could also just write our export script in Rust and not use a custom deserialize
-    ///  Better yet ... just store both the matrix and the dual quaternion representation so that
-    ///  we can use either one depending on the scenario.
-    ///  If memory ever became an issue we could put matrices behind a feature flag.
-    Matrix([f32; 16]),
-    /// Rotation:     [w, x, y, z]
-    /// Translation:  [w, x, y, z]
-    DualQuat([f32; 8]),
-}
-
 /// The pose bones at an individual keyframe time
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(test, derive(Default, Clone))]
@@ -205,7 +189,14 @@ impl BlenderArmature {
         for (_name, action) in self.actions.iter_mut() {
             for keyframe in action.keyframes_mut().iter_mut() {
                 for (index, bone) in keyframe.bones.iter_mut().enumerate() {
-                    bone.multiply(&mut self.inverse_bind_poses[index]);
+                    *bone = match (&bone, self.inverse_bind_poses[index]) {
+                        (Bone::Matrix(bone), Bone::Matrix(inverse_bind)) => {
+                            let bone = inverse_bind * (bone.clone());
+
+                            Bone::Matrix(bone)
+                        }
+                        _ => unimplemented!(),
+                    };
                 }
             }
         }
@@ -244,54 +235,20 @@ impl BlenderArmature {
 }
 
 impl Bone {
-    fn multiply(&mut self, rhs: &mut Bone) {
-        match self {
-            Bone::Matrix(ref mut lhs_matrix) => match rhs {
-                Bone::Matrix(ref mut rhs_matrix) => {
-                    let mut lhs_mat4 = Matrix4::identity();
-                    lhs_mat4.copy_from_slice(lhs_matrix);
-
-                    let mut rhs_mat4 = Matrix4::identity();
-                    rhs_mat4.copy_from_slice(rhs_matrix);
-
-                    let multiplied = rhs_mat4 * lhs_mat4;
-
-                    lhs_matrix.copy_from_slice(multiplied.as_slice());
-                }
-                Bone::DualQuat(_) => {}
-            },
-            Bone::DualQuat(_) => {}
-        };
-    }
-
     fn transpose(&mut self) {
         match self {
             Bone::Matrix(ref mut matrix) => {
-                let mut mat4 = Matrix4::identity();
-                mat4.copy_from_slice(matrix);
-                mat4.transpose_mut();
-
-                matrix.copy_from_slice(mat4.as_slice());
+                matrix.transpose_mut();
             }
             Bone::DualQuat(_) => panic!("Cannot transpose dual quat"),
         };
-    }
-
-    /// Get a slice representation of you bone data
-    ///
-    /// Dual Quat -> [Rx, Ry, Rz, Rw, Tx, Ty, Tz, Tw]
-    /// Matrix -> [f32; 16]. If from Blender will be row major
-    pub fn as_slice(&self) -> &[f32] {
-        match self {
-            Bone::Matrix(ref matrix) => &matrix[..],
-            Bone::DualQuat(ref dual_quat) => &dual_quat[..],
-        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::interpolate::tests::dq_to_bone;
 
     // TODO: dual_quat_z_up_to_y_up... but we can just get the rendering working first
     // https://github.com/chinedufn/change-mat4-coordinate-system/blob/master/change-mat4-coordinate-system.js
@@ -301,17 +258,17 @@ mod tests {
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
             frame: 1,
-            bones: vec![Bone::Matrix([
+            bones: vec![Bone::Matrix(Matrix4::from_column_slice(&[
                 1.0, 6.0, 2.0, 1.0, 7.0, 1.0, 2.0, 5.0, 0.0, 4.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-            ])],
+            ]))],
         });
         start_actions.insert("Fly".to_string(), Action::new(keyframes));
 
         let mut start_armature = BlenderArmature {
             actions: start_actions,
-            inverse_bind_poses: vec![Bone::Matrix([
+            inverse_bind_poses: vec![Bone::Matrix(Matrix4::from_column_slice(&[
                 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 1.0,
-            ])],
+            ]))],
             ..BlenderArmature::default()
         };
 
@@ -321,9 +278,9 @@ mod tests {
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
             frame: 1,
-            bones: vec![Bone::Matrix([
+            bones: vec![Bone::Matrix(Matrix4::from_column_slice(&[
                 1.0, 6.0, 7.0, 1.0, 7.0, 1.0, 27.0, 5.0, 0.0, 4.0, 1.0, 0.0, 0.0, 0.0, 5.0, 1.0,
-            ])],
+            ]))],
         });
         end_actions.insert("Fly".to_string(), Action::new(keyframes));
 
@@ -341,9 +298,9 @@ mod tests {
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
             frame: 1,
-            bones: vec![Bone::Matrix([
+            bones: vec![Bone::Matrix(Matrix4::from_column_slice(&[
                 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-            ])],
+            ]))],
         });
         start_actions.insert("Fly".to_string(), Action::new(keyframes));
 
@@ -358,7 +315,7 @@ mod tests {
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
             frame: 1,
-            bones: vec![Bone::DualQuat([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])],
+            bones: vec![dq_to_bone([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])],
         });
         end_actions.insert("Fly".to_string(), Action::new(keyframes));
 
@@ -377,9 +334,9 @@ mod tests {
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
             frame: 1,
-            bones: vec![Bone::Matrix([
+            bones: vec![Bone::Matrix(Matrix4::from_column_slice(&[
                 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 1.0,
-            ])],
+            ]))],
         });
 
         start_actions.insert("Fly".to_string(), Action::new(keyframes));
@@ -395,9 +352,9 @@ mod tests {
         let mut keyframes = vec![];
         keyframes.push(Keyframe {
             frame: 1,
-            bones: vec![Bone::Matrix([
+            bones: vec![Bone::Matrix(Matrix4::from_column_slice(&[
                 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 5.0, 0.0, 0.0, 0.0, 1.0,
-            ])],
+            ]))],
         });
         end_actions.insert("Fly".to_string(), Action::new(keyframes));
 

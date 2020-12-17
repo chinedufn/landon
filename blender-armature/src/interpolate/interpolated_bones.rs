@@ -32,49 +32,28 @@ pub fn blend_towards_bones(
 
 pub(crate) fn interpolate_bone(start_bone: &Bone, end_bone: &Bone, amount: f32) -> Bone {
     match start_bone {
-        &Bone::DualQuat(ref start_dual_quat) => match end_bone {
-            &Bone::DualQuat(ref end_dual_quat) => {
-                let mut start: [f32; 8] = [0.0; 8];
-                start.copy_from_slice(start_dual_quat);
-
-                let mut end = [0.; 8];
-                end.copy_from_slice(end_dual_quat);
+        Bone::DualQuat(start) => match end_bone {
+            Bone::DualQuat(end) => {
+                let mut end = *end;
 
                 // Get the dot product of the start and end rotation quaternions. If the
                 // dot product is negative we negate one of the dual quaternions in order to
                 // ensure the shortest path rotation.
                 //
                 // http://www.xbdev.net/misc_demos/demos/dual_quaternions_beyond/paper.pdf
-                if dot_product(&start, &end) < 0.0 {
-                    end[0] = -end[0];
-                    end[1] = -end[1];
-                    end[2] = -end[2];
-                    end[3] = -end[3];
-                    end[4] = -end[4];
-                    end[5] = -end[5];
-                    end[6] = -end[6];
-                    end[7] = -end[7];
+                if start.rot.dot(&end.rot) < 0.0 {
+                    end = end * -1.;
                 }
 
-                let mut interpolated_dual_quat: [f32; 8] = [0.0; 8];
+                let interpolated = *start + ((end - *start) * amount);
 
-                for index in 0..8 {
-                    let start = start[index];
-                    let end = end[index];
-                    interpolated_dual_quat[index] = (end - start) * amount + start;
-                }
-
-                Bone::DualQuat(interpolated_dual_quat)
+                Bone::DualQuat(interpolated)
             }
             _ => panic!(
-                "You may only interpolate bones of the same type. Please convert\
-                 your end bone into a dual quaternion before interpolating"
+                r#"You may only interpolate bones of the same type. Please convert
+your end bone into a dual quaternion before interpolating"#
             ),
         },
         &Bone::Matrix(ref _matrix) => unimplemented!(),
     }
-}
-
-fn dot_product(a: &[f32], b: &[f32]) -> f32 {
-    a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]
 }

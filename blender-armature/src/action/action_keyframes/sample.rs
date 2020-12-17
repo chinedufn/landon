@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::{interpolate_bone, ActionKeyframes, Bone, Keyframe};
+use crate::{interpolate_bone, ActionKeyframes, Bone};
 
 pub use self::joint_indices::*;
 pub use self::sample_desc::*;

@@ -18,9 +18,10 @@ serde = "1"
 serde_json = "1"
 serde_derive = "1"
 thiserror = "1"
-# Remove the dependency and just keep the few math functions we need in the crate
-nalgebra = {version = "0.16", features = ["serde-serialize"]}
+# Until https://github.com/dimforge/nalgebra/pull/810 lands
+nalgebra = {git = "https://github.com/chinedufn/nalgebra", features = ["serde-serialize"], branch = "dual-quaternion"}
+#nalgebra = {version = "0.16", features = ["serde-serialize"]}
 
 [dev-dependencies]
-blender-armature = { version = "0.6.0", path = "../blender-armature" }
+blender-armature = { version = "0.7.0", path = "../blender-armature" }
 serde_json = "1"

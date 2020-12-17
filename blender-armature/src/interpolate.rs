@@ -74,12 +74,13 @@ impl BlenderArmature {
 // Tests originally ported from:
 //  https://github.com/chinedufn/skeletal-animation-system/tree/8cc52d69f2e4e3f64540a4b6274bcd5fc3c00eee/test
 #[cfg(test)]
-mod tests {
+pub(super) mod tests {
     use std::collections::HashMap;
 
     use crate::{Action, Bone, FrameOffset, JointIndicesRef, Keyframe, SampleDesc};
 
     use super::*;
+    use nalgebra::{DualQuaternion, Quaternion};
 
     struct DualQuatTestCase {
         keyframes: Vec<TestKeyframeDualQuat>,
@@ -276,7 +277,7 @@ mod tests {
             for keyframe in self.keyframes.iter() {
                 keyframes.push(Keyframe {
                     frame: keyframe.frame,
-                    bones: vec![Bone::DualQuat(keyframe.bone.clone())],
+                    bones: vec![dq_to_bone(keyframe.bone)],
                 });
             }
 
@@ -291,7 +292,14 @@ mod tests {
                 armature.interpolate_bones("test", self.joint_indices, self.sample_desc);
             let interpolated_bone = interpolated_bones.get(&0).unwrap();
 
-            assert_eq!(interpolated_bone.as_slice(), &self.expected_bone,);
+            assert_eq!(interpolated_bone, &dq_to_bone(self.expected_bone));
         }
+    }
+
+    pub(crate) fn dq_to_bone(dq: [f32; 8]) -> Bone {
+        Bone::DualQuat(DualQuaternion::new(
+            Quaternion::new(dq[0], dq[1], dq[2], dq[3]),
+            Quaternion::new(dq[4], dq[5], dq[6], dq[7]),
+        ))
     }
 }

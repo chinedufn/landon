@@ -2,29 +2,20 @@
 
 use crate::BlenderArmature;
 use crate::Bone;
-use nalgebra::{Matrix4, Quaternion};
+use nalgebra::{DualQuaternion, Matrix4, Quaternion};
 
 impl BlenderArmature {
     /// Convert a matrix into a dual quaternion
     /// https://github.com/chinedufn/mat4-to-dual-quat/blob/master/src/mat4-to-dual-quat.js
-    /// Note that we use `w, x, y, z` and not `x, y, z, w` for our quaternion representation
     pub fn matrix_to_dual_quat(bone: &Bone) -> Bone {
         match bone {
             Bone::DualQuat(_dual_quat) => panic!("Already a dual quaternion"),
             Bone::Matrix(matrix) => {
-                let mut matrix4: Matrix4<f32> = Matrix4::identity();
-                matrix4.copy_from_slice(matrix);
+                let matrix = matrix.as_slice();
 
                 let matrix3 = [
-                    matrix4[0],
-                    matrix4[1],
-                    matrix4[2],
-                    matrix4[4],
-                    matrix4[5],
-                    matrix4[6],
-                    matrix4[8],
-                    matrix4[9],
-                    matrix4[10],
+                    matrix[0], matrix[1], matrix[2], matrix[4], matrix[5], matrix[6], matrix[8],
+                    matrix[9], matrix[10],
                 ];
 
                 // i, j, k, w
@@ -46,22 +37,7 @@ impl BlenderArmature {
                 let trans_quat = trans_quat * 0.5;
                 let trans_quat = trans_quat / rot_norm;
 
-                let dual_quat: [f32; 8] = [
-                    // w, i, j, k ... Quaternion has different indexing than the
-                    // order of the parameters in the `new` function.
-                    rotation_quat[3],
-                    rotation_quat[0],
-                    rotation_quat[1],
-                    rotation_quat[2],
-                    // w, i, j, k ... Quaternion has different indexing than the
-                    // order of the parameters in the `new` function.
-                    trans_quat[3],
-                    trans_quat[0],
-                    trans_quat[1],
-                    trans_quat[2],
-                ];
-
-                Bone::DualQuat(dual_quat)
+                Bone::DualQuat(DualQuaternion::new(rotation_quat, trans_quat))
             }
         }
     }
@@ -73,7 +49,16 @@ impl BlenderArmature {
             Bone::DualQuat(dual_quat) => {
                 let mut matrix: [f32; 16] = [0.0; 16];
 
-                let dq = dual_quat;
+                let dq = [
+                    dual_quat.rot.w,
+                    dual_quat.rot.i,
+                    dual_quat.rot.j,
+                    dual_quat.rot.k,
+                    dual_quat.trans.w,
+                    dual_quat.trans.i,
+                    dual_quat.trans.j,
+                    dual_quat.trans.k,
+                ];
 
                 matrix[0] = 1.0 - (2.0 * dq[2] * dq[2]) - (2.0 * dq[3] * dq[3]);
                 matrix[1] = (2.0 * dq[1] * dq[2]) + (2.0 * dq[0] * dq[3]);
@@ -92,7 +77,7 @@ impl BlenderArmature {
                 matrix[14] = 2.0 * (-dq[4] * dq[3] - dq[5] * dq[2] + dq[6] * dq[1] + dq[7] * dq[0]);
                 matrix[15] = 1.0;
 
-                Bone::Matrix(matrix)
+                Bone::Matrix(Matrix4::from_column_slice(&matrix))
             }
         }
     }
@@ -139,6 +124,7 @@ fn quaternion_from_mat3(m: [f32; 9]) -> [f32; 4] {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::interpolate::tests::dq_to_bone;
 
     #[test]
     fn matrix_to_dual_quat_and_back_again() {
@@ -196,11 +182,13 @@ mod tests {
             let MatrixToDualQuatTest { matrix, dual_quat } = test;
             let round = 10_000.0;
 
-            let matrix_bone = Bone::Matrix(matrix.clone());
-            let dual_quat_bone = Bone::DualQuat(dual_quat.clone());
+            let matrix_bone = Bone::Matrix(Matrix4::from_column_slice(&matrix));
+            let dual_quat_bone = dq_to_bone(dual_quat);
 
             if let Bone::Matrix(new_matrix) = BlenderArmature::dual_quat_to_matrix(&dual_quat_bone)
             {
+                let new_matrix = new_matrix.as_slice();
+
                 // Round values to remove precision errors
                 let new_matrix: Vec<f32> = new_matrix.iter().map(|x| x * round / round).collect();
                 let matrix: Vec<f32> = matrix.iter().map(|x| x * round / round).collect();
@@ -212,6 +200,17 @@ mod tests {
             if let Bone::DualQuat(new_dual_quat) =
                 BlenderArmature::matrix_to_dual_quat(&matrix_bone)
             {
+                let new_dual_quat = [
+                    new_dual_quat.rot.w,
+                    new_dual_quat.rot.i,
+                    new_dual_quat.rot.j,
+                    new_dual_quat.rot.k,
+                    new_dual_quat.trans.w,
+                    new_dual_quat.trans.i,
+                    new_dual_quat.trans.j,
+                    new_dual_quat.trans.k,
+                ];
+
                 let new_dual_quat: Vec<f32> =
                     new_dual_quat.iter().map(|x| (x * round).round()).collect();
                 let dual_quat: Vec<f32> = dual_quat.iter().map(|x| (x * round).round()).collect();
