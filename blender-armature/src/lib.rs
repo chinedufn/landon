@@ -136,6 +136,11 @@ impl BlenderArmature {
         &self.inverse_bind_poses
     }
 
+    /// See [`BlenderArmature.inverse_bind_poses()`]
+    pub fn inverse_bind_poses_mut(&mut self) -> &mut Vec<Bone> {
+        &mut self.inverse_bind_poses
+    }
+
     /// All of the actions defined on the armature, keyed by action name.
     pub fn actions(&self) -> &HashMap<String, Action> {
         &self.actions
