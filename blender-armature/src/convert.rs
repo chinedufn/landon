@@ -28,14 +28,11 @@ impl BlenderArmature {
                     rotation_quat[1],
                     rotation_quat[2],
                 );
-                let rot_norm = rotation_quat.norm();
-                let rotation_quat = rotation_quat / rot_norm;
 
                 // w, i, j, k
                 let trans_quat = Quaternion::new(0.0, matrix[12], matrix[13], matrix[14]);
                 let trans_quat = trans_quat * rotation_quat;
                 let trans_quat = trans_quat * 0.5;
-                let trans_quat = trans_quat / rot_norm;
 
                 Bone::DualQuat(DualQuaternion::new(rotation_quat, trans_quat))
             }
