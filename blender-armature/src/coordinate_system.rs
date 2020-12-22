@@ -85,17 +85,17 @@ fn dual_quat_z_up_right_to_y_up_right(bone: &mut Bone) {
     match bone {
         Bone::Matrix(_) => unimplemented!(),
         Bone::DualQuat(dq) => {
-            let rot_y = dq.rot.j;
-            let rot_z = dq.rot.k;
+            let rot_y = dq.real.j;
+            let rot_z = dq.real.k;
 
-            dq.rot.j = rot_z;
-            dq.rot.k = -rot_y;
+            dq.real.j = rot_z;
+            dq.real.k = -rot_y;
 
-            let trans_y = dq.trans.j;
-            let trans_z = dq.trans.k;
+            let trans_y = dq.dual.j;
+            let trans_z = dq.dual.k;
 
-            dq.trans.j = trans_z;
-            dq.trans.k = -trans_y;
+            dq.dual.j = trans_z;
+            dq.dual.k = -trans_y;
         }
     };
 }

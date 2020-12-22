@@ -17,7 +17,7 @@ console_log = "0.1.2"
 js-sys = "0.3.22"
 log = "0.4.6"
 # Until https://github.com/dimforge/nalgebra/pull/810 lands
-nalgebra = {git = "https://github.com/chinedufn/nalgebra", branch = "dual-quaternion"}
+nalgebra = {git = "https://github.com/chinedufn/nalgebra", features = ["serde-serialize"], rev = "c1eeaf0"}
 #nalgebra = "0.16.12"
 serde = "1.0"
 virtual-dom-rs = "0.6.9"

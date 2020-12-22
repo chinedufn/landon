@@ -12,7 +12,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1"
 # Until https://github.com/dimforge/nalgebra/pull/810 lands
-nalgebra = {git = "https://github.com/chinedufn/nalgebra", features = ["serde-serialize"], rev = "cbab6de2657"}
+nalgebra = {git = "https://github.com/chinedufn/nalgebra", features = ["serde-serialize"], rev = "c1eeaf0"}
 #nalgebra = {version = "0.16", features = ["serde-serialize"]}
 serde = "1"
 serde_derive = "1"

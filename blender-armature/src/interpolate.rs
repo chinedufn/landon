@@ -297,7 +297,7 @@ pub(super) mod tests {
     }
 
     pub(crate) fn dq_to_bone(dq: [f32; 8]) -> Bone {
-        Bone::DualQuat(DualQuaternion::new(
+        Bone::DualQuat(DualQuaternion::from_real_and_dual(
             Quaternion::new(dq[0], dq[1], dq[2], dq[3]),
             Quaternion::new(dq[4], dq[5], dq[6], dq[7]),
         ))

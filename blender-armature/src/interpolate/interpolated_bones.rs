@@ -41,7 +41,7 @@ pub(crate) fn interpolate_bone(start_bone: &Bone, end_bone: &Bone, amount: f32) 
                 // ensure the shortest path rotation.
                 //
                 // http://www.xbdev.net/misc_demos/demos/dual_quaternions_beyond/paper.pdf
-                if start.rot.dot(&end.rot) < 0.0 {
+                if start.real.dot(&end.real) < 0.0 {
                     end = end * -1.;
                 }
 

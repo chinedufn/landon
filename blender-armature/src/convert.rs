@@ -34,7 +34,10 @@ impl BlenderArmature {
                 let trans_quat = trans_quat * rotation_quat;
                 let trans_quat = trans_quat * 0.5;
 
-                Bone::DualQuat(DualQuaternion::new(rotation_quat, trans_quat))
+                Bone::DualQuat(DualQuaternion::from_real_and_dual(
+                    rotation_quat,
+                    trans_quat,
+                ))
             }
         }
     }
@@ -47,14 +50,14 @@ impl BlenderArmature {
                 let mut matrix: [f32; 16] = [0.0; 16];
 
                 let dq = [
-                    dual_quat.rot.w,
-                    dual_quat.rot.i,
-                    dual_quat.rot.j,
-                    dual_quat.rot.k,
-                    dual_quat.trans.w,
-                    dual_quat.trans.i,
-                    dual_quat.trans.j,
-                    dual_quat.trans.k,
+                    dual_quat.real.w,
+                    dual_quat.real.i,
+                    dual_quat.real.j,
+                    dual_quat.real.k,
+                    dual_quat.dual.w,
+                    dual_quat.dual.i,
+                    dual_quat.dual.j,
+                    dual_quat.dual.k,
                 ];
 
                 matrix[0] = 1.0 - (2.0 * dq[2] * dq[2]) - (2.0 * dq[3] * dq[3]);
@@ -198,14 +201,14 @@ mod tests {
                 BlenderArmature::matrix_to_dual_quat(&matrix_bone)
             {
                 let new_dual_quat = [
-                    new_dual_quat.rot.w,
-                    new_dual_quat.rot.i,
-                    new_dual_quat.rot.j,
-                    new_dual_quat.rot.k,
-                    new_dual_quat.trans.w,
-                    new_dual_quat.trans.i,
-                    new_dual_quat.trans.j,
-                    new_dual_quat.trans.k,
+                    new_dual_quat.real.w,
+                    new_dual_quat.real.i,
+                    new_dual_quat.real.j,
+                    new_dual_quat.real.k,
+                    new_dual_quat.dual.w,
+                    new_dual_quat.dual.i,
+                    new_dual_quat.dual.j,
+                    new_dual_quat.dual.k,
                 ];
 
                 let new_dual_quat: Vec<f32> =
