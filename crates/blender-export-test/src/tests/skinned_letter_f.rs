@@ -155,7 +155,6 @@ fn expected_armature_data() -> String {
     r#"
     {
         "name": "LetterFArmature",
-        "world_space_matrix": [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],
         "actions": {
           "Twist": {
             "keyframes": [

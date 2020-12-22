@@ -32,8 +32,8 @@ use crate::{BlenderArmature, Bone, JointIndicesRef, SampleDesc};
 pub use self::interpolated_bones::*;
 use std::collections::BTreeMap;
 
-mod interpolate_action;
 mod interpolated_bones;
+mod sample_action;
 
 /// Returns 0.0 if no time has elapsed.
 /// Returns 0.5 if 100 milliseconds have elapsed.
@@ -67,7 +67,7 @@ impl BlenderArmature {
         joint_indices: JointIndicesRef,
         sample_desc: SampleDesc,
     ) -> BTreeMap<u8, Bone> {
-        self.interpolate_action(action_name, joint_indices, sample_desc)
+        self.sample_action(action_name, joint_indices, sample_desc)
     }
 }
 

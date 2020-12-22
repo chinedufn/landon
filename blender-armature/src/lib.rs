@@ -47,7 +47,6 @@ pub enum BlenderError {
 #[cfg_attr(test, derive(Clone))]
 pub struct BlenderArmature {
     name: String,
-    world_space_matrix: Matrix4<f32>,
     #[serde(serialize_with = "serialize_hashmap_deterministic")]
     joint_indices: HashMap<String, u8>,
     bone_parents: HashMap<u8, Option<u8>>,
@@ -148,17 +147,6 @@ impl BlenderArmature {
         &mut self.actions
     }
 
-    /// The transformation matrix for the armature within the world that it was defined in
-    /// (i.e. a Blender scene).
-    ///
-    /// If you apply location, rotation and scale to the armature in Blender then this will be an
-    /// identity matrix.
-    ///
-    /// https://docs.blender.org/api/current/bpy.types.Object.html#bpy.types.Object.matrix_world
-    pub fn world_space_matrix(&self) -> Matrix4<f32> {
-        self.world_space_matrix
-    }
-
     /// The parent of each bone
     pub fn bone_parents(&self) -> &HashMap<u8, Option<u8>> {
         &self.bone_parents
@@ -244,7 +232,6 @@ impl Default for BlenderArmature {
     fn default() -> Self {
         BlenderArmature {
             name: "".to_string(),
-            world_space_matrix: Matrix4::identity(),
             joint_indices: Default::default(),
             bone_parents: Default::default(),
             inverse_bind_poses: vec![],

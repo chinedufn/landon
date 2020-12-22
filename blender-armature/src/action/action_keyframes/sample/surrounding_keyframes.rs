@@ -2,6 +2,11 @@ use crate::Keyframe;
 
 /// If you're sampling time 1.5seconds and there are three keyframes, 0.0s, 1.8s, 2.2s the
 /// surrounding keyframes are 0.0s and 1.8s
+///
+/// TODO: Assume that keyframes are always in order and return early once we find a highest and
+///  lowest keyframe.
+///  Use Vec.binary_search_by to find the keyframe right below the elapsed frames, then use the
+///  keyframe right above it as the upper keyframe
 pub(super) fn get_surrounding_keyframes(
     keyframes: &Vec<Keyframe>,
     elapsed_frames: f32,

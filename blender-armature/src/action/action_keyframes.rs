@@ -28,19 +28,20 @@ impl ActionKeyframes {
             largest_frame = largest_frame.max(frame.frame);
         }
 
-        ActionKeyframes {
+        let mut keyframes = ActionKeyframes {
             keyframes,
             smallest_frame,
             largest_frame,
-        }
+        };
+
+        keyframes.sort_keyframes_ascending();
+
+        keyframes
     }
 
+    /// Keyframes are guaranteed to be ordered from smallest frame first to largest frame last.
     pub fn keyframes(&self) -> &Vec<Keyframe> {
         &self.keyframes
-    }
-
-    pub fn keyframes_mut(&mut self) -> &mut Vec<Keyframe> {
-        &mut self.keyframes
     }
 
     pub fn smallest_frame(&self) -> u16 {
@@ -49,6 +50,24 @@ impl ActionKeyframes {
 
     pub fn largest_frame(&self) -> u16 {
         self.largest_frame
+    }
+
+    /// Insert a keyframe into the list of keyframes for the action
+    pub fn insert_keyframe(&mut self, keyframe: Keyframe) {
+        self.keyframes.push(keyframe);
+        self.sort_keyframes_ascending();
+    }
+
+    fn sort_keyframes_ascending(&mut self) {
+        self.keyframes.sort_by(|a, b| a.frame.cmp(&b.frame));
+    }
+}
+
+impl ActionKeyframes {
+    /// We use crate visibility to prevent users from being able to modify keyframes without
+    /// updating the cached smallest/largest frame number.
+    pub(crate) fn keyframes_mut(&mut self) -> &mut Vec<Keyframe> {
+        &mut self.keyframes
     }
 }
 

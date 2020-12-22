@@ -34,7 +34,6 @@ class ExportArmatureToJSON(bpy.types.Operator):
 
             armatureJSON = {
                 'name': activeArmature.name,
-                'world_space_matrix': matrixToArray(activeArmature.matrix_world),
                 'actions': {},
                 'inverse_bind_poses': [],
                 'joint_indices': {},
@@ -90,8 +89,8 @@ class ExportArmatureToJSON(bpy.types.Operator):
                     })
                     for bone in getBonePosesAtKeyframe(frame, activeArmature, allBoneNames):
                         # https://docs.blender.org/api/current/bpy.types.PoseBone.html#bpy.types.PoseBone.matrix
-                        boneArmatureSpaceMatrix = bone.matrix
-                        armatureJSON['actions'][actionInfo.name]['keyframes'][index]['bones'].append({'Matrix': matrixToArray(boneArmatureSpaceMatrix)})
+                        boneWorldSpaceMatrix = activeArmature.matrix_world @ bone.matrix
+                        armatureJSON['actions'][actionInfo.name]['keyframes'][index]['bones'].append({'Matrix': matrixToArray(boneWorldSpaceMatrix)})
 
                     index += 1
 

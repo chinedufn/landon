@@ -3,8 +3,7 @@ use std::collections::BTreeMap;
 use crate::{BlenderArmature, Bone, JointIndicesRef, SampleDesc};
 
 impl BlenderArmature {
-    /// FIXME: Refactor
-    pub(super) fn interpolate_action(
+    pub(super) fn sample_action(
         &self,
         action_name: &str,
         joint_indices: JointIndicesRef,
