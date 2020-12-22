@@ -1,20 +1,6 @@
-//! Blender files can have armature such as circles, cubes, cylinders, a dragon or any other
-//! 3D shape.
-//!
-//! A armature can be represented as a group of vertices and data about those vertices, such as their
-//! normals or UV coordinates.
-//!
-//! Armaturees can also have metadata, such as the name of it's parent armature (useful for vertex
-//! skinning).
-//!
-//! blender-armature-to-json seeks to be a well tested, well documented exporter for blender armature
-//! metadata.
-//!
-//! You can write data to stdout or to a file. At the onset it will be geared towards @chinedufn's
-//! needs - but if you have needs that aren't met feel very free to open an issue.
+//! Data structures and methods for dealing with armatures.
 //!
 //! @see https://docs.blender.org/manual/en/dev/modeling/armature/introduction.html - Armature Introduction
-//! @see https://github.com/chinedufn/blender-actions-to-json - Exporting blender armatures / actions
 
 #[macro_use]
 extern crate serde_derive;
@@ -28,6 +14,7 @@ pub use self::bone::*;
 pub use self::coordinate_system::*;
 pub use self::export::*;
 pub use self::interpolate::*;
+use nalgebra::Matrix4;
 
 mod action;
 mod bone;
@@ -56,14 +43,15 @@ pub enum BlenderError {
 /// If you have other needs, such as a way to know the model space position of any bone at any
 /// time so that you can, say, render a baseball in on top of your hand bone.. Open an issue.
 /// (I plan to support this specific example in the future)
-#[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(test, derive(Clone))]
 pub struct BlenderArmature {
     name: String,
+    world_space_matrix: Matrix4<f32>,
     #[serde(serialize_with = "serialize_hashmap_deterministic")]
     joint_indices: HashMap<String, u8>,
+    bone_parents: HashMap<u8, Option<u8>>,
     inverse_bind_poses: Vec<Bone>,
-    // TODO: Make private
     #[serde(serialize_with = "serialize_hashmap_deterministic")]
     actions: HashMap<String, Action>,
     #[serde(serialize_with = "serialize_hashmap_deterministic")]
@@ -129,9 +117,10 @@ impl BlenderArmature {
 
     /// Every bone's inverse bind pose.
     ///
-    /// The parent matrices are *not* multiplied in.
+    /// # From Blender
+    /// When exporting from Blender these include the armature's world space matrix.
     ///
-    /// So, if a parent matrix is moved the inverse bind matrix of the child will be the same.
+    /// So, effectively these are `(armature_world_space_matrix * bone_bind_pose).inverse()`
     pub fn inverse_bind_poses(&self) -> &Vec<Bone> {
         &self.inverse_bind_poses
     }
@@ -142,6 +131,14 @@ impl BlenderArmature {
     }
 
     /// All of the actions defined on the armature, keyed by action name.
+    ///
+    /// # From Blender
+    ///
+    /// When exporting from Blender these are the pose bone's armature space matrix.
+    ///
+    /// Note that this means that these bones are not relative to their parent's.
+    ///
+    /// To get a pose bone relative to it's parent use [`Bone.relative_to()`]
     pub fn actions(&self) -> &HashMap<String, Action> {
         &self.actions
     }
@@ -149,6 +146,22 @@ impl BlenderArmature {
     /// See [`BlenderArmature.method#actions`]
     pub fn actions_mut(&mut self) -> &mut HashMap<String, Action> {
         &mut self.actions
+    }
+
+    /// The transformation matrix for the armature within the world that it was defined in
+    /// (i.e. a Blender scene).
+    ///
+    /// If you apply location, rotation and scale to the armature in Blender then this will be an
+    /// identity matrix.
+    ///
+    /// https://docs.blender.org/api/current/bpy.types.Object.html#bpy.types.Object.matrix_world
+    pub fn world_space_matrix(&self) -> Matrix4<f32> {
+        self.world_space_matrix
+    }
+
+    /// The parent of each bone
+    pub fn bone_parents(&self) -> &HashMap<u8, Option<u8>> {
+        &self.bone_parents
     }
 }
 
@@ -184,32 +197,6 @@ impl Keyframe {
 
 // TODO: These methods can be abstracted into calling a method that takes a callback
 impl BlenderArmature {
-    /// Iterate over all of the action bones and apply and multiply in the inverse bind pose.
-    ///
-    /// TODO: another function to apply bind shape matrix? Most armatures seem to export an identity
-    ///  bind shape matrix but that might not be the same for every armature.
-    ///
-    /// TODO: Do not mutate the matrices and instead just return the new values and let the caller
-    ///  handle caching them? Would mean less moving parts in our data structures and you always
-    ///  know exactly what you are getting. Right now you have no way actions of knowing whether or
-    ///  not actions have their bind poses pre-multiplied in.
-    pub fn apply_inverse_bind_poses(&mut self) {
-        for (_name, action) in self.actions.iter_mut() {
-            for keyframe in action.keyframes_mut().iter_mut() {
-                for (index, bone) in keyframe.bones.iter_mut().enumerate() {
-                    *bone = match (&bone, self.inverse_bind_poses[index]) {
-                        (Bone::Matrix(bone), Bone::Matrix(inverse_bind)) => {
-                            let bone = inverse_bind * (bone.clone());
-
-                            Bone::Matrix(bone)
-                        }
-                        _ => unimplemented!(),
-                    };
-                }
-            }
-        }
-    }
-
     /// Tranpose all of the bone matrices in our armature's action keyframes.
     /// Blender uses row major matrices, but OpenGL uses column major matrices so you'll
     /// usually want to transpose your matrices before using them.
@@ -248,8 +235,23 @@ impl Bone {
             Bone::Matrix(ref mut matrix) => {
                 matrix.transpose_mut();
             }
-            Bone::DualQuat(_) => panic!("Cannot transpose dual quat"),
+            Bone::DualQuat(_) => unimplemented!(),
         };
+    }
+}
+
+impl Default for BlenderArmature {
+    fn default() -> Self {
+        BlenderArmature {
+            name: "".to_string(),
+            world_space_matrix: Matrix4::identity(),
+            joint_indices: Default::default(),
+            bone_parents: Default::default(),
+            inverse_bind_poses: vec![],
+            actions: Default::default(),
+            bone_groups: Default::default(),
+            coordinate_system: Default::default(),
+        }
     }
 }
 
@@ -257,48 +259,6 @@ impl Bone {
 mod tests {
     use super::*;
     use crate::interpolate::tests::dq_to_bone;
-
-    // TODO: dual_quat_z_up_to_y_up... but we can just get the rendering working first
-    // https://github.com/chinedufn/change-mat4-coordinate-system/blob/master/change-mat4-coordinate-system.js
-    #[test]
-    fn applying_inv_bind_poses() {
-        let mut start_actions = HashMap::new();
-        let mut keyframes = vec![];
-        keyframes.push(Keyframe {
-            frame: 1,
-            bones: vec![Bone::Matrix(Matrix4::from_column_slice(&[
-                1.0, 6.0, 2.0, 1.0, 7.0, 1.0, 2.0, 5.0, 0.0, 4.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-            ]))],
-        });
-        start_actions.insert("Fly".to_string(), Action::new(keyframes));
-
-        let mut start_armature = BlenderArmature {
-            actions: start_actions,
-            inverse_bind_poses: vec![Bone::Matrix(Matrix4::from_column_slice(&[
-                1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 1.0,
-            ]))],
-            ..BlenderArmature::default()
-        };
-
-        start_armature.apply_inverse_bind_poses();
-
-        let mut end_actions = HashMap::new();
-        let mut keyframes = vec![];
-        keyframes.push(Keyframe {
-            frame: 1,
-            bones: vec![Bone::Matrix(Matrix4::from_column_slice(&[
-                1.0, 6.0, 7.0, 1.0, 7.0, 1.0, 27.0, 5.0, 0.0, 4.0, 1.0, 0.0, 0.0, 0.0, 5.0, 1.0,
-            ]))],
-        });
-        end_actions.insert("Fly".to_string(), Action::new(keyframes));
-
-        let expected_armature = BlenderArmature {
-            actions: end_actions,
-            ..start_armature.clone()
-        };
-
-        assert_eq!(start_armature, expected_armature);
-    }
 
     #[test]
     fn convert_actions_to_dual_quats() {

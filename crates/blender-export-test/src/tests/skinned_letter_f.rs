@@ -155,6 +155,7 @@ fn expected_armature_data() -> String {
     r#"
     {
         "name": "LetterFArmature",
+        "world_space_matrix": [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],
         "actions": {
           "Twist": {
             "keyframes": [
@@ -175,6 +176,9 @@ fn expected_armature_data() -> String {
         ],
         "joint_indices": {
             "Lower.Body": 0,"Upper.Body": 1,"Upper.Arm": 2,"Lower.Arm": 3
+        },
+        "bone_parents": {
+            "1": 0, "2": 1, "3": 0
         },
         "bone_groups": {}
     }

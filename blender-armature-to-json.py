@@ -6,8 +6,6 @@ bl_info = {
     "blender": (2, 80, 0)
 }
 
-# TODO: breadcrumb - refactor to use json dumps
-
 import bpy
 import math
 import json
@@ -36,9 +34,11 @@ class ExportArmatureToJSON(bpy.types.Operator):
 
             armatureJSON = {
                 'name': activeArmature.name,
+                'world_space_matrix': matrixToArray(activeArmature.matrix_world),
                 'actions': {},
                 'inverse_bind_poses': [],
                 'joint_indices': {},
+                'bone_parents': {},
                 'bone_groups': {}
             }
 
@@ -78,6 +78,9 @@ class ExportArmatureToJSON(bpy.types.Operator):
                 }
                 # Loop through the keyframes and build the frame data for the action
                 # We convert keyframes into times in seconds
+                #
+                # TODO: Get bone pose matrices from fcurves (should be faster than querying for poses each frame)
+                #  https://blenderartists.org/t/get-bone-position-data-matrix-relative-to-parent-bone/1116191/6
                 index = 0
                 for frame in actionKeyframes:
                     # Get all of the bone pose matrices for this frame -> [bone1Matrix, bone2Matrix, ..]
@@ -86,29 +89,26 @@ class ExportArmatureToJSON(bpy.types.Operator):
                         'frame': frame
                     })
                     for bone in getBonePosesAtKeyframe(frame, activeArmature, allBoneNames):
-                        armatureJSON['actions'][actionInfo.name]['keyframes'][index]['bones'].append({'Matrix': matrixToArray(bone.matrix)})
+                        # https://docs.blender.org/api/current/bpy.types.PoseBone.html#bpy.types.PoseBone.matrix
+                        boneArmatureSpaceMatrix = bone.matrix
+                        armatureJSON['actions'][actionInfo.name]['keyframes'][index]['bones'].append({'Matrix': matrixToArray(boneArmatureSpaceMatrix)})
 
                     index += 1
 
                 for pose_marker in activeArmature.animation_data.action.pose_markers:
                     armatureJSON['actions'][actionInfo.name]['pose_markers'][pose_marker.frame] = pose_marker.name;
 
-            # Now that we've added our actions we add our bind poses
-            # We iterate over pose bones instead of edit bones to ensure a consistent ordering
-            # of bone data
+            # Calculate bone inverse bind poses
             for boneName in allBoneNames:
                 # Calculate the bone's inverse bind matrix
                 #
                 # taken from:
                 #   https://blenderartists.org/forum/showthread.php?323968-Exporting-armature-amp-actions-how-do-you-get-the-bind-pose-and-relative-transform
                 #   https://blender.stackexchange.com/a/15229/40607
-                #
-                # TODO: Not currently handling the case where a bone has a parent since I'm using blender-iks-to-fks
-                #  which clears all parent relationships before visual keying
-                #  Need to add tests for handling this.
                 poseBone = activeArmature.pose.bones[boneName]
 
                 # We make sure to account for the world offset of the armature since matrix_local is in armature space
+                # https://docs.blender.org/api/current/bpy.types.Bone.html#bpy.types.Bone.matrix_local
                 boneBindMatrix = activeArmature.matrix_world @ poseBone.bone.matrix_local
                 boneInverseBind = boneBindMatrix.copy().inverted()
 
@@ -118,6 +118,14 @@ class ExportArmatureToJSON(bpy.types.Operator):
             # arrays of index 0...numBones - 1. To look up a bone in this array you use its joint name index
             for boneIndex, boneName in enumerate(allBoneNames):
                 armatureJSON['joint_indices'][boneName] = boneIndex
+
+            # Parent indices
+            for boneName in allBoneNames:
+                poseBone = activeArmature.pose.bones[boneName]
+                if poseBone.parent is not None:
+                    boneIdx = armatureJSON['joint_indices'][boneName]
+                    parentIdx = armatureJSON['joint_indices'][poseBone.parent.name]
+                    armatureJSON['bone_parents'][boneIdx] = parentIdx
 
             # Exporting bone groups
             #
