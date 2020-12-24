@@ -75,17 +75,16 @@ impl BlenderArmature {
 //  https://github.com/chinedufn/skeletal-animation-system/tree/8cc52d69f2e4e3f64540a4b6274bcd5fc3c00eee/test
 #[cfg(test)]
 pub(super) mod tests {
-    use std::collections::HashMap;
 
-    use crate::{Action, Bone, FrameOffset, JointIndicesRef, Keyframe, SampleDesc};
+    use crate::{Bone, BoneKeyframe, FrameOffset, JointIndicesRef, Keyframe, SampleDesc};
 
     use super::*;
+    use crate::test_util::{action_name, action_with_keyframes, BONE_IDX};
     use nalgebra::{DualQuaternion, Quaternion};
 
     struct DualQuatTestCase {
         keyframes: Vec<TestKeyframeDualQuat>,
         expected_bone: [f32; 8],
-        joint_indices: JointIndicesRef<'static>,
         sample_desc: SampleDesc,
     }
 
@@ -112,7 +111,6 @@ pub(super) mod tests {
                 },
             ],
             expected_bone: [0.75, 0.75, 0.75, 0.75, 0.25, 0.25, 0.25, 0.25],
-            joint_indices: JointIndicesRef::Some(&[0]),
             sample_desc: SampleDesc {
                 // TODO: armature.get_group_indices(BlenderArmature::BONE_GROUPS_ALL)
                 frame_offset: FrameOffset::new_with_elapsed_time_and_frames_per_second(
@@ -141,7 +139,6 @@ pub(super) mod tests {
                 },
             ],
             expected_bone: [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
-            joint_indices: JointIndicesRef::Some(&[0]),
             sample_desc: SampleDesc {
                 frame_offset: FrameOffset::new_with_elapsed_time_and_frames_per_second(
                     Duration::from_secs(4),
@@ -172,7 +169,6 @@ pub(super) mod tests {
                 },
             ],
             expected_bone: [4.0, 4.0, 4.0, 4.0, 0.0, 0.0, 0.0, 0.0],
-            joint_indices: JointIndicesRef::Some(&[0]),
             sample_desc: SampleDesc {
                 frame_offset: FrameOffset::new_with_elapsed_time_and_frames_per_second(
                     Duration::from_secs_f32(2.5),
@@ -200,7 +196,6 @@ pub(super) mod tests {
                 },
             ],
             expected_bone: [3.0, 3.0, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0],
-            joint_indices: JointIndicesRef::Some(&[0]),
             sample_desc: SampleDesc {
                 frame_offset: FrameOffset::new_with_elapsed_time_and_frames_per_second(
                     Duration::from_secs(7),
@@ -229,7 +224,6 @@ pub(super) mod tests {
             ],
             // Same as the first bone in the animation
             expected_bone: [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0],
-            joint_indices: JointIndicesRef::Some(&[0]),
             sample_desc: SampleDesc {
                 // TODO: armature.get_group_indices(BlenderArmature::BONE_GROUPS_ALL)
                 frame_offset: FrameOffset::new_with_elapsed_time_and_frames_per_second(
@@ -257,7 +251,6 @@ pub(super) mod tests {
                 },
             ],
             expected_bone: [20., 20., 20., 20., 20., 20., 20., 20.],
-            joint_indices: JointIndicesRef::Some(&[0]),
             sample_desc: SampleDesc {
                 frame_offset: FrameOffset::new_with_elapsed_time_and_frames_per_second(
                     Duration::from_secs_f32(0.2),
@@ -271,26 +264,23 @@ pub(super) mod tests {
 
     impl DualQuatTestCase {
         fn test(self) {
-            let mut actions = HashMap::new();
             let mut keyframes = vec![];
 
             for keyframe in self.keyframes.iter() {
-                keyframes.push(Keyframe {
-                    frame: keyframe.frame,
-                    bones: vec![dq_to_bone(keyframe.bone)],
-                });
+                keyframes.push(BoneKeyframe::new(keyframe.frame, dq_to_bone(keyframe.bone)));
             }
 
-            actions.insert("test".to_string(), Action::new(keyframes));
-
             let armature = BlenderArmature {
-                actions,
+                bone_space_actions: action_with_keyframes(keyframes),
                 ..BlenderArmature::default()
             };
 
-            let interpolated_bones =
-                armature.interpolate_bones("test", self.joint_indices, self.sample_desc);
-            let interpolated_bone = interpolated_bones.get(&0).unwrap();
+            let interpolated_bones = armature.interpolate_bones(
+                &action_name(),
+                JointIndicesRef::Some(&[BONE_IDX]),
+                self.sample_desc,
+            );
+            let interpolated_bone = interpolated_bones.get(&BONE_IDX).unwrap();
 
             assert_eq!(interpolated_bone, &dq_to_bone(self.expected_bone));
         }

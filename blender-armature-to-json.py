@@ -8,6 +8,7 @@ bl_info = {
 
 import bpy
 import math
+import mathutils
 import json
 
 class ExportArmatureToJSON(bpy.types.Operator):
@@ -34,10 +35,10 @@ class ExportArmatureToJSON(bpy.types.Operator):
 
             armatureJSON = {
                 'name': activeArmature.name,
-                'actions': {},
+                'bone_space_actions': {},
                 'inverse_bind_poses': [],
                 'joint_indices': {},
-                'bone_parents': {},
+                'bone_child_to_parent': {},
                 'bone_groups': {}
             }
 
@@ -52,50 +53,197 @@ class ExportArmatureToJSON(bpy.types.Operator):
             # order. We've had issues in the past where the order would be different depending on how you
             # accessed the bones, so this should help prevent future errors.
             allBoneNames = []
+            allPoseBones = {}
             for poseBone in activeArmature.pose.bones:
                 poseBone.bone.select = True
                 allBoneNames.append(poseBone.name)
+                allPoseBones[poseBone.name] = poseBone
+
+            # Now we create the JSON for the joint name indices. The bind poses and keyframe poses are
+            # arrays of index 0...numBones - 1. To look up a bone in this array you use its joint name index
+            for boneIndex, boneName in enumerate(allBoneNames):
+                armatureJSON['joint_indices'][boneName] = boneIndex
+
+            # Parent indices
+            for boneName in allBoneNames:
+                poseBone = activeArmature.pose.bones[boneName]
+                bone_idx = armatureJSON['joint_indices'][boneName]
+
+                if poseBone.parent is not None:
+                    parentIdx = armatureJSON['joint_indices'][poseBone.parent.name]
+                    armatureJSON['bone_child_to_parent'][bone_idx] = parentIdx
+
             # Start building our JSON
             # The format is
             # {
             #   someAction: { timeInSeconds: [bone1, bone2, bone3 ...], keyframe2: [bone1, bone2, bone3 ...] },
             #   anotherAction: { someTime: [bone1, bone2, bone3 ...], keyframe2: [bone1, bone2, bone3 ...], anotherTime: { ... } },
             # }
+            #
+            # TODO: This is no longer the format. Re-write the docs after we port to Rust
             for actionInfo in actionsList:
                 # Change to the action that we are currently parsing the data of
                 activeArmature.animation_data.action = bpy.data.actions.get(actionInfo.name)
+                action = activeArmature.animation_data.action
+
+                locationsRotationsScales = {}
+
                 # Get all of the keyframes for the current action. We'll iterate through them
                 # to get all of the bone data
                 actionKeyframes = getKeyframesInAction(activeArmature.animation_data.action)
                 # If this action has no keyframes we skip it
                 if actionKeyframes == []:
-                     continue
+                    continue
 
-                armatureJSON['actions'][actionInfo.name] = {
+                armatureJSON['bone_space_actions'][actionInfo.name] = {
+                    'bone_keyframes': {
+                        'frame_range_inclusive': [math.floor(action.frame_range[0]), math.floor(action.frame_range[1])],
+                        'keyframes': {}
+                    },
                     'keyframes': [],
                     'pose_markers': {}
                 }
-                # Loop through the keyframes and build the frame data for the action
-                # We convert keyframes into times in seconds
-                #
-                # TODO: Get bone pose matrices from fcurves (should be faster than querying for poses each frame)
-                #  https://blenderartists.org/t/get-bone-position-data-matrix-relative-to-parent-bone/1116191/6
-                index = 0
-                for frame in actionKeyframes:
-                    # Get all of the bone pose matrices for this frame -> [bone1Matrix, bone2Matrix, ..]
-                    armatureJSON['actions'][actionInfo.name]['keyframes'].append({
-                        'bones': [],
-                        'frame': frame
-                    })
-                    for bone in getBonePosesAtKeyframe(frame, activeArmature, allBoneNames):
-                        # https://docs.blender.org/api/current/bpy.types.PoseBone.html#bpy.types.PoseBone.matrix
-                        boneWorldSpaceMatrix = activeArmature.matrix_world @ bone.matrix
-                        armatureJSON['actions'][actionInfo.name]['keyframes'][index]['bones'].append({'Matrix': matrixToArray(boneWorldSpaceMatrix)})
 
-                    index += 1
+                # TODO: Cross reference our implementation with this:
+                #  https://github.com/HENDRIX-ZT2/bfb-blender/blob/master/export_bf.py#L81
+                for fcurve in action.fcurves:
+                    # example: pose.bones["Lower.Body"].location
+                    data_path = fcurve.data_path
+                    channel = fcurve.array_index
+
+                    prefix = 'pose.bones["'
+
+                    if not data_path.startswith(prefix):
+                        continue
+
+                    path_pieces = data_path.replace(prefix, '').split('"].')
+
+                    if len(path_pieces) < 2:
+                        continue
+
+                    # Lower.Body
+                    boneName = path_pieces[0]
+                    property = path_pieces[1]
+
+                    if property not in ["location", "rotation_euler", "rotation_quaternion", "scale"]:
+                        continue
+
+                    if boneName not in allPoseBones:
+                        continue
+
+                    if boneName not in locationsRotationsScales:
+                        locationsRotationsScales[boneName] = {}
+
+                    for keyframe in fcurve.keyframe_points:
+                        frame, val = keyframe.co
+
+                        if frame not in locationsRotationsScales[boneName]:
+                            locationsRotationsScales[boneName][frame] = {}
+
+                        if property not in locationsRotationsScales[boneName][frame]:
+                            locationsRotationsScales[boneName][frame][property] = {}
+
+                        locationsRotationsScales[boneName][frame][property][channel] = val
+
+                for boneName, frames in locationsRotationsScales.items():
+                    previous_rot_euler_0 = None
+                    previous_rot_euler_1 = None
+                    previous_rot_euler_2 = None
+
+                    previous_rot_quat_w = 1
+                    previous_rot_quat_x = 0
+                    previous_rot_quat_y = 0
+                    previous_rot_quat_z = 0
+
+                    previous_trans_x = 0
+                    previous_trans_y = 0
+                    previous_trans_z = 0
+
+                    previous_scale_x = None
+                    previous_scale_y = None
+                    previous_scale_z = None
+
+                    for frame in sorted(frames):
+                        transforms = frames[frame]
+
+                        mat_loc = mathutils.Matrix.Translation((0, 0, 0))
+                        mat_rot = mathutils.Euler((0, 0, 0), 'XYZ').to_matrix()
+                        mat_scale = mathutils.Matrix.Scale(1.0, 4, (1.0, 1.0, 1.0))
+
+                        poseBone = allPoseBones[boneName]
+
+                        # Handles Blender baking optimization that deletes redundant keyframes when neighbors share the
+                        #  same value. We need to make sure to include the value in our transformation matrix
+
+                        t = transforms.get('location') if transforms.get('location') is not None else {}
+                        trans = [0, 0, 0]
+
+                        trans[0] = t.get(0) if t.get(0) is not None else previous_trans_x
+                        previous_trans_x = trans[0]
+
+                        trans[1] = t.get(1) if t.get(1) is not None else previous_trans_y
+                        previous_trans_y = trans[1]
+
+                        trans[2] = t.get(2) if t.get(2) is not None else previous_trans_z
+                        previous_trans_z = trans[2]
+
+                        mat_loc = mathutils.Matrix.Translation(trans)
+
+                        ### ---
+
+                        if poseBone.rotation_mode == 'QUATERNION':
+                            q = transforms.get('rotation_quaternion') if transforms.get('rotation_quaternion') is not None else {}
+                            quat = [0, 0, 0, 0]
+
+                            quat[0] = q.get(0) if q.get(0) is not None else previous_rot_quat_w
+                            previous_rot_quat_w = quat[0]
+
+                            quat[1] = q.get(1) if q.get(1) is not None else previous_rot_quat_x
+                            previous_rot_quat_x = quat[1]
+
+                            quat[2] = q.get(2) if q.get(2) is not None else previous_rot_quat_y
+                            previous_rot_quat_y = quat[2]
+
+                            quat[3] = q.get(3) if q.get(3) is not None else previous_rot_quat_z
+                            previous_rot_quat_z = quat[3]
+
+                            mat_rot = mathutils.Quaternion(quat).to_matrix()
+                        else:
+                            euler = transforms.get('rotation_euler') if transforms.get('rotation_euler') is not None else {}
+
+                            euler[0] = euler.get(0) if euler.get(0) is not None else previous_rot_euler_0
+                            previous_rot_euler_0 = euler[0]
+
+                            euler[1] = euler.get(1) if euler.get(1) is not None else previous_rot_euler_1
+                            previous_rot_euler_1 = euler[1]
+
+                            euler[2] = euler.get(2) if euler.get(2) is not None else previous_rot_euler_2
+                            previous_rot_euler_2 = euler[2]
+
+                            mat_rot = mathutils.Euler((euler[0], euler[1], euler[2]), poseBone.rotation_mode).to_matrix()
+
+                        # FIXME: Treat this like the above. Need to re-write and test all of this when we port
+                        #  to Rust.
+                        # if 'scale' in transforms:
+                        #     mat_scale = mathutils.Matrix.Scale(1.0, 4, transforms['scale'])
+
+                        mat_rot = mat_rot.to_4x4()
+
+                        local_space_transform_matrix = mat_loc @ mat_rot @ mat_scale
+
+                        bone_idx = armatureJSON['joint_indices'][boneName]
+                        if bone_idx not in armatureJSON['bone_space_actions'][actionInfo.name]['bone_keyframes']['keyframes']:
+                            armatureJSON['bone_space_actions'][actionInfo.name]['bone_keyframes']['keyframes'][bone_idx] = []
+
+                        # bpy.context.scene.frame_set(frame)
+                        armatureJSON['bone_space_actions'][actionInfo.name]['bone_keyframes']['keyframes'][bone_idx].append({
+                            'frame': math.floor(frame),
+                            'bone': {'Matrix': matrixToArray(local_space_transform_matrix)}
+                        })
+
 
                 for pose_marker in activeArmature.animation_data.action.pose_markers:
-                    armatureJSON['actions'][actionInfo.name]['pose_markers'][pose_marker.frame] = pose_marker.name;
+                    armatureJSON['bone_space_actions'][actionInfo.name]['pose_markers'][pose_marker.frame] = pose_marker.name
 
             # Calculate bone inverse bind poses
             for boneName in allBoneNames:
@@ -112,19 +260,6 @@ class ExportArmatureToJSON(bpy.types.Operator):
                 boneInverseBind = boneBindMatrix.copy().inverted()
 
                 armatureJSON['inverse_bind_poses'].append({'Matrix': matrixToArray(boneInverseBind)})
-
-            # Now we create the JSON for the joint name indices. The bind poses and keyframe poses are
-            # arrays of index 0...numBones - 1. To look up a bone in this array you use its joint name index
-            for boneIndex, boneName in enumerate(allBoneNames):
-                armatureJSON['joint_indices'][boneName] = boneIndex
-
-            # Parent indices
-            for boneName in allBoneNames:
-                poseBone = activeArmature.pose.bones[boneName]
-                if poseBone.parent is not None:
-                    boneIdx = armatureJSON['joint_indices'][boneName]
-                    parentIdx = armatureJSON['joint_indices'][poseBone.parent.name]
-                    armatureJSON['bone_parents'][boneIdx] = parentIdx
 
             # Exporting bone groups
             #
@@ -179,22 +314,11 @@ class ExportArmatureToJSON(bpy.types.Operator):
                         keyframes.append((math.ceil(x)))
             return keyframes
 
-        # Get all of the bone pose matrices for the current keyframe
-        # So if there are 10 bones, we'll get 10 matrices representing
-        # these bones' orientations at this point in time
-        def getBonePosesAtKeyframe(frame, armature, boneNames):
-            bonePosesAtKeyframe = []
-            bpy.context.scene.frame_set(frame)
-            for boneName in boneNames:
-                poseBone = armature.pose.bones[boneName]
-                bonePosesAtKeyframe.append(poseBone)
-            return bonePosesAtKeyframe
-
         def matrixToArray (matrix):
             array = []
-            for column in range(0, 4):
-                for row in range(0, 4):
-                    array.append(matrix[column][row])
+            for row in range(0, 4):
+                for column in range(0, 4):
+                    array.append(matrix[row][column])
             return array
 
         # Run our armature2json() add on

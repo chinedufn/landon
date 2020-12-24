@@ -9,7 +9,7 @@ impl BlenderArmature {
     /// https://github.com/chinedufn/mat4-to-dual-quat/blob/master/src/mat4-to-dual-quat.js
     pub fn matrix_to_dual_quat(bone: &Bone) -> Bone {
         match bone {
-            Bone::DualQuat(_dual_quat) => panic!("Already a dual quaternion"),
+            Bone::DualQuat(_dual_quat) => *bone,
             Bone::Matrix(matrix) => {
                 let matrix = matrix.as_slice();
 

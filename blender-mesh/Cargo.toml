@@ -23,5 +23,5 @@ nalgebra = {git = "https://github.com/chinedufn/nalgebra", features = ["serde-se
 #nalgebra = {version = "0.16", features = ["serde-serialize"]}
 
 [dev-dependencies]
-blender-armature = { version = "0.8.0", path = "../blender-armature" }
+blender-armature = { version = "0.9.0", path = "../blender-armature" }
 serde_json = "1"

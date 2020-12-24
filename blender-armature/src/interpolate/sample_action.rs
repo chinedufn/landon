@@ -14,10 +14,20 @@ impl BlenderArmature {
             JointIndicesRef::Some(joint_indices) => joint_indices,
         };
 
-        self.actions
-            .get(action_name)
-            .unwrap()
-            .keyframes()
-            .sample(joint_indices, sample_desc)
+        let mut bones = BTreeMap::new();
+
+        for joint_idx in joint_indices {
+            let bone_keyframes = self
+                .bone_space_actions
+                .get(action_name)
+                .unwrap()
+                .bone_keyframes();
+
+            let bone = bone_keyframes.sample(*joint_idx, sample_desc);
+
+            bones.insert(*joint_idx, bone);
+        }
+
+        bones
     }
 }

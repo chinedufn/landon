@@ -63,13 +63,14 @@ impl BlenderArmature {
         ) {
             ((Hand::Right, Axis::Z), (Hand::Right, Axis::Y)) => {
                 for bone in self.inverse_bind_poses.iter_mut() {
-                    dual_quat_z_up_right_to_y_up_right(bone);
+                    *bone = dual_quat_z_up_right_to_y_up_right(*bone);
                 }
 
-                for (_action_name, action) in self.actions.iter_mut() {
-                    for keyframe in action.keyframes_mut() {
-                        for bone in keyframe.bones_mut() {
-                            dual_quat_z_up_right_to_y_up_right(bone);
+                for (_action_name, action) in self.bone_space_actions.iter_mut() {
+                    for (bone_idx, keyframes) in action.keyframes_mut() {
+                        for bone_keyframe in keyframes.iter_mut() {
+                            let bone = bone_keyframe.bone();
+                            bone_keyframe.set_bone(dual_quat_z_up_right_to_y_up_right(bone));
                         }
                     }
                 }
@@ -81,10 +82,10 @@ impl BlenderArmature {
     }
 }
 
-fn dual_quat_z_up_right_to_y_up_right(bone: &mut Bone) {
+fn dual_quat_z_up_right_to_y_up_right(bone: Bone) -> Bone {
     match bone {
         Bone::Matrix(_) => unimplemented!(),
-        Bone::DualQuat(dq) => {
+        Bone::DualQuat(mut dq) => {
             let rot_y = dq.real.j;
             let rot_z = dq.real.k;
 
@@ -96,15 +97,18 @@ fn dual_quat_z_up_right_to_y_up_right(bone: &mut Bone) {
 
             dq.dual.j = trans_z;
             dq.dual.k = -trans_y;
+
+            Bone::DualQuat(dq)
         }
-    };
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::interpolate::tests::dq_to_bone;
-    use crate::{Action, BlenderArmature, Keyframe};
+    use crate::test_util::{action_name, action_with_keyframes, BONE_IDX};
+    use crate::{Action, BlenderArmature, BoneKeyframe, Keyframe};
     use std::collections::HashMap;
 
     /// Convert from the default Z-up right handed coordinate system to a Y-up right handed
@@ -118,17 +122,15 @@ mod tests {
         let bone = dq_to_bone([0., 1., 2., 3., 4., 5., 6., 7.]);
         arm.inverse_bind_poses = vec![bone.clone()];
 
-        let keyframes = Keyframe::new(0, vec![bone]);
+        let keyframes = vec![BoneKeyframe::new(0, bone)];
 
-        let mut actions = HashMap::new();
-        actions.insert("Idle".to_string(), Action::new(vec![keyframes]));
-        arm.actions = actions;
+        arm.bone_space_actions = action_with_keyframes(keyframes);
 
         arm.change_coordinate_system(CoordinateSystem::new(Axis::Y, Hand::Right));
 
         assert_eq!(&arm.inverse_bind_poses[0], &expected_bone);
         assert_eq!(
-            &arm.actions[&"Idle".to_string()].keyframes()[0].bones()[0],
+            &arm.bone_space_actions[&action_name()].bone_keyframes()[&BONE_IDX][0].bone(),
             &expected_bone
         );
     }
@@ -145,17 +147,15 @@ mod tests {
         let bone = dq_to_bone([0., 1., 2., 3., 4., 5., 6., 7.]);
         arm.inverse_bind_poses = vec![bone];
 
-        let keyframes = Keyframe::new(0, vec![bone]);
+        let keyframes = vec![BoneKeyframe::new(0, bone)];
 
-        let mut actions = HashMap::new();
-        actions.insert("Idle".to_string(), Action::new(vec![keyframes]));
-        arm.actions = actions;
+        arm.bone_space_actions = action_with_keyframes(keyframes);
 
         arm.change_coordinate_system(CoordinateSystem::new(Axis::Y, Hand::Right));
 
         assert_eq!(&arm.inverse_bind_poses[0], &expected_bone);
         assert_eq!(
-            &arm.actions[&"Idle".to_string()].keyframes()[0].bones()[0],
+            &arm.bone_space_actions[&action_name()].bone_keyframes()[&BONE_IDX][0].bone(),
             &expected_bone
         );
     }

@@ -1,70 +1,78 @@
-use crate::Keyframe;
+use crate::BoneKeyframe;
 
-/// If you're sampling time 1.5seconds and there are three keyframes, 0.0s, 1.8s, 2.2s the
-/// surrounding keyframes are 0.0s and 1.8s
+/// If you're sampling frame 1.5 and there are three keyframes - 0, 2, 3 the
+/// surrounding keyframes are 0 and 2.
 ///
-/// TODO: Assume that keyframes are always in order and return early once we find a highest and
-///  lowest keyframe.
-///  Use Vec.binary_search_by to find the keyframe right below the elapsed frames, then use the
-///  keyframe right above it as the upper keyframe
-pub(super) fn get_surrounding_keyframes(
-    keyframes: &Vec<Keyframe>,
-    elapsed_frames: f32,
-) -> (&Keyframe, &Keyframe) {
-    let mut action_lower_keyframe = 0;
-    let mut action_upper_keyframe = 0;
+/// If you're sampling frame 1.5 and there are three keyframes - 10, 15, 31 the
+/// surrounding keyframes are 0 and 0.
+///
+/// If you're sampling frame 1.5 and there are three keyframes - 0, and 1
+/// then the surrounding keyframes are 1 and 1.
+///
+/// We assume that the keyframes are stored in ascending order.
+///
+/// TODO: Binary search instead of linear
+pub fn get_surrounding_keyframes(
+    keyframes: &Vec<BoneKeyframe>,
+    current_frame: f32,
+) -> (BoneKeyframe, BoneKeyframe) {
+    let mut closest_lower = None;
+    let mut closest_upper = None;
 
-    let mut lowest_time_seen = -std::f32::INFINITY;
-    let mut highest_time_seen = std::f32::INFINITY;
-
-    for (index, keyframe) in keyframes.iter().enumerate() {
-        let frame = keyframe.frame as f32;
-
-        if frame <= elapsed_frames && frame >= lowest_time_seen {
-            action_lower_keyframe = index;
-            lowest_time_seen = frame;
+    for (idx, frame) in keyframes.iter().enumerate() {
+        if (frame.frame() as f32) <= current_frame {
+            closest_lower = Some(idx)
         }
 
-        if frame >= elapsed_frames && frame <= highest_time_seen {
-            action_upper_keyframe = index;
-            highest_time_seen = frame;
+        if (frame.frame() as f32) >= current_frame {
+            closest_upper = Some(idx);
+            break;
         }
     }
 
+    if closest_upper.is_none() {
+        closest_upper = closest_lower;
+    } else if closest_lower.is_none() {
+        closest_lower = closest_upper;
+    }
+
     (
-        &keyframes[action_lower_keyframe],
-        &keyframes[action_upper_keyframe],
+        keyframes[closest_lower.unwrap()],
+        keyframes[closest_upper.unwrap()],
     )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Keyframe;
+    use crate::test_util::bone_dual_quat_identity;
 
+    /// Verify that we properly determine the lower and upper keyframe to sample
     #[test]
     fn surrounding_keyframes() {
         let keyframes = vec![
-            Keyframe {
-                frame: 0,
-                bones: vec![],
-            },
-            Keyframe {
-                frame: 8,
-                bones: vec![],
-            },
-            Keyframe {
-                frame: 3,
-                bones: vec![],
-            },
+            BoneKeyframe::new(2, bone_dual_quat_identity()),
+            BoneKeyframe::new(5, bone_dual_quat_identity()),
+            BoneKeyframe::new(8, bone_dual_quat_identity()),
         ];
 
-        let (lower, upper) = get_surrounding_keyframes(&keyframes, 0.3);
-        assert_eq!(lower, &keyframes[0]);
-        assert_eq!(upper, &keyframes[2]);
+        let tests = vec![
+            //
+            (0.0, [0, 0]),
+            (4.0, [0, 1]),
+            (5.0, [1, 1]),
+            (7.0, [1, 2]),
+            (8.0, [2, 2]),
+            (9.0, [2, 2]),
+        ];
 
-        let (lower, upper) = get_surrounding_keyframes(&keyframes, 4.0);
-        assert_eq!(lower, &keyframes[2]);
-        assert_eq!(upper, &keyframes[1]);
+        for (idx, (elapsed_frames, [expected_lower, expected_upper])) in
+            tests.into_iter().enumerate()
+        {
+            let (lower, upper) = get_surrounding_keyframes(&keyframes, elapsed_frames);
+
+            assert_eq!(lower, keyframes[expected_lower], "Test idx {}", idx);
+            assert_eq!(upper, keyframes[expected_upper], "Test idx {}", idx);
+        }
     }
 }
