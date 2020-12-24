@@ -47,7 +47,7 @@ fn exports_pose_markers() {
 
     let armature = armature.get("PoseMarkerTest").unwrap();
 
-    let action = &armature.actions()[&"Action".to_string()];
+    let action = &armature.bone_space_actions()[&"Action".to_string()];
     assert_eq!(action.pose_markers().len(), 2);
 
     assert_eq!(action.pose_markers()[&0], "Some Pose Marker");

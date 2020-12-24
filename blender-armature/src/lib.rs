@@ -14,7 +14,8 @@ pub use self::bone::*;
 pub use self::coordinate_system::*;
 pub use self::export::*;
 pub use self::interpolate::*;
-use nalgebra::Matrix4;
+use std::borrow::Borrow;
+use std::hash::Hash;
 
 mod action;
 mod bone;
@@ -23,6 +24,9 @@ mod coordinate_system;
 mod export;
 mod interpolate;
 mod serde;
+
+#[cfg(test)]
+mod test_util;
 
 /// Something went wrong in the Blender child process that was trying to parse your armature data.
 #[derive(Debug, thiserror::Error)]
@@ -43,16 +47,17 @@ pub enum BlenderError {
 /// If you have other needs, such as a way to know the model space position of any bone at any
 /// time so that you can, say, render a baseball in on top of your hand bone.. Open an issue.
 /// (I plan to support this specific example in the future)
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
 #[cfg_attr(test, derive(Clone))]
+// TODO: BlenderArmature<T: Bone> for DQ and matrix
 pub struct BlenderArmature {
     name: String,
     #[serde(serialize_with = "serialize_hashmap_deterministic")]
     joint_indices: HashMap<String, u8>,
-    bone_parents: HashMap<u8, Option<u8>>,
+    bone_child_to_parent: HashMap<u8, u8>,
     inverse_bind_poses: Vec<Bone>,
     #[serde(serialize_with = "serialize_hashmap_deterministic")]
-    actions: HashMap<String, Action>,
+    bone_space_actions: HashMap<String, Action>,
     #[serde(serialize_with = "serialize_hashmap_deterministic")]
     bone_groups: HashMap<String, Vec<u8>>,
     #[serde(default)]
@@ -60,9 +65,47 @@ pub struct BlenderArmature {
 }
 
 impl BlenderArmature {
+    ///
+    pub fn foobar(&self) {
+        for (_name, action) in self.bone_space_actions.iter() {
+            let mut frame_order = HashMap::new();
+            for (idx, k) in action.keyframes.iter().enumerate() {
+                frame_order.insert(k.frame, idx);
+            }
+
+            for (bone_idx, keyframe) in action.bone_keyframes().iter() {
+                for (index, bone) in keyframe.iter().enumerate() {
+                    let old_k_index = frame_order.get(&bone.frame()).unwrap();
+                    let old_k = &action.keyframes[*old_k_index];
+
+                    assert_eq!(bone.frame(), old_k.frame());
+
+                    assert_eq!(bone.bone(), old_k.bones[*bone_idx as usize]);
+                }
+            }
+        }
+    }
+}
+
+impl BlenderArmature {
     /// The name of the armature
     pub fn name(&self) -> &String {
         &self.name
+    }
+
+    /// Set the name of the armature.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use blender_armature::BlenderArmature;
+    /// let mut armature = BlenderArmature::default();
+    /// armature.set_name("Some Name".to_string());
+    ///
+    /// assert_eq!(armature.name(), "Some Name");
+    /// ```
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
     }
 
     /// Blender [bone groups]
@@ -110,8 +153,36 @@ impl BlenderArmature {
     }
 
     /// Get a bone's index into the various Vec<Bone> data structures that hold bone data.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use blender_armature::BlenderArmature;
+    /// let mut armature = BlenderArmature::default();
+    ///
+    /// armature.insert_joint_index("Spine".to_string(), 0);
+    ///
+    /// assert_eq!(armature.joint_indices(), 1);
+    /// ```
     pub fn joint_indices(&self) -> &HashMap<String, u8> {
         &self.joint_indices
+    }
+
+    /// Set a bone's index into the various Vec<Bone> data structures that hold bone data.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use blender_armature::BlenderArmature;
+    /// let mut armature = BlenderArmature::default();
+    ///
+    /// armature.insert_joint_index("Spine".to_string(), 0);
+    /// armature.insert_joint_index("UpperArm".to_string(), 2);
+    ///
+    /// assert_eq!(armature.joint_indices(), 2);
+    /// ```
+    pub fn insert_joint_index(&mut self, joint_name: String, joint_idx: u8) {
+        self.joint_indices.insert(joint_name, joint_idx);
     }
 
     /// Every bone's inverse bind pose.
@@ -124,32 +195,53 @@ impl BlenderArmature {
         &self.inverse_bind_poses
     }
 
-    /// See [`BlenderArmature.inverse_bind_poses()`]
-    pub fn inverse_bind_poses_mut(&mut self) -> &mut Vec<Bone> {
-        &mut self.inverse_bind_poses
+    /// Set the inverse bind poses.
+    pub fn set_inverse_bind_poses(&mut self, poses: Vec<Bone>) {
+        self.inverse_bind_poses = poses;
     }
 
     /// All of the actions defined on the armature, keyed by action name.
-    ///
-    /// # From Blender
-    ///
-    /// When exporting from Blender these are the pose bone's armature space matrix.
-    ///
-    /// Note that this means that these bones are not relative to their parent's.
-    ///
-    /// To get a pose bone relative to it's parent use [`Bone.relative_to()`]
-    pub fn actions(&self) -> &HashMap<String, Action> {
-        &self.actions
+    pub fn bone_space_actions(&self) -> &HashMap<String, Action> {
+        &self.bone_space_actions
     }
 
-    /// See [`BlenderArmature.method#actions`]
-    pub fn actions_mut(&mut self) -> &mut HashMap<String, Action> {
-        &mut self.actions
+    /// Insert an action into the map of actions.
+    pub fn insert_bone_space_action(&mut self, name: String, action: Action) {
+        self.bone_space_actions.insert(name, action);
     }
 
-    /// The parent of each bone
-    pub fn bone_parents(&self) -> &HashMap<u8, Option<u8>> {
-        &self.bone_parents
+    /// Remove an action from the map.
+    pub fn remove_bone_space_action<Q>(&mut self, name: &Q) -> Option<Action>
+    where
+        String: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        self.bone_space_actions.remove(name)
+    }
+
+    /// A map of a bone chil to its parent
+    ///
+    /// If a bone is not stored in this map then it does not have a parent.
+    pub fn bone_child_to_parent(&self) -> &HashMap<u8, u8> {
+        &self.bone_child_to_parent
+    }
+
+    /// # Example
+    ///
+    /// ```
+    /// # use blender_armature::BlenderArmature;
+    /// let mut armature = BlenderArmature::default();
+    ///
+    /// let child_idx = 4;
+    /// let parent_idx = 2;
+    ///
+    /// armature.insert_joint_index("UpperArm".to_string(), parent_idx);
+    /// armature.insert_joint_index("Lower Arm".to_string(), child_idx);
+    ///
+    /// armature.insert_child_to_parent(child_idx, parent_idx);
+    /// ```
+    pub fn insert_child_to_parent(&mut self, child: u8, parent: u8) {
+        self.bone_child_to_parent.insert(child, parent);
     }
 }
 
@@ -189,12 +281,16 @@ impl BlenderArmature {
     /// Blender uses row major matrices, but OpenGL uses column major matrices so you'll
     /// usually want to transpose your matrices before using them.
     pub fn transpose_actions(&mut self) {
-        for (_name, action) in self.actions.iter_mut() {
-            for keyframe in action.keyframes_mut().iter_mut() {
-                for (_index, bone) in keyframe.bones.iter_mut().enumerate() {
-                    bone.transpose();
+        for (_name, action) in self.bone_space_actions.iter_mut() {
+            for (_bone_idx, keyframes) in action.keyframes_mut().iter_mut() {
+                for bone in keyframes.iter_mut() {
+                    bone.bone_mut().transpose();
                 }
             }
+        }
+
+        for bone in self.inverse_bind_poses.iter_mut() {
+            bone.transpose();
         }
     }
 }
@@ -203,10 +299,11 @@ impl BlenderArmature {
     /// Convert your action matrices into dual quaternions so that you can implement
     /// dual quaternion linear blending.
     pub fn matrices_to_dual_quats(&mut self) {
-        for (_, keyframes) in self.actions.iter_mut() {
-            for keyframe in keyframes.keyframes_mut().iter_mut() {
-                for bone in keyframe.bones.iter_mut() {
-                    *bone = BlenderArmature::matrix_to_dual_quat(bone);
+        for (_, keyframes) in self.bone_space_actions.iter_mut() {
+            for (bone_idx, keyframes) in keyframes.keyframes_mut().iter_mut() {
+                for bone_keyframe in keyframes.iter_mut() {
+                    bone_keyframe
+                        .set_bone(BlenderArmature::matrix_to_dual_quat(&bone_keyframe.bone()));
                 }
             }
         }
@@ -226,18 +323,41 @@ impl Bone {
             Bone::DualQuat(_) => unimplemented!(),
         };
     }
+
+    // DELETE ME
+    fn multiply(&mut self, rhs: Bone) {
+        match self {
+            Bone::Matrix(lhs_matrix) => match rhs {
+                Bone::Matrix(rhs_matrix) => {
+                    //
+                    *self = Bone::Matrix(rhs_matrix * *lhs_matrix)
+                }
+                Bone::DualQuat(_) => {}
+            },
+            Bone::DualQuat(_) => {}
+        };
+    }
 }
 
-impl Default for BlenderArmature {
-    fn default() -> Self {
-        BlenderArmature {
-            name: "".to_string(),
-            joint_indices: Default::default(),
-            bone_parents: Default::default(),
-            inverse_bind_poses: vec![],
-            actions: Default::default(),
-            bone_groups: Default::default(),
-            coordinate_system: Default::default(),
+// DELETE ME
+impl BlenderArmature {
+    /// Iterate over all of the action bones and apply and multiply in the inverse bind pose.
+    ///
+    /// TODO: another function to apply bind shape matrix? Most armatures seem to export an identity
+    ///  bind shape matrix but that might not be the same for every armature.
+    ///
+    /// TODO: Do not mutate the matrices and instead just return the new values and let the caller
+    ///  handle caching them? Would mean less moving parts in our data structures and you always
+    ///  know exactly what you are getting. Right now you have no way actions of knowing whether or
+    ///  not actions have their bind poses pre-multiplied in.
+    pub fn apply_inverse_bind_poses(&mut self) {
+        for (_name, action) in self.bone_space_actions.iter_mut() {
+            for (bone_idx, keyframe) in action.keyframes_mut().iter_mut() {
+                for (index, bone) in keyframe.iter_mut().enumerate() {
+                    bone.bone_mut()
+                        .multiply(self.inverse_bind_poses[*bone_idx as usize]);
+                }
+            }
         }
     }
 }
@@ -246,36 +366,34 @@ impl Default for BlenderArmature {
 mod tests {
     use super::*;
     use crate::interpolate::tests::dq_to_bone;
+    use crate::test_util::action_with_keyframes;
+    use nalgebra::Matrix4;
 
     #[test]
     fn convert_actions_to_dual_quats() {
-        let mut start_actions = HashMap::new();
         let mut keyframes = vec![];
-        keyframes.push(Keyframe {
-            frame: 1,
-            bones: vec![Bone::Matrix(Matrix4::from_column_slice(&[
+        keyframes.push(BoneKeyframe::new(
+            1,
+            Bone::Matrix(Matrix4::from_column_slice(&[
                 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-            ]))],
-        });
-        start_actions.insert("Fly".to_string(), Action::new(keyframes));
+            ])),
+        ));
 
         let mut start_armature = BlenderArmature {
-            actions: start_actions,
+            bone_space_actions: action_with_keyframes(keyframes),
             ..BlenderArmature::default()
         };
 
         start_armature.matrices_to_dual_quats();
 
-        let mut end_actions = HashMap::new();
-        let mut keyframes = vec![];
-        keyframes.push(Keyframe {
-            frame: 1,
-            bones: vec![dq_to_bone([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])],
-        });
-        end_actions.insert("Fly".to_string(), Action::new(keyframes));
+        let mut new_keyframes = vec![];
+        new_keyframes.push(BoneKeyframe::new(
+            1,
+            dq_to_bone([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+        ));
 
         let expected_armature = BlenderArmature {
-            actions: end_actions,
+            bone_space_actions: action_with_keyframes(new_keyframes),
             ..start_armature.clone()
         };
 
@@ -285,36 +403,29 @@ mod tests {
     // TODO: Function to return these start_actions that we keep using
     #[test]
     fn transpose_actions() {
-        let mut start_actions = HashMap::new();
-        let mut keyframes = vec![];
-        keyframes.push(Keyframe {
-            frame: 1,
-            bones: vec![Bone::Matrix(Matrix4::from_column_slice(&[
+        let keyframes = vec![BoneKeyframe::new(
+            1,
+            Bone::Matrix(Matrix4::from_column_slice(&[
                 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 1.0,
-            ]))],
-        });
-
-        start_actions.insert("Fly".to_string(), Action::new(keyframes));
+            ])),
+        )];
 
         let mut start_armature = BlenderArmature {
-            actions: start_actions,
+            bone_space_actions: action_with_keyframes(keyframes),
             ..BlenderArmature::default()
         };
 
         start_armature.transpose_actions();
 
-        let mut end_actions = HashMap::new();
-        let mut keyframes = vec![];
-        keyframes.push(Keyframe {
-            frame: 1,
-            bones: vec![Bone::Matrix(Matrix4::from_column_slice(&[
+        let new_keyframes = vec![BoneKeyframe::new(
+            1,
+            Bone::Matrix(Matrix4::from_column_slice(&[
                 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 5.0, 0.0, 0.0, 0.0, 1.0,
-            ]))],
-        });
-        end_actions.insert("Fly".to_string(), Action::new(keyframes));
+            ])),
+        )];
 
         let expected_armature = BlenderArmature {
-            actions: end_actions,
+            bone_space_actions: action_with_keyframes(new_keyframes),
             ..start_armature.clone()
         };
 

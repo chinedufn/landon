@@ -166,6 +166,9 @@ class ConvertIKToFK(bpy.types.Operator):
             # Bake adds extra keyframes, so we delete any keyframes that did not previously exist
             bpy.ops.object.mode_set(mode = 'POSE')
             # Delete generated keyframes that did not exist before this script
+            #
+            # FIXME: Do this on a per bone basis, so that no bone is keyed at frames that it wasn't keyed for
+            #  previously.
             for frame in range(keyframes[0], keyframes[-1]):
                 if frame not in keyframes:
                     bpy.context.scene.frame_set(frame)

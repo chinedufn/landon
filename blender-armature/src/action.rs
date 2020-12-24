@@ -1,53 +1,52 @@
 use std::collections::HashMap;
 
-use crate::Keyframe;
-
 pub use self::action_keyframes::*;
+pub use self::bone_keyframes::*;
+use crate::Keyframe;
 
 type Frame = u16;
 
 mod action_keyframes;
+mod bone_keyframes;
 
 /// A set of keyframes along with metadata such as pose markers.
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[cfg_attr(test, derive(Clone))]
 pub struct Action {
-    keyframes: ActionKeyframes,
+    // TODO: Remove `keyframes` and replace them with keyframes.
+    pub(super) bone_keyframes: BoneKeyframes,
     #[serde(default)]
     pose_markers: HashMap<Frame, String>,
+    pub(super) keyframes: Vec<Keyframe>,
 }
 
 impl Action {
     #[allow(missing_docs)]
-    pub fn new(keyframes: Vec<Keyframe>) -> Self {
+    pub fn new() -> Self {
         Action {
+            bone_keyframes: BoneKeyframes::default(),
             pose_markers: HashMap::new(),
-            keyframes: ActionKeyframes::new(keyframes),
+            keyframes: vec![],
         }
     }
 
-    /// Each of the key frames for the action.
-    pub fn keyframes(&self) -> &ActionKeyframes {
-        &self.keyframes
+    #[cfg(test)]
+    pub(crate) fn new_with_keyframes(keyframes: HashMap<u8, Vec<SortedKeyframes>>) -> Self {
+        Action {
+            bone_keyframes: BoneKeyframes::new_with_keyframes(keyframes),
+            pose_markers: HashMap::new(),
+            keyframes: vec![],
+        }
     }
 
-    /// The smallest keyed frame number in the action.
-    pub fn smallest_frame(&self) -> u16 {
-        self.keyframes.smallest_frame()
+    /// The world space transform keyframes for each bone
+    pub fn bone_keyframes(&self) -> &BoneKeyframes {
+        &self.bone_keyframes
     }
 
-    /// The largest keyed frame number in the action.
-    pub fn largest_frame(&self) -> u16 {
-        self.keyframes.largest_frame()
-    }
-
-    /// The number of frames separating the largest frame from the smallest.
-    ///
-    /// (largest_frame - smallest_frame)
-    ///
-    /// So if the largest frame is 30, and the smallest is 20, then the frame duration is 10.
-    pub fn frame_duration(&self) -> u16 {
-        self.largest_frame() - self.smallest_frame()
+    /// Add a trnasformation keyframe for a bone.
+    pub fn insert_bone_keyframe(&mut self, bone_idx: u8, keyframe: BoneKeyframe) {
+        self.bone_keyframes.insert_bone_keyframe(bone_idx, keyframe);
     }
 
     /// Labeled frame times for the action.
@@ -61,6 +60,21 @@ impl Action {
     pub fn pose_markers_mut(&mut self) -> &mut HashMap<Frame, String> {
         &mut self.pose_markers
     }
+
+    /// The smallest frame
+    pub fn smallest_frame(&self) -> u16 {
+        self.bone_keyframes.frame_range_inclusive().unwrap().0
+    }
+
+    /// The largest frame
+    pub fn largest_frame(&self) -> u16 {
+        self.bone_keyframes.frame_range_inclusive().unwrap().1
+    }
+
+    /// Last frame - first frame
+    pub fn frame_duration(&self) -> u16 {
+        self.bone_keyframes.frame_duration().unwrap()
+    }
 }
 
 // pub(crate)
@@ -69,7 +83,7 @@ impl Action {
     /// updating the cached smallest/largest frame number.
     ///
     /// See [`Action.method#keyframes`]
-    pub(crate) fn keyframes_mut(&mut self) -> &mut Vec<Keyframe> {
-        self.keyframes.keyframes_mut()
+    pub(crate) fn keyframes_mut(&mut self) -> &mut HashMap<u8, SortedKeyframes> {
+        self.bone_keyframes.keyframes_mut()
     }
 }
