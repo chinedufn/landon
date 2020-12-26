@@ -103,8 +103,6 @@ fn parse_skinned_letter_f_armature_data() {
 
     let armature = armature.get("LetterFArmature").unwrap();
 
-    println!("{}", serde_json::to_string_pretty(&armature).unwrap());
-
     let expected_armature = &expected_armature_data();
     let expected_armature: BlenderArmature = serde_json::from_str(expected_armature).unwrap();
 
