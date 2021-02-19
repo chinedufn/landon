@@ -1,6 +1,6 @@
 [package]
 name = "blender-mesh"
-version = "0.8.7"
+version = "0.8.8"
 authors = ["Chinedu Francis Nwafili <frankie.nwafili@gmail.com>"]
 publish = true
 description = "Serialize / deserialize Blender armatures"
