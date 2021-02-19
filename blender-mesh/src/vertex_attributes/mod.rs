@@ -80,7 +80,7 @@ impl Default for VertexAttributes {
 /// multiple indices.
 ///
 /// TODO: A HashMap so that we can have arbitrary vertex attributes
-#[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct MultiIndexedVertexAttributes {
     // The number of vertices that comprise each face of the mesh.
     //
@@ -100,7 +100,7 @@ pub struct MultiIndexedVertexAttributes {
     pub(crate) bone_influences: Option<VertexBoneInfluences>,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct IndexedAttribute {
     pub(crate) indices: VertexIndices,
     pub(crate) attribute: VertexAttribute<f32>,
@@ -143,7 +143,7 @@ impl From<SingleIndexedVertexAttributes> for VertexAttributes {
 ///
 /// TODO: Remove this and use VertexAttribute with something like attribute_size: Varies(vec![])
 /// this allows us to handle all attributes the same way.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct VertexBoneInfluences {
     /// The number of bones that affect each vertex.
     ///

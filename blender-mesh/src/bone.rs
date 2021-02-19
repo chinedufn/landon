@@ -8,7 +8,7 @@ use crate::vertex_attributes::{MultiIndexedVertexAttributes, VertexBoneInfluence
 ///
 /// TODO: Remove this and use VertexAttribute with something like attribute_size: Varies(vec![])
 /// this allows us to handle all attributes the same way.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub(crate) enum BoneInfluencesPerVertex {
     NonUniform(Vec<u8>),
     Uniform(u8),

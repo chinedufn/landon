@@ -13,7 +13,7 @@ use std::ops::Deref;
 /// vertices.
 ///
 /// There could be multiple vertices that happened to have the same positions.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct VertexAttribute<T> {
     pub(crate) data: Vec<T>,
     pub(crate) attribute_size: u8,

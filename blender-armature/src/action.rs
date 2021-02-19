@@ -10,8 +10,7 @@ mod action_keyframes;
 mod bone_keyframes;
 
 /// A set of keyframes along with metadata such as pose markers.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Action {
     // TODO: Remove `keyframes` and replace them with keyframes.
     pub(super) bone_keyframes: BoneKeyframes,

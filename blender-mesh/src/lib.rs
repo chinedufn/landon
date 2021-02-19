@@ -67,7 +67,7 @@ pub enum BlenderError {
 /// All of the data about a mesh
 ///
 /// TODO: Rename crate to `MeshIr`
-#[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 #[serde(deny_unknown_fields)]
 pub struct BlenderMesh {
     name: String,

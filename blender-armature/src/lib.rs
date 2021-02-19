@@ -47,7 +47,7 @@ pub enum BlenderError {
 /// If you have other needs, such as a way to know the model space position of any bone at any
 /// time so that you can, say, render a baseball in on top of your hand bone.. Open an issue.
 /// (I plan to support this specific example in the future)
-#[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 #[cfg_attr(test, derive(Clone))]
 // TODO: BlenderArmature<T: Bone> for DQ and matrix
 pub struct BlenderArmature {

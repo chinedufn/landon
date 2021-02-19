@@ -1,6 +1,6 @@
 /// A [Blender custom property][custom-property]:
 /// [custom-property]: https://docs.blender.org/manual/en/latest//files/data_blocks.html#custom-properties
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[allow(missing_docs)]
 pub enum CustomProperty {
     Float(f32),
@@ -9,7 +9,7 @@ pub enum CustomProperty {
     Vec(Vec<CustomPropertyVecItem>),
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[allow(missing_docs)]
 pub enum CustomPropertyVecItem {
     Float(f32),
