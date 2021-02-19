@@ -123,6 +123,11 @@ impl BlenderMesh {
     pub fn name(&self) -> &String {
         &self.name
     }
+
+    /// Set the name of the mesh
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
 }
 
 /// Concatenate a series of vectors into one vector.
