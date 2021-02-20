@@ -48,7 +48,6 @@ pub enum BlenderError {
 /// time so that you can, say, render a baseball in on top of your hand bone.. Open an issue.
 /// (I plan to support this specific example in the future)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
-#[cfg_attr(test, derive(Clone))]
 // TODO: BlenderArmature<T: Bone> for DQ and matrix
 pub struct BlenderArmature {
     name: String,
