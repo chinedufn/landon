@@ -40,7 +40,7 @@ Options
 if (argv.i || argv['install']) {
   var addonInstallScript = path.resolve(__dirname, './install-addon.py')
   cp.execSync(
-    `blender --background --python ${addonInstallScript}`,
+    `blender --background -noaudio --python ${addonInstallScript}`,
     function (err, stdout, stderr) {
       if (err) {
         console.error('There was an error installing the addon. Please make sure that your Blender installation is added to your $PATH')
