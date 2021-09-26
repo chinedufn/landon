@@ -41,7 +41,7 @@ bpy.ops.wm.save_userpref()
         // https://blenderartists.org/t/cannot-run-blender-on-ubuntu-server-12-04lts/614415
         .arg("-noaudio")
         .spawn()
-        .unwrap()
+        .expect("blender must be in your $PATH")
         .wait()
         .unwrap();
 
@@ -82,7 +82,7 @@ bpy.ops.wm.save_userpref()
         // https://blenderartists.org/t/cannot-run-blender-on-ubuntu-server-12-04lts/614415
         .arg("-noaudio")
         .spawn()
-        .unwrap()
+        .expect("blender must be in your $PATH")
         .wait()
         .unwrap();
 
