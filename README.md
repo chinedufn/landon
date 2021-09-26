@@ -68,6 +68,7 @@ cat exported.json | jq -r '.meshes | to_entries[] | .value | to_entries[] | "\(.
 
 ## To Install
 
+### Install Blender
 We currently support `Blender 2.80` The Blender command line executable should be installed and availble in your shell path. On MacOs you can install through homebrew to acheive this.
 
 ```
@@ -86,6 +87,7 @@ Blender 2.82 (sub 7)
 	build system: CMake
 ```
 
+### Install Landon
 
 ```
 cargo install -f landon
