@@ -68,7 +68,21 @@ cat exported.json | jq -r '.meshes | to_entries[] | .value | to_entries[] | "\(.
 
 ## To Install
 
-We currently support `Blender 2.80`
+### Install Blender
+The minimum supported Blender version is 2.80.
+
+The blender command line executable should be available in your shell path.
+
+#### MacOS
+
+```
+# Add Blender to your path
+export PATH="$PATH:/Applications/blender.app/Contents/MacOS"
+```
+
+To verify that Blender is in your path, run `blender --version` in your shell.
+
+### Install Landon
 
 ```
 cargo install -f landon
