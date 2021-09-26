@@ -69,23 +69,18 @@ cat exported.json | jq -r '.meshes | to_entries[] | .value | to_entries[] | "\(.
 ## To Install
 
 ### Install Blender
-We currently support `Blender 2.80` The Blender command line executable should be installed and availble in your shell path. On MacOs you can install through homebrew to acheive this.
+The minimum supported Blender version is 2.80.
+
+The blender command line executable should be available in your shell path.
+
+#### MacOS
 
 ```
-$ blender --version
-Blender 2.82 (sub 7)
-	build date: 2020-03-12
-	build time: 05:31:51
-	build commit date: 2020-03-12
-	build commit time: 05:06
-	build hash: 375c7dc4caf4
-	build platform: Darwin
-	build type: Release
-	build c flags:  -Wall -Werror=implicit-function-declaration -Werror=return-type -Wno-tautological-compare -Wno-unknown-pragmas -Wno-char-subscripts -Wstrict-prototypes -Wmissing-prototypes -Wunused-parameter  -mmacosx-version-min=10.11 -Xclang -fopenmp -I'/Users/gast/blender-buildbot/mac_x86_64_10_9_cmake/blender.git/../lib/darwin/openmp/include' -std=gnu11   -msse -pipe -funsigned-char -msse2
-	build c++ flags:  -Wall -Wno-tautological-compare -Wno-unknown-pragmas -Wno-char-subscripts -Wno-overloaded-virtual -Wno-sign-compare -Wno-invalid-offsetof  -mmacosx-version-min=10.11 -ftemplate-depth=1024 -stdlib=libc++ -Xclang -fopenmp -I'/Users/gast/blender-buildbot/mac_x86_64_10_9_cmake/blender.git/../lib/darwin/openmp/include' -std=c++11   -msse -pipe -funsigned-char -msse2
-	build link flags: -fexceptions -framework CoreServices -framework Foundation -framework IOKit -framework AppKit -framework Cocoa -framework Carbon -framework AudioUnit -framework AudioToolbox -framework CoreAudio -framework Metal -framework QuartzCore -framework ForceFeedback -liconv -Xlinker -unexported_symbols_list -Xlinker '/Users/gast/blender-buildbot/mac_x86_64_10_9_cmake/blender.git/source/creator/osx_locals.map' -stdlib=libc++
-	build system: CMake
+# Add Blender to your path
+export PATH="$PATH:/Applications/blender.app/Contents/MacOS"
 ```
+
+To verify that Blender is in your path, run `blender --version` in your shell.
 
 ### Install Landon
 
