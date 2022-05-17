@@ -75,8 +75,7 @@ pub struct BlenderMesh {
     bounding_box: BoundingBox,
     #[serde(alias = "attribs")]
     multi_indexed_vertex_attributes: MultiIndexedVertexAttributes,
-    #[serde(default, serialize_with = "serialize_hashmap_deterministic")]
-    materials: HashMap<String, PrincipledBSDF>,
+    materials: Vec<PrincipledBSDF>,
     #[serde(default, serialize_with = "serialize_hashmap_deterministic")]
     custom_properties: HashMap<String, CustomProperty>,
 }
@@ -93,12 +92,20 @@ impl BlenderMesh {
     }
 
     /// A map of material name to the material's data
-    pub fn materials(&self) -> &HashMap<String, PrincipledBSDF> {
+    pub fn materials(&self) -> HashMap<String, PrincipledBSDF> {
+        let mut res = HashMap::new();
+        for material in &self.materials {
+            res.insert(material.name.clone(), material.clone());
+        }
+        res
+    }
+
+    pub fn materials_vec(&self) -> &Vec<PrincipledBSDF> {
         &self.materials
     }
 
     /// A mutable map of material name to the material's data
-    pub fn materials_mut(&mut self) -> &mut HashMap<String, PrincipledBSDF> {
+    pub fn materials_mut(&mut self) -> &mut Vec<PrincipledBSDF> {
         &mut self.materials
     }
 

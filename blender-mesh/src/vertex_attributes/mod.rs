@@ -94,6 +94,7 @@ pub struct MultiIndexedVertexAttributes {
     // - Calculating vertex tangents, where all vertices in the same face will have the same
     //   tangent.
     pub(crate) vertices_in_each_face: Vec<u8>,
+    pub(crate) material_index: Vec<u16>,
     pub(crate) positions: IndexedAttribute,
     pub(crate) normals: Option<IndexedAttribute>,
     pub(crate) uvs: Option<IndexedAttribute>,

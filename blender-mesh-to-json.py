@@ -46,10 +46,11 @@ class MeshToJSON(bpy.types.Operator):
             'bounding_box': {
                 'min_corner': [], 'max_corner': []
             },
-            'materials': {},
+            'materials': [],
             'custom_properties': {},
             'attribs': {
                 'vertices_in_each_face': [],
+                'material_index': [],
                 'positions': {
                     'indices': [],
                     'attribute': {
@@ -101,6 +102,7 @@ class MeshToJSON(bpy.types.Operator):
         for face in mesh.data.polygons:
             num_vertices_in_face = len(face.vertices)
             mesh_json['attribs']['vertices_in_each_face'].append(num_vertices_in_face)
+            mesh_json['attribs']['material_index'].append(face.material_index)
 
             for i in range(num_vertices_in_face):
                 mesh_json['attribs']['positions']['indices'].append(face.vertices[i])
@@ -288,12 +290,13 @@ class MeshToJSON(bpy.types.Operator):
                             normalMapNode = link.from_node
                             normalMap = normalMapNode.inputs['Color'].links[0].from_node.image.name
 
-                    mesh_json['materials'][material.name] = {
+                    mesh_json['materials'].append({
+                        'name': material.name,
                         'base_color': baseColor,
                         'roughness': roughness,
                         'metallic': metallic,
                         'normal_map': normalMap
-                    }
+                    })
 
         for property in mesh.keys():
             # Not sure what this is but it gets automatically added into the properties. So we ignore it

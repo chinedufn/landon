@@ -8,6 +8,8 @@
 /// https://docs.blender.org/manual/en/latest/render/cycles/nodes/types/shaders/principled.html
 #[derive(Debug, Serialize, Deserialize, PartialEq, Default, Clone)]
 pub struct PrincipledBSDF {
+    /// Material name
+    pub(crate) name: String,
     /// [r, g, b]
     pub(crate) base_color: MaterialInput<[f32; 3], String>,
     /// roughness
@@ -76,12 +78,14 @@ where
 impl PrincipledBSDF {
     /// Create a new physically-based material.
     pub fn new(
+        name: String,
         base_color: MaterialInput<[f32; 3], String>,
         roughness: MaterialInput<f32, (String, Channel)>,
         metallic: MaterialInput<f32, (String, Channel)>,
         normal_map: Option<String>,
     ) -> Self {
         PrincipledBSDF {
+            name,
             base_color,
             roughness,
             metallic,

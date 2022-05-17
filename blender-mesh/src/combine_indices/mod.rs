@@ -73,6 +73,9 @@ impl BlenderMesh {
         let mut expanded_normals = vec![];
         expanded_normals.resize((largest_vert_id + 1) * 3, EASILY_RECOGNIZABLE_NUMBER);
 
+        let mut expanded_material_index = vec![];
+        expanded_material_index.resize( largest_vert_id +1, 0u16);
+
         let mut expanded_uvs = vec![];
         expanded_uvs.resize((largest_vert_id + 1) * 2, EASILY_RECOGNIZABLE_NUMBER);
 
@@ -142,6 +145,7 @@ impl BlenderMesh {
                     start_vert_id,
                     elem_array_index,
                     &mut expanded_positions,
+                    &mut expanded_material_index,
                     &mut expanded_normals,
                     &mut expanded_uvs,
                     &mut expanded_tangents,
@@ -167,6 +171,7 @@ impl BlenderMesh {
                     new_group_indices.as_mut(),
                     new_group_weights.as_mut(),
                     &mut expanded_positions,
+                    &mut expanded_material_index,
                     &mut expanded_normals,
                     &mut expanded_uvs,
                     &mut expanded_tangents,
@@ -226,7 +231,7 @@ impl BlenderMesh {
 
         let mut single_indexed_vertex_attributes = SingleIndexedVertexAttributes {
             indices: expanded_pos_indices,
-            vertices: make_vertices(expanded_positions, normals, uvs, tangents, bones),
+            vertices: make_vertices(expanded_material_index,expanded_positions,  normals, uvs, tangents, bones),
         };
 
         let indices = self.triangulate(&single_indexed_vertex_attributes.indices);
@@ -244,6 +249,7 @@ impl BlenderMesh {
         start_vert_id: u16,
         elem_array_index: usize,
         expanded_positions: &mut Vec<f32>,
+        expanded_material_index: &mut Vec<u16>,
         expanded_normals: &mut Vec<f32>,
         expanded_uvs: &mut Vec<f32>,
         expanded_tangents: &mut Vec<f32>,
@@ -263,6 +269,8 @@ impl BlenderMesh {
             expanded_positions[start_vert_id * 3 + 1] = y;
             expanded_positions[start_vert_id * 3 + 2] = z;
         }
+
+        expanded_material_index[start_vert_id] = multi.material_index[face_idx];
 
         if let Some(normal_index) = normal_index {
             if let &[x, y, z] = multi
@@ -310,6 +318,7 @@ impl BlenderMesh {
         new_group_indices: Option<&mut Vec<u8>>,
         new_group_weights: Option<&mut Vec<f32>>,
         expanded_positions: &mut Vec<f32>,
+        expanded_material_index: &mut Vec<u16>,
         expanded_normals: &mut Vec<f32>,
         expanded_uvs: &mut Vec<f32>,
         expanded_tangents: &mut Vec<f32>,
@@ -322,6 +331,8 @@ impl BlenderMesh {
             expanded_positions.push(y);
             expanded_positions.push(z);
         }
+
+        expanded_material_index.push(multi.material_index[face_idx]);
 
         if let Some(normal_idx) = normal_idx {
             if let &[x, y, z] = multi
@@ -412,6 +423,7 @@ impl DerefMut for EncounteredIndexCombinations {
 
 // TODO: We're just throwing things around as we work to refactor this crate ...
 fn make_vertices(
+    material_index: Vec<u16>,
     vertex_positions: Vec<f32>,
     vertex_normals: Option<Vec<f32>>,
     vertex_uvs: Option<Vec<f32>>,
@@ -425,6 +437,7 @@ fn make_vertices(
             vertex_positions[idx * 3 + 1],
             vertex_positions[idx * 3 + 2],
         ];
+        let material_idx = material_index[idx];
         let normal = vertex_normals
             .as_ref()
             .map(|n| [n[idx * 3], n[idx * 3 + 1], n[idx * 3 + 2]]);
@@ -456,6 +469,7 @@ fn make_vertices(
         });
         vertices.push(Vertex {
             position,
+            material_index: material_idx,
             normal,
             face_tangent,
             uv,
@@ -534,6 +548,7 @@ pub mod tests {
                 bone_influences_per_vertex: None,
                 vertex_group_indices: None,
                 num_vertices_in_each_face: vec![3],
+                material_index: vec![0],
                 vertex_position_indices: vec![2, 1, 0],
                 vertex_normal_indices: vec![2, 1, 0],
                 vertex_uv_indices: Some(vec![2, 1, 0]),
@@ -545,6 +560,7 @@ pub mod tests {
 
         let expected_combined_mesh = TodoDeleteMeSingleConverter {
             vertex_position_indices: vec![2, 1, 0],
+            material_index: vec![0,0,0],
             vertex_positions: concat_vecs!(v(5), v(6), v(7)),
             vertex_normals: concat_vecs!(v(10), v(11), v(12)),
             vertex_uvs: Some(concat_vecs!(v2(15), v2(16), v2(17))),
@@ -593,6 +609,7 @@ pub mod tests {
 
         let expected_combined_mesh = TodoDeleteMeSingleConverter {
             vertex_positions: concat_vecs!(v3_x3(5, 6, 7), v(8), v3_x3(5, 7, 8)),
+            material_index: vec![0,0,0],
             vertex_position_indices: concat_vecs![vec![0, 1, 2], vec![0, 2, 3], vec![4, 5, 6]],
             num_vertices_in_each_face: vec![3, 3, 3],
             vertex_normals: concat_vecs!(v3_x3(10, 11, 12), v(13), v3_x3(14, 15, 16)),
@@ -661,6 +678,7 @@ pub mod tests {
     fn expected_mesh_to_combine_pos_norm_uv_indices() -> SingleIndexedVertexAttributes {
         TodoDeleteMeSingleConverter {
             vertex_positions: concat_vecs!(v3_x4(0, 1, 2, 3), v3_x4(0, 1, 2, 3), v3_x4(0, 1, 2, 3)),
+            material_index: vec![0,0,0],
             vertex_position_indices: concat_vecs![
                 // First Triangle
                 vec![0, 1, 2, 0, 2, 3,],
@@ -733,6 +751,7 @@ pub mod tests {
 
         let expected_combined_mesh = TodoDeleteMeSingleConverter {
             vertex_positions: vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0],
+            material_index: vec![0,0,0,0],
             vertex_position_indices: vec![
                 0, 1, 2, 0, 2, 3, 0, 1, 2, 0, 2, 3, 0, 1, 2, 0, 2, 3, 0, 1, 2, 0, 2, 3,
             ],
@@ -771,6 +790,7 @@ pub mod tests {
                 vertex_positions: start_positions,
                 vertex_position_indices: vec![0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3],
                 num_vertices_in_each_face: vec![4, 4, 4],
+                material_index: vec![0,0,0],
                 vertex_normals: start_normals,
                 // Our last 4 vertices already exist so our expected mesh will generate
                 // position indices 4, 5, 6 and 7 and use those for the second to last 4 and
@@ -797,6 +817,7 @@ pub mod tests {
             vertex_positions: end_positions,
             vertex_position_indices: vec![0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 4, 5, 6, 4, 6, 7],
             num_vertices_in_each_face: vec![4, 4, 4],
+            material_index: vec![0,0,0],
             vertex_normals: end_normals,
             bone_influences_per_vertex: Some(BoneInfluencesPerVertex::Uniform(3)),
             // Config.bone_influences_per_vertex = 3
@@ -822,6 +843,7 @@ pub mod tests {
         pub vertex_positions: Vec<f32>,
         pub vertex_position_indices: Vec<u16>,
         pub num_vertices_in_each_face: Vec<u8>,
+        pub material_index: Vec<u16>,
         pub vertex_normals: Vec<f32>,
         pub vertex_normal_indices: Vec<u16>,
         pub vertex_uv_indices: Option<Vec<u16>>,
@@ -860,6 +882,7 @@ pub mod tests {
 
             MultiIndexedVertexAttributes {
                 vertices_in_each_face: self.num_vertices_in_each_face,
+                material_index: self.material_index,
                 positions: IndexedAttribute {
                     indices: self.vertex_position_indices,
                     attribute: (self.vertex_positions, 3).into(),
@@ -875,6 +898,7 @@ pub mod tests {
     #[derive(Default)]
     pub struct TodoDeleteMeSingleConverter {
         pub vertex_positions: Vec<f32>,
+        pub material_index: Vec<u16>,
         pub vertex_position_indices: Vec<u16>,
         pub num_vertices_in_each_face: Vec<u8>,
         pub vertex_normals: Vec<f32>,
@@ -908,6 +932,7 @@ pub mod tests {
             SingleIndexedVertexAttributes {
                 indices: self.vertex_position_indices,
                 vertices: make_vertices(
+                    self.material_index,
                     self.vertex_positions,
                     Some(self.vertex_normals),
                     self.vertex_uvs,
