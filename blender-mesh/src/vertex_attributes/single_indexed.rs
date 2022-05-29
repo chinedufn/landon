@@ -25,6 +25,7 @@ pub struct SingleIndexedVertexAttributes {
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct Vertex {
     pub(crate) position: [f32; 3],
+    pub(crate) material_index: u16,
     pub(crate) normal: Option<[f32; 3]>,
     pub(crate) face_tangent: Option<[f32; 3]>,
     pub(crate) uv: Option<[f32; 2]>,
@@ -51,6 +52,9 @@ impl Vertex {
     pub fn uv(&self) -> Option<[f32; 2]> {
         self.uv
     }
+
+    /// The index of material associated with face
+    pub fn material_index(&self) -> u16 { self.material_index }
 
     /// The bones that influence this Vertex.
     ///

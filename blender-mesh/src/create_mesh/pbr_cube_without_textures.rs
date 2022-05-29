@@ -4,25 +4,26 @@ use crate::{
     VertexAttribute,
 };
 use std::collections::HashMap;
+use crate::CustomProperty::Vec;
 
 impl BlenderMesh {
     /// Create a default Blender cube with uniform PBR texture inputs.
     ///
     /// A 2x2x2 cube centered about the origin.
     pub fn pbr_cube_without_textures() -> Self {
-        let mut materials = HashMap::with_capacity(1);
-        materials.insert(
-            "Default".to_string(),
+        let materials = vec![
             PrincipledBSDF {
+                name: String::from("Default"),
                 base_color: MaterialInput::Uniform([0.4, 0.5, 0.6]),
                 roughness: MaterialInput::Uniform(0.2),
                 metallic: MaterialInput::Uniform(0.3),
                 normal_map: None,
             },
-        );
+        ];
 
         let multi_indexed_vertex_attributes = MultiIndexedVertexAttributes {
             vertices_in_each_face: vec![4, 4, 4, 4, 4, 4],
+            material_index: vec![0,0,0,0,0,0],
             positions: IndexedAttribute::new(
                 vec![
                     0, 1, 2, 3, 4, 7, 6, 5, 0, 4, 5, 1, 1, 5, 6, 2, 2, 6, 7, 3, 4, 0, 3, 7,
