@@ -112,14 +112,11 @@ class MeshToJSON(bpy.types.Operator):
                 # Especially important for smoothed models that mostly re-use
                 # the same normals. Test this by making a cube with to faces
                 # that have the same normal
-                mesh_json['attribs']['normals']['indices'].append(index)
+                mesh_json['attribs']['normals']['indices'].append(face.vertices[i])
                 if mesh.data.uv_layers:
                     mesh_json['attribs']['uvs']['indices'].append(face.loop_indices[i])
 
             # TODO: Don't append normals if we've already encountered them
-            mesh_json['attribs']['normals']['attribute']['data'].append(face.normal.x)
-            mesh_json['attribs']['normals']['attribute']['data'].append(face.normal.y)
-            mesh_json['attribs']['normals']['attribute']['data'].append(face.normal.z)
 
             index += 1
 
@@ -127,6 +124,10 @@ class MeshToJSON(bpy.types.Operator):
             mesh_json['attribs']['positions']['attribute']['data'].append(vert.co.x)
             mesh_json['attribs']['positions']['attribute']['data'].append(vert.co.y)
             mesh_json['attribs']['positions']['attribute']['data'].append(vert.co.z)
+
+            mesh_json['attribs']['normals']['attribute']['data'].append(vert.normal.x)
+            mesh_json['attribs']['normals']['attribute']['data'].append(vert.normal.y)
+            mesh_json['attribs']['normals']['attribute']['data'].append(vert.normal.z)
 
             num_groups = len(list(vert.groups))
             for group in vert.groups:
